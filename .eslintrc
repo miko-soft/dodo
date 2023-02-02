@@ -1,0 +1,30 @@
+{
+	"globals": {
+    "dodoGlob": true
+	},
+	"env": {
+		"browser": true,
+		"node": false,
+    "es6": true
+	},
+	"rules": {
+		"quotes": [1, "single", {"avoidEscape": true, "allowTemplateLiterals": true}],
+    "indent": [1, 2, {"SwitchCase": 1}],
+    "no-var": 2,
+    "no-undef": 2,
+    "no-unused-vars": [0, { "args": "all" }],
+    "no-const-assign": 2,
+    "prefer-const": 2,
+    "no-console": [2, { "allow": ["log", "error", "info"] }],
+    "no-extra-boolean-cast": 0,
+    "no-trailing-spaces": 2,
+    "strict": [1, "never"],
+    "semi": [2, "always"],
+    "no-extra-semi": 2,
+    "no-template-curly-in-string": 0
+	},
+	"parserOptions": {
+		"ecmaVersion": 13,
+    "sourceType": "module"
+ 	}
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@mikosoft/dodo",
+  "version": "1.0.0",
+  "title": "DoDo",
+  "description": "DoDo is javascript framework for single page applications which can run in browser, mobile apps, browser extensions and desktop apps. Intuitive and simple to use.",
+  "author": "Mikodanic Sasa <smikodanic@gmail.com>",
+  "homepage": "http://dodo.mikosoft.info",
+  "license": "MIT",
+  "keywords": [
+    "spa",
+    "dodo",
+    "single page app",
+    "single page application",
+    "web app",
+    "javascript framework",
+    "frontend framework"
+  ],
+  "main": "./core/index.js",
+  "type": "module",
+  "scripts": {},
+  "dependencies": {},
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/miko-soft/dodo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mikosoft/dodo/issues"
+  }
+}
