@@ -53,6 +53,8 @@ class View extends DataDd {
       if (this._debug().ddInc) { console.log('\n******** path_dest_cssSel:: ', viewPath, dest, cssSel, '********'); }
       if (!viewPath) { console.error('viewPath is not defined'); return; }
 
+      if (!window.dodoGlob.viewsCached[viewPath]) { console.log(`ddInc Warning: Bad view path ${viewPath}`); }
+
       // Get HTML content. First try from the cached JSON and if it doesn't exist then request from the server.
       let nodes, str;
       if (!!window && !!window.dodoGlob && !!window.dodoGlob.viewsCached && !!window.dodoGlob.viewsCached[viewPath]) { // HTML content from the cached file /cache/views.json
@@ -149,6 +151,8 @@ class View extends DataDd {
     if (this._debug().loadView) { console.log('elem::', elem); }
     if (!elem) { throw new Error(`Element ${attrSel} not found.`); }
     if (!viewPath) { throw new Error(`View path is not defined.`); }
+
+    if (!window.dodoGlob.viewsCached[viewPath]) { console.log(`loadView Warning: Bad view path ${viewPath}`); }
 
     // Get HTML content. First try from the cached JSON and if it doesn't exist then request from the server.
     let nodes, str;
