@@ -567,12 +567,13 @@ class Aux {
 
     let elems = [];
     if (!!attrValQuery) {
-      const attrValQuery2 = attrValQuery.replace('$', '\\$');
-      const reg = new RegExp(`${attrValQuery2}$|${attrValQuery2}[\\s\\@\\.]+.*$`); // $model.companies or $model.companies.
+      const attrValQuery2 = attrValQuery.replace('$', '\\$'); // prepare for regexp
+      const reg = new RegExp(`${attrValQuery2}$|${attrValQuery2}[\\s\\@\\.]+.*$|${attrValQuery2}___.+$`); // $model.companies or $model.companies.
 
       for (const attrName_elem of attrName_elems) {
-        const attrVal = attrName_elem.getAttribute(attrName); // '$model.companies' or  '$model.companies @@ inner'  or  '$model.companies.$i0.name'
+        const attrVal = attrName_elem.getAttribute(attrName); // '$model.companies' or '$model.companies @@ inner' or '$model.companies.$i0.name' or '$model.advert___{{ad_num}}' or '$model.advert___solveMath/{{ad_num}} + 1/'
         const tf = reg.test(attrVal);
+        // console.log(tf, attrVal, reg);
         if (tf) { elems.push(attrName_elem); }
       }
       // console.log(attrName, attrValQuery, reg, elems);
