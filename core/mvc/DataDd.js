@@ -781,6 +781,8 @@ class DataDd extends DataDdListeners {
       txt = this._solveMath(txt); // calculte for example solveMath/$i0 + 1/
       txt = txt.replace(/\[/g, '<').replace(/\]/g, '>'); // solve html tags, [b style='color:red']3[/b]
 
+      if (txt.includes('$i')) { txt = ''; } // don't show txt if the $i is not rendered
+
       this._debug('ddEcho', `ddEcho txt after: ${txt}\n`, 'navy', '#B6ECFF');
 
       elem.innerHTML = txt;
