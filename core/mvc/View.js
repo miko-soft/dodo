@@ -242,7 +242,7 @@ class View extends DataDd {
 
 
   /**
-   * Empty a
+   * Empty a view
    * @param {string} viewName - view name
    * @param {string} dest - destination where the view was placed: inner, outer, sibling, prepend, append
    * @returns {void}
@@ -383,7 +383,7 @@ class View extends DataDd {
    * @returns {object}
    */
   async fetchRemoteView(viewPath, cssSel) {
-    const path = `/frontend/src/views/${viewPath}`; // /frontend/views/pages/home/main.html
+    const path = `/src/views/${viewPath}`; // /src/views/pages/home/main.html
     const url = new URL(path, this.$baseURIhost).toString(); // resolve the URL
     const answer = await this.$httpClient.askHTML(url, cssSel);
     const content = answer.res.content;

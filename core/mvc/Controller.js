@@ -104,8 +104,8 @@ class Controller extends Model {
    */
   async render(attrValQuery, renderDelay = 5) {
     if (!!attrValQuery) {
-      /* - remove dynamic part of the attrValquery because dynamic part in the data-dd- elem is not same as solved attrValQuery
-       - for example data-dd-print="$model.advert___{{ad_num}}" is resolved to $model.advert___3 */
+      /* - Remove dynamic part of the attrValquery because dynamic part in the data-dd- elem is not same as solved attrValQuery.
+         - For example data-dd-print="$model.advert___{{ad_num}}" is resolved to $model.advert___3 */
       attrValQuery = attrValQuery.replace(/___.+$/, ''); // $model.advert___3 -> $model.advert
     }
 
