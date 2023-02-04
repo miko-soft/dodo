@@ -110,8 +110,8 @@ class Form {
 
   /**
    * Get the form control value.
-   * @param {string} key - the value of the "name" HTML attribute
-   * @param {boolean} convertType - default true
+   * @param {string} key - the value of the "name" HTML attribute, for example in name="pets" the key is 'pets'
+   * @param {boolean} convertType - convert data type, for example "5" -> 5 , default is true
    * @returns {string|number}
    */
   getControl(key, convertType = true) {
@@ -164,7 +164,7 @@ class Form {
       i++;
     }
 
-    this._debug('getControl', `${val}`, 'green');
+    this._debug('getControl', `${key} = ${val}`, 'green');
     return val;
   }
 

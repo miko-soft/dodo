@@ -504,10 +504,12 @@ class View extends DataDd {
   /**
    * Create <link rel="stylesheet"> tags and load CSS.
    * Usually use it in the loader() controller hook.
-   * @param {string[]} urls - array of CSS file URLs, ['/frontend/assets/css/common.css', '/frontend/assets/css/home.css']
+   * @param {string|string[]} urls - one url, or array of CSS file URLs, ['/frontend/assets/css/common.css', '/frontend/assets/css/home.css']
    */
   loadCSS(urls) {
     if (!urls) { return; }
+    else if (!Array.isArray(urls)) { urls = [urls]; }
+
     for (const url of urls) {
       // check if LINK tag already exists and if exists remove it
       const elems = document.body.querySelectorAll(`link[href="${url}"]`);
@@ -529,6 +531,8 @@ class View extends DataDd {
    */
   unloadCSS(urls) {
     if (!urls) { return; }
+    else if (!Array.isArray(urls)) { urls = [urls]; }
+
     for (const url of urls) {
       const elems = document.head.querySelectorAll(`link[rel="stylesheet"][href="${url}"]`);
       for (const elem of elems) {
