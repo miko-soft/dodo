@@ -5,7 +5,7 @@ class View extends DataDd {
 
   constructor() {
     super();
-    // window.dodoGlob.viewsCached is defined by the App:controllerViewsCached()
+    // this.$viewsCached is defined by the App.viewsCached() method
   }
 
 
@@ -53,11 +53,11 @@ class View extends DataDd {
       if (this._debug().ddInc) { console.log('\n******** path_dest_cssSel:: ', viewPath, dest, cssSel, '********'); }
       if (!viewPath) { console.error('viewPath is not defined'); return; }
 
-      if (!window.dodoGlob.viewsCached[viewPath]) { console.log(`ddInc Warning: Bad view path ${viewPath}`); }
+      if (!!this.$viewsCached && !this.$viewsCached[viewPath]) { console.log(`ddInc Warning: Bad view path ${viewPath} in data-dd-inc`); }
 
       // Get HTML content. First try from the cached JSON and if it doesn't exist then request from the server.
       let nodes, str;
-      if (!!window && !!window.dodoGlob && !!window.dodoGlob.viewsCached && !!window.dodoGlob.viewsCached[viewPath]) { // HTML content from the cached file /cache/views.json
+      if (!!this.$viewsCached && !!this.$viewsCached[viewPath]) { // HTML content from the cached file /cache/views.json
         const cnt = this.fetchCachedView(viewPath, cssSel);
         nodes = cnt.nodes;
         str = cnt.str;
@@ -152,11 +152,11 @@ class View extends DataDd {
     if (!elem) { throw new Error(`Element ${attrSel} not found.`); }
     if (!viewPath) { throw new Error(`View path is not defined.`); }
 
-    if (!window.dodoGlob.viewsCached[viewPath]) { console.log(`loadView Warning: Bad view path ${viewPath}`); }
+    if (!!this.$viewsCached && !this.$viewsCached[viewPath]) { console.log(`loadView Warning: Bad view path ${viewPath} data-dd-view`); }
 
     // Get HTML content. First try from the cached JSON and if it doesn't exist then request from the server.
     let nodes, str;
-    if (!!window && !!window.dodoGlob && !!window.dodoGlob.viewsCached && !!window.dodoGlob.viewsCached[viewPath]) { // HTML content from the cached file /cache/views.json
+    if (!!this.$viewsCached && !!this.$viewsCached[viewPath]) { // HTML content from the cached file /cache/views.json
       const cnt = this.fetchCachedView(viewPath, cssSel);
       nodes = cnt.nodes;
       str = cnt.str;
@@ -358,14 +358,14 @@ class View extends DataDd {
   fetchCachedView(viewPath, cssSel) {
     // convert HTML string to Document
     const parser = new DOMParser();
-    const doc = parser.parseFromString(window.dodoGlob.viewsCached[viewPath], 'text/html');
+    const doc = parser.parseFromString(this.$viewsCached[viewPath], 'text/html');
 
     // define nodes and string
     let nodes; // array of DOM nodes (Node[])
     let str; // HTML content as string (string)
     if (!cssSel) {
-      nodes = /\<title|\<meta|\<link\<base/.test(window.dodoGlob.viewsCached[viewPath]) ? doc.head.childNodes : doc.body.childNodes;
-      str = window.dodoGlob.viewsCached[viewPath];
+      nodes = /\<title|\<meta|\<link\<base/.test(this.$viewsCached[viewPath]) ? doc.head.childNodes : doc.body.childNodes;
+      str = this.$viewsCached[viewPath];
     } else {
       const elem = doc.querySelector(cssSel);
       nodes = [elem];
@@ -383,7 +383,7 @@ class View extends DataDd {
    * @returns {object}
    */
   async fetchRemoteView(viewPath, cssSel) {
-    const path = `/src/views/${viewPath}`; // /src/views/pages/home/main.html
+    const path = `/views/${viewPath}`; // /views/pages/home/main.html
     const url = new URL(path, this.$baseURIhost).toString(); // resolve the URL
     const answer = await this.$httpClient.askHTML(url, cssSel);
     const content = answer.res.content;
@@ -504,7 +504,7 @@ class View extends DataDd {
   /**
    * Create <link rel="stylesheet"> tags and load CSS.
    * Usually use it in the loader() controller hook.
-   * @param {string|string[]} urls - one url, or array of CSS file URLs, ['/frontend/assets/css/common.css', '/frontend/assets/css/home.css']
+   * @param {string|string[]} urls - one url, or array of CSS file URLs, ['/assets/css/common.css', '/assets/css/home.css']
    */
   loadCSS(urls) {
     if (!urls) { return; }
@@ -527,7 +527,7 @@ class View extends DataDd {
   /**
    * Remove <link rel="stylesheet"> tags and unload CSS.
    * Usually use it in the loader() controller hook.
-   * @param {string[]} urls - array of CSS file URLs, ['/frontend/assets/css/common.css', '/frontend/assets/css/home.css'] or just ['/frontend/assets/css/'] to remove all folder files
+   * @param {string[]} urls - array of CSS file URLs, ['/assets/css/common.css', '/assets/css/home.css'] or just ['/assets/css/'] to remove all folder files
    */
   unloadCSS(urls) {
     if (!urls) { return; }
@@ -623,7 +623,7 @@ class View extends DataDd {
 
     // Get HTML content. First try from the cached JSON and if it doesn't exist then request from the server.
     let nodes, str;
-    if (!!window.dodoGlob.viewsCached[viewPath]) { // HTML content from the cached file /cache/views.json
+    if (!!this.$viewsCached[viewPath]) { // HTML content from the cached file /cache/views.json
       const cnt = this.fetchCachedView(viewPath);
       nodes = cnt.nodes;
       str = cnt.str;

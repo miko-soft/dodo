@@ -9,7 +9,6 @@ class App {
   constructor() {
     this.ctrls = {}; // { ctrlName1: {}, ctrlName2: {} }
     this.$debugOpts = debugOpts; // object with the debug parameters -- {ddFor: true, ddIf: false}
-    window.dodoGlob = {}; // init global variable
   }
 
   /*============================== CONTROLLERS ==============================*/
@@ -190,14 +189,13 @@ class App {
 
 
   /**
-   * Inject the content of the tmp/cache/views.json.
+   * Inject the content of the viewsCached.js
    * Useful to speed up the HTML view load, especially in data-dd-inc elements.
-   * @param {object} viewsCached - the content of the tmp/cache/views.json file
+   * @param {object} viewsCached - the content of the _bundle/viewsCached.js file
    * @returns {App}
    */
   viewsCached(viewsCached) {
-    // this.controllerProp('viewsCached', viewsCached);
-    window.dodoGlob.viewsCached = viewsCached;
+    this._controllerProp('$viewsCached', viewsCached);
     return this;
   }
 
