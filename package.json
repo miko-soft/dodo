@@ -22,9 +22,9 @@
   "devDependencies": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/miko-soft/dodo.git"
+    "url": "https://github.com/miko-soft/dodo"
   },
-  "bugs": {
-    "url": "https://github.com/mikosoft/dodo/issues"
+  "publishConfig": {
+    "access": "public"
   }
 }
