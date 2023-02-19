@@ -22,6 +22,21 @@ class Aux {
   }
 
 
+  /**
+   * Convert value to string.
+   * @param {any} val - input value of any type
+   * @returns {string}
+   */
+  _val2str(val) {
+    if (typeof val === 'string') { val = val; }
+    else if (typeof val === 'number') { val = +val; }
+    else if (typeof val === 'boolean') { val = val.toString(); }
+    else if (typeof val === 'object') { val = JSON.stringify(val); }
+    else { val = val; }
+    return val;
+  }
+
+
 
 
   /***** HTML DOM *****/
@@ -54,10 +69,56 @@ class Aux {
   }
 
 
+  /**
+   * Define new cloned element.
+   * The original element gets dd-xyz-id , unique ID to distinguish the element from other dd-xyz elements on the page.
+   * The cloned element gets dd-xyz-gen and dd-xyz-id attributes.
+   * @param {Element} elem - original element
+   * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
+   * @param {string} attrVal - attribute value: '$model.continent --append'
+   * @param {string} dd_id - dodo unique id
+   * @returns {HTMLElement}
+   */
+  _genElem_define(elem, attrName, attrVal, dd_id) {
+    if (!dd_id) {
+      const { prop } = this._decomposeAttribute(attrVal);
+      dd_id = this._uid(prop);
+    }
+
+    // clone the dd-xyz element
+    const newElem = elem.cloneNode(true);
+
+    // remove cloned attributes and add new attributes
+    newElem.removeAttribute(attrName);
+    newElem.removeAttribute(`${attrName}-id`);
+    newElem.setAttribute(`${attrName}-gen`, dd_id);
+
+    // redefine style attribute
+    newElem.style.display = '';
+    if (!newElem.getAttribute('style')) { newElem.removeAttribute('style'); }
+
+    return newElem;
+  }
+
+
+  /**
+   * Remove element with the specific dd-xyz-gen attributes.
+   * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
+   * @param {string} dd_id - dodo unique id
+   * @returns
+   */
+  _genElem_remove(attrName, dd_id) {
+    if (!dd_id) { return; }
+    const genAttr_sel = `[${attrName}-gen="${dd_id}"]`;
+    const genElems = document.querySelectorAll(genAttr_sel);
+    for (const genElem of genElems) { genElem.remove(); }
+  }
+
+
 
   /***** SOLVERS *****/
   /**
-   * Find {{...}} mustachess in the txt and replace it with the real value. The real value is JS expression like: '2+4' or 'this.$model.n +1' which needs to be solved.
+   * Find {{...}} mustaches in the txt and replace it with the real value. The real value is JS expression like: '2+4' or 'this.$model.n +1' which needs to be solved.
    * @param {string} txt - text with mustache, for example: '$model.company{{this.n + 1}}' or $model.company{{'something'.slice(0,1)}}
    * @returns {string}
    */
@@ -96,6 +157,61 @@ class Aux {
 
     return exprResult;
   }
+
+
+
+  /***** FUNCTIONS *****/
+  /**
+   * Parse function definition and return function name and arguments.
+   * For example: products.list(25, 'str', $event, $element) -> {funcName: 'products.list', funcArgs: [55, elem]}
+   * @param {string} funcDef - function definition in the dd- attribute
+   * @param {HTMLElement} elem - dd- HTML element on which is the event applied
+   * @param {Event} event - event (click, keyup, ...) applied on the dd- element (used only in the DdListeners)
+   * @returns {{funcName:string, funcArgs:any[], funcArgsStr:string}
+   */
+  _funcParse(funcDef, elem, event) {
+    if (!funcDef) { return {}; }
+
+    const matched = funcDef.match(/^(.+)\((.*)\)$/);
+    if (!matched) { console.error(`_funcParseErr: Function "${funcDef}" has bad definition.`); return {}; }
+    const funcName = matched[1] || ''; // function name: products.list
+
+    const funcArgsStr = !!matched[2] ? matched[2].trim() : ''; // function arguments: 25, 'str', $event, $element, this.products
+    const funcArgs = !funcArgsStr ? [] : funcArgsStr
+      .split(',')
+      .map(arg => {
+        arg = arg.trim();
+        if (arg === '$element') { arg = elem; } // DOM HTMLElement: func($element)
+        else if (arg === '$value') { arg = this._getElementValue(elem, true); } // DOM HTMLElement value (INPUT, SELECT, TEXTAREA,...): func($value)
+        else if (arg === '$event') { arg = event; } // DOM Event: func($event)
+        else if (/"|'/.test(arg)) { arg = arg.replace(/\'/g, ''); } // string: func('some str', "some str")
+        else if (/^-?\d+\.?\d*$/.test(arg) && !/\'/.test(arg)) { arg = +arg; } // number: func(12, -12, -12.22)
+        else if ((arg === 'true' || arg === 'false')) { arg = JSON.parse(arg); } // boolean: func(true, false)
+        else if (/^\/.+\/i?g?$/.test(arg)) { // if regular expression, for example in replace(/Some/i, 'some')
+          const mat = arg.match(/^\/(.+)\/(i?g?)$/);
+          arg = new RegExp(mat[1], mat[2]);
+        }
+        else if (/^\$model\./.test(arg)) { // model: func($model.cars)
+          const mprop = arg.replace(/^\$model\./, ''); // remove $model.
+          const val = this._getModelValue(mprop);
+          arg = val;
+        }
+        else if (/^this\./.test(arg)) { // if contain this. i.e. controller property: func(this.pets)
+          const prop = arg.replace(/^this\./, ''); // remove this.
+          const val = this._getControllerValue(prop);
+          arg = val;
+        } else { // finally take it as controller property (without this.): func(pets)
+          const prop = arg;
+          const val = this._getControllerValue(prop);
+          arg = val;
+        }
+
+        return arg;
+      });
+
+    return { funcName, funcArgs, funcArgsStr };
+  }
+
 
 
 

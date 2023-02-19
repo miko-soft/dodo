@@ -32,6 +32,7 @@ class Dd extends DdListeners {
 
     const attrName = 'dd-text';
     const elems = this._listElements(attrName, dd_id);
+
     this._debug('ddText', `found elements:: ${elems.length} | dd_id:: ${dd_id}`, 'navy');
 
 
@@ -42,8 +43,38 @@ class Dd extends DdListeners {
       let prop2 = this._solveMustache(prop);
       prop2 = prop2.replace(/^this\./, '');
 
-      const val = this._getControllerValue(prop2);
+      let val = this._getControllerValue(prop2);
       this._debug('ddText', `ddText:: ${prop} --> ${prop2} = "${val}"  --opts::"${opts}"`, 'navy');
+
+      // don't render elements with undefined controller's value
+      if (val === undefined || val === null) { elem.textContent = ''; continue; }
+
+      // convert controller val to string
+      val = this._val2str(val);
+
+      // remove all gen elems and create new elements which are siblings to elem (which is initially hidden)
+      this._genElem_remove(attrName, dd_id);
+      const newElem = this._genElem_define(elem, attrName, attrVal);
+      elem.parentNode.insertBefore(newElem, elem.nextSibling);
+
+      // apply pipe option (val must be a string)
+      const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
+      if (!!pipeOpt) {
+        const pipeFunc = pipeOpt.replace('pipe:', '').trim();
+        const { funcName, funcArgs } = this._funcParse(pipeFunc, newElem);
+        if (typeof val[funcName] === 'function') { val = val[funcName](...funcArgs); }
+      }
+
+      // load content in the element
+      if (opts.includes('overwrite')) {
+        newElem.textContent = val;
+      } else if (opts.includes('prepend')) {
+        newElem.textContent = val + elem.textContent;
+      } else if (opts.includes('append')) {
+        newElem.textContent = elem.textContent + val;
+      } else {
+        newElem.textContent = val;
+      }
 
     }
 

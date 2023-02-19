@@ -703,10 +703,10 @@ class View extends Dd {
         dd_elem.style.display = 'none';
 
         // add id attribute for example dd-text-id
-        const ddAttrVal = dd_elem.getAttribute(attribute) || ''; // $model.companies --append
-        const txt2hash = ddAttrVal.replace(/--[a-zA-z0-9]+/g, '').trim(); // remove options, --append
-        const dd_id = this._uid(txt2hash);
-        // console.log('_invisible_id::', txt2hash, ' --> ', dd_id);
+        const attrVal = dd_elem.getAttribute(attribute) || ''; // '$model.companies --append'
+        const { prop } = this._decomposeAttribute(attrVal); // '$model.companies'
+        const dd_id = this._uid(prop);
+        // console.log('_invisible_id::', prop, ' --> ', dd_id);
         dd_elem.setAttribute(`${attribute}-id`, dd_id);
       }
     }
