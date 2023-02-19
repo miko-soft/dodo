@@ -3,9 +3,9 @@ import navig from '../lib/navig.js';
 
 
 /**
- * Parse HTML elements with the "data-dd-" attribute (event listeners)
+ * Parse HTML elements with the "dd-" attribute (event listeners)
  */
-class DataDdListeners extends Aux {
+class DdListeners extends Aux {
 
   constructor() {
     super();
@@ -13,8 +13,8 @@ class DataDdListeners extends Aux {
 
 
   /**
-   * Remove all listeners (click, input, keyup, ...) from the elements with the "data-dd-..." attribute
-   * when controller is destroyed i.e. when URL is changed. See /core/router.js
+   * Remove all listeners (click, input, keyup, ...) from the elements with the "dd-..." attribute
+   * when controller is destroyed i.e. when URL is changed. See /core/router/Router.js
    * @returns {void}
    */
   async ddKILL() {
@@ -38,17 +38,17 @@ class DataDdListeners extends Aux {
 
 
   /**
-   * data-dd-href
-   * <a href="/product/12" data-dd-href>Product 12</a>
-   * <a href="" data-dd-href="/product/12">Product 12</a>
+   * dd-href
+   * <a href="/product/12" dd-href>Product 12</a> - when link is hovered the URL will be shown in browser status bar
+   * <a href="" dd-href="/product/12">Product 12</a>
    * Href listeners and changing URLs (browser history states).
-   * NOTICE: Click on data-dd-href element will destroy the controller i.e. ddKILL() will be invoked.
+   * NOTICE: The click on dd-href element will destroy current controller i.e. ddKILL() will be invoked.
    * @returns {void}
    */
   ddHref() {
     this._debug('ddHref', '--------- ddHref ------', 'orange', '#F4EA9E');
 
-    const attrName = 'data-dd-href';
+    const attrName = 'dd-href';
     const elems = this._listElements(attrName, '');
     this._debug('ddHref', `found elements:: ${elems.length}`, 'orange');
 
@@ -59,7 +59,7 @@ class DataDdListeners extends Aux {
         event.preventDefault();
 
         // change browser's address bar (emit 'pushstate' event)
-        const href = elem.getAttribute('data-dd-href') || elem.getAttribute('href') || '';
+        const href = elem.getAttribute('dd-href') || elem.getAttribute('href') || '';
         const url = href.trim();
         const state = { href };
         const title = !!elem.innerText ? elem.innerText.trim() : '';
@@ -78,22 +78,22 @@ class DataDdListeners extends Aux {
 
 
   /**
-   * data-dd-click="<controllerMethod> [@@ preventDefault]"
-   * <button data-dd-click="myFunc()">CLICK ME</button>
+   * dd-click="<controllerMethod> [-- preventDefault]"
+   * <button dd-click="myFunc()">CLICK ME</button>
    * Listen for click and execute the function i.e. controller method.
    * @returns {void}
    */
   ddClick() {
     this._debug('ddClick', '--------- ddClick ------', 'orange', '#F4EA9E');
 
-    const attrName = 'data-dd-click';
+    const attrName = 'dd-click';
     const elems = this._listElements(attrName, '');
     this._debug('ddClick', `found elements:: ${elems.length}`, 'orange');
 
 
     for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName); // string 'myFunc(x, y, ...restArgs) @@ preventDefault'
-      if (!attrVal) { console.error(`Attribute "data-dd-click" has bad definition (data-dd-click="${attrVal}").`); continue; }
+      const attrVal = elem.getAttribute(attrName); // string 'myFunc(x, y, ...restArgs) -- preventDefault'
+      if (!attrVal) { console.error(`Attribute "dd-click" has bad definition (dd-click="${attrVal}").`); continue; }
 
       const attrValSplited = attrVal.split(this.$dd.separator);
       const funcDefs = attrValSplited[0]; // func1();func2(a, b);
@@ -108,22 +108,22 @@ class DataDdListeners extends Aux {
       const eventName = 'click';
       elem.addEventListener(eventName, handler);
       this.$dd.listeners.push({ attrName, elem, handler, eventName });
-      this._debug('ddClick', `pushed::  tag: ${elem.localName} | data-dd-click="${attrVal}" | preventDefault: ${tf} | ddListeners: ${this.$dd.listeners.length}`, 'orange');
+      this._debug('ddClick', `pushed::  tag: ${elem.localName} | dd-click="${attrVal}" | preventDefault: ${tf} | ddListeners: ${this.$dd.listeners.length}`, 'orange');
     }
   }
 
 
   /**
-   * data-dd-keyup="<controllerMethod> [@@ keyCode]"
-   * <input type="text" data-dd-keyup="myFunc()"> - it will execute myFunc on every key
-   * <input type="text" data-dd-keyup="myFunc() @@ enter"> - it will execute myFunc on Enter
-   * Parse the "data-dd-keyup" attribute. Listen for the keyup event on certain element and execute the controller method.
+   * dd-keyup="<controllerMethod> [-- keyCode]"
+   * <input type="text" dd-keyup="myFunc()"> - it will execute myFunc on every key
+   * <input type="text" dd-keyup="myFunc() -- enter"> - it will execute myFunc on Enter
+   * Parse the "dd-keyup" attribute. Listen for the keyup event on certain element and execute the controller method.
    * @returns {void}
    */
   ddKeyup() {
     this._debug('ddKeyup', '--------- ddKeyup ------', 'orange', '#F4EA9E');
 
-    const attrName = 'data-dd-keyup';
+    const attrName = 'dd-keyup';
     const elems = this._listElements(attrName, '');
     this._debug('ddKeyup', `found elements:: ${elems.length}`, 'orange');
 
@@ -132,7 +132,7 @@ class DataDdListeners extends Aux {
       const attrVal = elem.getAttribute(attrName);
       const attrValSplited = attrVal.split(this.$dd.separator);
 
-      if (!attrValSplited[0]) { console.error(`Attribute "data-dd-keyup" has bad definition (data-dd-keyup="${attrVal}").`); continue; }
+      if (!attrValSplited[0]) { console.error(`Attribute "dd-keyup" has bad definition (dd-keyup="${attrVal}").`); continue; }
       const funcDefs = attrValSplited[0]; // func1();func2();
 
       let keyCode = attrValSplited[1] || '';
@@ -149,29 +149,29 @@ class DataDdListeners extends Aux {
       const eventName = 'keyup';
       elem.addEventListener(eventName, handler);
       this.$dd.listeners.push({ attrName, elem, handler, eventName });
-      this._debug('ddKeyup', `pushed::  tag: ${elem.localName} | data-dd-keyup="${attrVal}" | ctrl="${this.constructor.name}" | ddListeners: ${this.$dd.listeners.length}`, 'orange');
+      this._debug('ddKeyup', `pushed::  tag: ${elem.localName} | dd-keyup="${attrVal}" | ctrl="${this.constructor.name}" | ddListeners: ${this.$dd.listeners.length}`, 'orange');
     }
   }
 
 
 
   /**
-   * data-dd-change="<controllerMethod>"
-   * <select data-dd-change="myFunc()">
+   * dd-change="<controllerMethod>"
+   * <select dd-change="myFunc()">
    * Listen for change and execute the function i.e. controller method.
    * @returns {void}
    */
   ddChange() {
     this._debug('ddChange', '--------- ddChange ------', 'orange', '#F4EA9E');
 
-    const attrName = 'data-dd-change';
+    const attrName = 'dd-change';
     const elems = this._listElements(attrName, '');
     this._debug('ddChange', `found elements:: ${elems.length}`, 'orange');
 
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName); // string 'myFunc(x, y, ...restArgs)'
-      if (!attrVal) { console.error(`Attribute "data-dd-change" has bad definition (data-dd-change="${attrVal}").`); continue; }
+      if (!attrVal) { console.error(`Attribute "dd-change" has bad definition (dd-change="${attrVal}").`); continue; }
       const funcDefs = attrVal; // func1();func2();
 
       const handler = async event => {
@@ -182,33 +182,33 @@ class DataDdListeners extends Aux {
       const eventName = 'change';
       elem.addEventListener(eventName, handler);
       this.$dd.listeners.push({ attrName, elem, handler, eventName });
-      this._debug('ddChange', `pushed::  tag: ${elem.localName} | data-dd-change="${attrVal}" | ddListeners: ${this.$dd.listeners.length}`, 'orange');
+      this._debug('ddChange', `pushed::  tag: ${elem.localName} | dd-change="${attrVal}" | ddListeners: ${this.$dd.listeners.length}`, 'orange');
     }
   }
 
 
 
   /**
-   * data-dd-evt="eventName1 @@ <controllerMethod1> [&& eventName2 @@ <controllerMethod2>]"
+   * dd-evt="eventName1 -- <controllerMethod1> [&& eventName2 -- <controllerMethod2>]"
    * Listen for event and execute the function i.e. controller method.
    * Example:
-   * data-dd-evt="mouseenter @@ myFunc($element, $event, 25, 'some text')"  - $element and $event are the DOM objects of the data-dd-evt element
+   * dd-evt="mouseenter -- myFunc($element, $event, 25, 'some text')"  - $element and $event are the DOM objects of the dd-evt element
    * @returns {void}
    */
   ddEvt() {
     this._debug('ddEvt', '--------- ddEvt ------', 'orange', '#F4EA9E');
-    const attrName = 'data-dd-evt';
+    const attrName = 'dd-evt';
     const elems = this._listElements(attrName, '');
     this._debug('ddEvt', `found elements:: ${elems.length}`, 'orange');
 
 
     for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName).trim(); // mouseenter @@ runEVT($element, $event, 'red') && mouseleave @@ runEVT($element, $event, 'green')
+      const attrVal = elem.getAttribute(attrName).trim(); // mouseenter -- runEVT($element, $event, 'red') && mouseleave -- runEVT($element, $event, 'green')
       const directives = attrVal.split('&&');
 
       for (const directive of directives) {
         const attrValSplited = directive.split(this.$dd.separator);
-        if (!attrValSplited[0] || !attrValSplited[1]) { console.error(`Attribute "data-dd-evt" has bad definition (data-dd-evt="${attrVal}").`); continue; }
+        if (!attrValSplited[0] || !attrValSplited[1]) { console.error(`Attribute "dd-evt" has bad definition (dd-evt="${attrVal}").`); continue; }
 
         const eventName = attrValSplited[0].trim();
         const funcDefs = attrValSplited[1]; // func1();func2();
@@ -220,7 +220,7 @@ class DataDdListeners extends Aux {
 
         elem.addEventListener(eventName, handler);
         this.$dd.listeners.push({ eventName, attrName, elem, handler, eventName });
-        this._debug('ddEvt', `pushed::  tag: ${elem.localName} | data-dd-evt | event: ${eventName} | ddListeners: ${this.$dd.listeners.length}`, 'orange');
+        this._debug('ddEvt', `pushed::  tag: ${elem.localName} | dd-evt | event: ${eventName} | ddListeners: ${this.$dd.listeners.length}`, 'orange');
       }
     }
   }
@@ -228,26 +228,26 @@ class DataDdListeners extends Aux {
 
 
   /**
-   * data-dd-set="<controllerProperty> [@@convertType|convertTypeDont]"
-   * Parse the "data-dd-set" attribute. Get the value from elements like INPUT, SELECT, TEXTAREA, .... and set the controller property i.e. $model.
+   * dd-set="<controllerProperty> [--convertType|convertTypeDont]"
+   * Parse the "dd-set" attribute. Get the value from elements like INPUT, SELECT, TEXTAREA, .... and set the controller property i.e. $model.
    * Examples:
-   * data-dd-set="product" - product is the controller property
-   * data-dd-set="product.name"
-   * data-dd-set="product.price @@ convertType" -> will convert price to number
-   * data-dd-set="product.price @@ convertTypeDont" -> will not convert price to number, it will stay string
+   * dd-set="product" - product is the controller property
+   * dd-set="product.name"
+   * dd-set="product.price -- convertType" -> will convert price to number
+   * dd-set="product.price -- convertTypeDont" -> will not convert price to number, it will stay string
    * @returns {void}
    */
   ddSet() {
     this._debug('ddSet', '--------- ddSet ------', 'orange', '#F4EA9E');
 
-    const attrName = 'data-dd-set';
+    const attrName = 'dd-set';
     const elems = this._listElements(attrName, '');
     this._debug('ddSet', `found elements:: ${elems.length}`, 'orange');
 
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
-      if (!attrVal) { console.error(`Attribute "data-dd-set" has bad definition (data-dd-set="${attrVal}").`); continue; }
+      if (!attrVal) { console.error(`Attribute "dd-set" has bad definition (dd-set="${attrVal}").`); continue; }
 
       const attrValSplited = attrVal.split(this.$dd.separator);
 
@@ -272,28 +272,28 @@ class DataDdListeners extends Aux {
 
 
   /**
-   * data-dd-model="<controllerProp> [@@convertType|convertTypeDont]"
+   * dd-model="<controllerProp> [--convertType|convertTypeDont]"
    * Bind controller property and view INPUT, SELECT, TEXTAREA, ...etc in both directions.
    * When the view is updated the controller property will be updated and when controller property is updated the view will be updated.
-   * This is a shortcut of ddSet and ddValue, for example <input type="text" data-dd-input="product" data-dd-set="product"> is <input type="text" data-dd-model="product">
+   * This is a shortcut of ddSet and ddValue, for example <input type="text" dd-input="product" dd-set="product"> is <input type="text" dd-model="product">
    * Example:
-   * data-dd-model="product.name"
-   * data-dd-model="$model.product.name"  --> $model. should be omitted althought it will not cause issue
-   * data-dd-model="product.price @@ convertType" -> will convert price to number
-   * data-dd-model="product.price @@ convertTypeDont" -> will not convert price to number, it will stay string
+   * dd-model="product.name"
+   * dd-model="$model.product.name"  --> $model. should be omitted althought it will not cause issue
+   * dd-model="product.price -- convertType" -> will convert price to number
+   * dd-model="product.price -- convertTypeDont" -> will not convert price to number, it will stay string
    * @returns {void}
    */
   ddModel() {
     this._debug('ddModel', '--------- ddModel ------', 'orange', '#F4EA9E');
 
-    const attrName = 'data-dd-model';
+    const attrName = 'dd-model';
     const elems = this._listElements(attrName, '');
     this._debug('ddModel', `found elements:: ${elems.length}`, 'orange');
 
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
-      if (!attrVal) { console.error(`Attribute "data-dd-model" has bad definition (data-dd-model="${attrVal}").`); continue; }
+      if (!attrVal) { console.error(`Attribute "dd-model" has bad definition (dd-model="${attrVal}").`); continue; }
 
       const attrValSplited = attrVal.split(this.$dd.separator);
 
@@ -326,5 +326,5 @@ class DataDdListeners extends Aux {
 }
 
 
-export default DataDdListeners;
+export default DdListeners;
 

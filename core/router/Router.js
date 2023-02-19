@@ -1,125 +1,352 @@
-import DodoRouter from './DodoRouter.js';
+/**
+ * Terminology
+ * =================================
+ * route :string - defined route in the def() method - /room/subscribe/:room_name/:id
+ * routeParsed.full :string - full route (start and end slashes removed) - 'room/subscribe/:room_name/:id'
+ * routeParsed.segments :number - number the full route segments (with param parts) - 4
+ * routeParsed.base :number - route part without params segments (start and end slashes removed) - 'room/subscribe'
+ *
+ * uri :string - current URI - /room/subscribe/sasa/123?x=123&y=abc&z=false
+ * uriParsed.path :string - complete uri (start and end slashes removed) - '/room/subscribe/sasa/123'
+ * uriParsed.segments :number - number of the uri segments - 4
+ * uriParsed.queryString :string - uri part after question mark as string - 'x=123&y=abc&z=false'
+ * uriParsed.queryObject :object - uri part parsed as object - {x: 123, y: 'abc', z: false}
+ *
+ * body :any - data sent along with uri as the transitional object - trx: {uri, body}
+ *
+ * func :Function - route function - a function which is executed when certain route is matched against the uri
+ * trx :object - transitional object which can be changed in the route functions, required field is "uri" - {uri, body, uriParsed, routeParsed, params, query}
+ *
+ * Notice
+ *-----------
+ * a) Variables "uri" and "body" are analogous to HTTP POST request, for example:  POST /room/subscribe/sasa/123?key=999  {a: 'something})
+ * b) This code is simillar to general purpose "regoch-router" - https://github.com/smikodanic/regoch-router
+ */
 
 
-class Router extends DodoRouter {
 
-  constructor(debugRouter, debug) {
-    super({ debug });
-    this.debugRouter = debugRouter;
+class Router {
+
+  /**
+   * @param {object} routerOpts - router initial options {debug:boolean}
+   */
+  constructor(routerOpts) {
+    this.routerOpts = routerOpts || {};
+    this.trx; // transitional object {uri:string, body:any, ...}
+    this.routeDefs = []; // route definitions [{route:string, routeParsed:object, funcs:Function[] }]
   }
 
 
   /**
-   * Define the routes
-   * @param {string} route - route, for example: '/page1.html'
-   * @param {object} ctrl - route controller instance
-   * @param {{authGuards:string[]}} routeOpts - route options: {authGuards: ['autoLogin', 'isLogged', 'hasRole']}
+   * Set transitional object.
+   * @param {object} obj - {uri, body, ...}
    * @returns {void}
    */
-  _when(route, ctrl, routeOpts = {}) {
-    const authGuards = routeOpts.authGuards || [];
+  set trx(obj) {
+    // required properties
+    if (!obj.uri) { throw new Error('The "uri" property is required.'); }
 
-    // prechecks
-    if (!route && !!ctrl) { throw new Error(`Route is not defined for "${ctrl.constructor.name}" controller.`); }
-    if (!!route && !ctrl) { throw new Error(`Controller is not defined for route "${route}".`); }
-    if (/autoLogin|isLogged|hasRole/.test(authGuards.join()) && !ctrl.$auth) { throw new Error(`Auth guards (autoLogin, isLogged, hasRole) are used but Auth is not injected in the controller ${ctrl.constructor.name}. Use App::controllerAuth().`); }
+    // "uri" and "body" as properties with constant value (can not be modified)
+    Object.defineProperty(obj, 'uri', {
+      value: obj.uri,
+      writable: false
+    });
 
-    const assign_ctrl = trx => { trx.ctrl = ctrl; }; // add ctrl in trx so that controller it can be used in preflight and postflight
+    Object.defineProperty(obj, 'body', {
+      value: obj.body,
+      writable: false
+    });
 
-    const guards = [];
-    if (authGuards.length && ctrl.$auth) {
-      const autoLogin = ctrl.$auth.autoLogin.bind(ctrl.$auth);
-      const isLogged = ctrl.$auth.isLogged.bind(ctrl.$auth);
-      const hasRole = ctrl.$auth.hasRole.bind(ctrl.$auth);
-      if (authGuards.indexOf('autoLogin') !== -1) { guards.push(autoLogin); }
-      if (authGuards.indexOf('isLogged') !== -1) { guards.push(isLogged); }
-      if (authGuards.indexOf('hasRole') !== -1) { guards.push(hasRole); }
-    }
+    // parse uri
+    obj.uriParsed = this._uriParser(obj.uri);
 
-    const preflight = !!ctrl.$preflight ? ctrl.$preflight : []; // array of preflight functions, will be executed on every route before the controller's loader()
-    const processing = ctrl.processing.bind(ctrl);
-    const postflight = !!ctrl.$postflight ? ctrl.$postflight : []; // array of postflight functions, will be executed on every route ater the controller's postrend()
-
-
-    this.when(route, assign_ctrl, ...guards, ...preflight, processing, ...postflight);
+    this._trx = obj;
   }
 
 
-
   /**
-   * Define 404 not found route
-   * @param {object} ctrl - route controller instance
-   * @returns {void}
+   * Get transitional object.
+   * @returns {object} - {uri, body, ...}
    */
-  _notfound(ctrl) {
-    const processing = ctrl.processing.bind(ctrl);
-    this.notfound(processing);
+  get trx() {
+    return this._trx;
   }
 
 
 
   /**
-   * Define functions which will be executed on every route.
-   * @param {Function[]} funcs - function which will be executed on every request, e.g. every exe()
+   * Define route, routeParsed and corresponding functions.
+   * @param {string} route - /room/subscribe/:room_name
+   * @param {Function[]} funcs - route functions, middlewares
    * @returns {Router}
    */
-  _do(...funcs) {
-    this.do(...funcs);
+  when(route, ...funcs) {
+    this.routeDefs.push({
+      route,
+      routeParsed: this._routeParser(route),
+      funcs
+    });
+    return this;
   }
-
 
 
   /**
    * Redirect from one route to another route.
    * @param {string} fromRoute - new route
    * @param {string} toRoute - destination route (where to redirect)
+   * @param {Function} cb - callback function executed during redirection process, it's a route middleware appended to toRoute middlewares
    * @returns {Router}
    */
-  _redirect(fromRoute, toRoute) {
-    const cb = () => {
-      window.history.pushState(null, '', toRoute); // change URL in the address bar
-    };
-    this.redirect(fromRoute, toRoute, cb);
+  redirect(fromRoute, toRoute, cb) {
+    const toRouteDef = this.routeDefs.find(routeDef => routeDef.route === toRoute); // {route, routeParsed, funcs}
+    const toFuncs = !!toRouteDef ? toRouteDef.funcs : [];
+    this.when(fromRoute, cb, ...toFuncs); // assign destination functions to the new route
+    return this;
+  }
+
+
+  /**
+   * Define special route <notfound>
+   * @param {Function[]} funcs - middlewares which will be executed when route is not matched aginst URI
+   * @returns {Router}
+   */
+  notfound(...funcs) {
+    this.when('<notfound>', ...funcs);
+    return this;
   }
 
 
 
   /**
-   * Match routes against current browser URI and execute matched route.
-   * @param {Event} pevent - popstate or pushstate event
-   * @returns {void}
+   * Define special route <do>
+   * @param {Function[]} funcs - middlewares which will be executed on every request, e.g. every exe()
+   * @returns {Router}
    */
-  async _exe(pevent) {
-    try {
-      const start = new Date();
-      let uri = window.location.pathname + window.location.search; // the current uri -  The uri is path + query string, without hash, for example: /page1.html?q=12
-      uri = decodeURI(uri); // /sh/po%C5%A1ta?field=title --> /sh/pošta?field=title
+  do(...funcs) {
+    this.when('<do>', ...funcs);
+    return this;
+  }
 
-      if (this.debugRouter) { console.log(`%c --------- router exe start --> ${uri} ------`, 'color:#680C72; background:#E59FED'); }
 
-      // execute matched route middlewares
-      this.trx = { uri, pevent };
-      const trx = await this.exe();
 
-      const end = new Date();
-      trx.elapsedTime = (end - start) + ' ms'; // in miliseconds
 
-      if (this.debugRouter) {
-        console.log('Router trx::', trx);
-        console.log(`%c --------- router exe end --> elapsedTime: ${this.trx.elapsedTime} ------`, 'color:#680C72; background:#E59FED');
-      }
+  /**
+   * Find the matched route and execute its middlewares.
+   * @returns {Promise<object>}
+   */
+  async exe() {
+    const trx_cloned = { ...this.trx }; // clone trx in case that this.trx is changing to fast
+    const uriParsed = trx_cloned.uriParsed; // shop/register/john/23
 
-    } catch (err) {
-      if (/AuthWarn::/.test(err.message)) { console.log(`%c${err.message}`, `color:#FF6500; background:#FFFEEE;`); }
-      else { console.error(err); }
+    /*** FIND ROUTE ***/
+    // found route definition
+    const routeDef_found = this.routeDefs.find(routeDef => { // {route, routeParsed, funcs}
+      const routeParsed = routeDef.routeParsed; // {full, segments, base}
+      return this._routeRegexMatchNoParams(routeParsed, uriParsed) || this._routeWithParamsMatch(routeParsed, uriParsed);
+    });
+
+    // not found route definition
+    const routeDef_notfound = this.routeDefs.find(routeDef => routeDef.route === '<notfound>');
+
+    // do route definition
+    const routeDef_do = this.routeDefs.find(routeDef => routeDef.route === '<do>');
+
+    /*** EXECUTE FOUND ROUTE FUNCTIONS */
+    if (!!routeDef_found) {
+      trx_cloned.routeParsed = routeDef_found.routeParsed;
+      trx_cloned.query = uriParsed.queryObject;
+      trx_cloned.params = !!trx_cloned.routeParsed ? this._getParams(routeDef_found.routeParsed.full, uriParsed.path) : {};
+
+      for (const func of routeDef_found.funcs) { await func(trx_cloned); }
+    } else if (!!routeDef_notfound) {
+      for (const func of routeDef_notfound.funcs) { await func(trx_cloned); }
     }
+
+
+    if (!!routeDef_do && !!routeDef_do.funcs && !!routeDef_do.funcs.length) {
+      for (const func of routeDef_do.funcs) { await func(trx_cloned); }
+    }
+
+
+    return trx_cloned;
+  }
+
+
+
+
+
+  /*********** ROUTE MATCHES  ***********/
+
+  /**
+   * Route regular expression match against the uri. Parameters are not defined in the route e.g. there is no /: chars.
+   * For example:
+   *       (route) /ads/autos/bmw - (uri) /ads/autos/bmw -> true
+   *       (route) /ads/a.+s/bmw  - (uri) /ads/autos/bmw -> true
+   * @param {object} routeParsed - {full, segments, base}
+   * @param {object} uriParsed - {path, segments, queryString, queryObject}
+   * @returns {boolean}
+   */
+  _routeRegexMatchNoParams(routeParsed, uriParsed) {
+    const routeReg = new RegExp(`^${routeParsed.full}$`, 'i');
+    const tf1 = routeReg.test(uriParsed.path); // route must match uri
+    const tf2 = routeParsed.segments === uriParsed.segments; // route and uri must have same number of segments
+    const tf = tf1 && tf2;
+    if (this.routerOpts.debug) { console.log(`\n_routeRegexMatchNoParams:: (route) ${routeParsed.full} - (uri) ${uriParsed.path} -> ${tf}`); }
+    return tf;
+  }
+
+
+  /**
+   * Route with parameters match against the uri.
+   * (route) /shop/register/:name/:age - (uri) /shop/register/john/23
+   * @param {object} routeParsed - {full, segments, base}
+   * @param {object} uriParsed - {path, segments, queryString, queryObject}
+   * @returns {boolean}
+   */
+  _routeWithParamsMatch(routeParsed, uriParsed) {
+    const routeReg = new RegExp(`^${routeParsed.base}\/`, 'i');
+    const tf1 = routeReg.test(uriParsed.path); // route base must match uri
+    const tf2 = routeParsed.segments === uriParsed.segments; // route and uri must have same number of segments
+    const tf3 = /\/\:/.test(routeParsed.full); // route must have at least one /:
+    const tf = tf1 && tf2 && tf3;
+    if (this.routerOpts.debug) { console.log(`_routeWithParamsMatch:: (route) ${routeParsed.full} - (uri) ${uriParsed.path} -> ${tf}`); }
+    return tf;
+  }
+
+
+
+
+  /*********** HELPERS  ***********/
+
+  /**
+   * Removing slashes from the beginning and the end.
+   * /ads/autos/bmw/ --> ads/autos/bmw
+   * //ads/autos/bmw/// --> ads/autos/bmw
+   * @param {string} path - uri path or route
+   * @returns {string}
+   */
+  _removeSlashes(path) {
+    return path.trim().replace(/^\/+/, '').replace(/\/+$/, '');
+  }
+
+
+  /**
+   * Convert string into integer, float or boolean.
+   * @param {string} value
+   * @returns {string | number | boolean | object}
+   */
+  _stringTypeConvert(value) {
+    function isJSON(str) {
+      try { JSON.parse(str); }
+      catch (err) { return false; }
+      return true;
+    }
+
+    if (!!value && !isNaN(value) && value.indexOf('.') === -1) { // convert string into integer (12)
+      value = parseInt(value, 10);
+    } else if (!!value && !isNaN(value) && value.indexOf('.') !== -1) { // convert string into float (12.35)
+      value = parseFloat(value);
+    } else if (value === 'true' || value === 'false') { // convert string into boolean (true)
+      value = JSON.parse(value);
+    } else if (isJSON(value)) {
+      value = JSON.parse(value);
+    }
+
+    return value;
+  }
+
+
+
+  /**
+   * Create query object from query string.
+   * @param  {string} queryString - x=abc&y=123&z=true
+   * @return {object}             - {x: 'abc', y: 123, z: true}
+   */
+  _toQueryObject(queryString) {
+    const queryArr = queryString.split('&');
+    const queryObject = {};
+
+    let eqParts, property, value;
+    queryArr.forEach(elem => {
+      eqParts = elem.split('='); // equotion parts
+      property = eqParts[0];
+      value = eqParts[1];
+
+      value = this._stringTypeConvert(value); // t y p e   c o n v e r s i o n
+
+      queryObject[property] = value;
+    });
+
+    return queryObject;
+  }
+
+
+
+  /**
+   * URI parser
+   * @param  {string} uri - /shop/register/john/23?x=abc&y=123&z=true  (uri === trx.uri)
+   * @returns {path:string, queryString:string, queryObject:object} - {path: 'shop/register/john/23', queryString: 'x=abc&y=123&z=true', queryObject: {x: 'abc', y: 123, z: true}}
+   */
+  _uriParser(uri) {
+    const uriDivided = uri.split('?');
+
+    const path = this._removeSlashes(uriDivided[0]); // /shop/register/john/23 -> shop/register/john/23
+    const segments = path.split('/').length;
+    const queryString = uriDivided[1];
+    const queryObject = !!queryString ? this._toQueryObject(queryString) : {};
+
+    const uriParsed = { path, segments, queryString, queryObject };
+    return uriParsed;
+  }
+
+
+  /**
+   * Route parser.
+   * Converts route string into the parsed object {full, segments, parser} which is used for matching against the URI.
+   * @param  {string} route - /shop/register/:name/:age/
+   * @returns {full:string, segments:number, base:string} - {full: 'shop/register/:name/:age', segments: 4, base: 'shop/register'}
+   */
+  _routeParser(route) {
+    const full = this._removeSlashes(route);
+    const segments = full.split('/').length;
+    const base = full.replace(/\/\:.+/, ''); // shop/register/:name/:age --> shop/register
+
+    const routeParsed = { full, segments, base };
+    return routeParsed;
+  }
+
+
+
+  /**
+   * Create parameters object.
+   * For example if route is /register/:name/:age AND uri is /register/john/23 then params is {name: 'john', age: 23}
+   * @param  {string} routeParsedFull - routeParsed.full -- shop/register/:name/:age
+   * @param  {string} uriParsedPath  - uriParsed.path -- shop/register/john/23
+   * @returns {object}
+   */
+  _getParams(routeParsedFull, uriParsedPath) {
+    const routeParts = routeParsedFull.split('/'); // ['shop', 'register', ':name', ':age']
+    const uriParts = uriParsedPath.split('/'); // ['shop', 'register', 'john', 23]
+
+    const params = {};
+
+    routeParts.forEach((routePart, index) => {
+      if (/\:/.test(routePart)) {
+        const property = routePart.replace(/^\:/, ''); // remove :
+
+        let value = uriParts[index];
+        value = this._stringTypeConvert(value); // t y p e   c o n v e r s i o n
+
+        params[property] = value;
+      }
+    });
+
+    return params;
   }
 
 
 
 }
-
-
 
 
 

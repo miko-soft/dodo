@@ -83,7 +83,7 @@ class Controller extends Model {
     await this.ddInc(true);
     try { await this.__loader(trx); } catch (err) { console.error(err); }
     await this.ddInc(false);
-    // this.ddSetInitial(); // parse dd-setinitial
+    this.ddSetInitial(); // parse dd-setinitial
     try { await this.__init(trx); } catch (err) { console.error(err); }
     try { await this.__rend(trx); } catch (err) { console.error(err); }
     try { await this.__postrend(trx); } catch (err) { console.error(err); }
@@ -99,34 +99,39 @@ class Controller extends Model {
   /**
    * Render the view i.e. the dd- elements with the attrValQuery.
    * For example: dd-text="first_name", where first_name is the controllerProp.
-   * @param {string} dd_id - unique dodo id
+   * @param {string|RegExp} attrValQuery - query for the attribute value
    * @param {number} renderDelay - delay in miliseconds
    */
-  async render(dd_id, renderDelay = 5) {
+  async render(attrValQuery, renderDelay = 5) {
+    if (!!attrValQuery) {
+      /* - Remove dynamic part of the attrValquery because dynamic part in the dd- elem is not same as solved attrValQuery.
+      - For example dd-text="$model.advert___{{ad_num}}" is resolved to $model.advert___3 */
+      attrValQuery = attrValQuery.replace(/___.+$/, ''); // $model.advert___3 -> $model.advert
+    }
 
-    this._debug('render', `--------- render (start) -- dd_id: ${dd_id} -- renderDelay: ${renderDelay} -- ctrl: ${this.constructor.name} ------`, 'green', '#D9FC9B');
+    this._debug('render', `--------- render (start) -- attrValQuery: ${attrValQuery} -- renderDelay: ${renderDelay} -- ctrl: ${this.constructor.name} ------`, 'green', '#D9FC9B');
 
     // Render Dd generators.
-    // this.ddFor(attrValQuery);
-    // this.ddRepeat(attrValQuery);
-    this.ddText(dd_id);
-    // this.ddHtml(attrValQuery);
+    this.ddFor(attrValQuery);
+    this.ddRepeat(attrValQuery);
+    this.ddText(attrValQuery);
+    this.ddHtml(attrValQuery);
 
     await new Promise(r => setTimeout(r, renderDelay));
 
     // Render Dd non-generators.
-    // this.ddShow(attrValQuery);
+    this.ddShow(attrValQuery);
     // this.ddSpinner(attrValQuery);
-    // this.ddSwitch(attrValQuery);
-    // this.ddDisabled(attrValQuery);
-    // this.ddValue(attrValQuery);
-    // this.ddChecked(attrValQuery);
-    // this.ddClass(attrValQuery);
-    // this.ddStyle(attrValQuery);
-    // this.ddSrc(attrValQuery);
-    // this.ddAttr(attrValQuery);
-    // this.ddElem(attrValQuery);
-    // this.ddEcho();
+    this.ddSwitch(attrValQuery);
+    this.ddDisabled(attrValQuery);
+    this.ddValue(attrValQuery);
+    this.ddChecked(attrValQuery);
+    this.ddClass(attrValQuery);
+    this.ddStyle(attrValQuery);
+    this.ddSrc(attrValQuery);
+    this.ddAttr(attrValQuery);
+    this.ddElem(attrValQuery);
+    this.ddEcho();
 
     await new Promise(r => setTimeout(r, renderDelay));
 
@@ -134,14 +139,25 @@ class Controller extends Model {
     await this.ddKILL();
     this.ddHref();
     this.ddClick();
-    // this.ddKeyup();
-    // this.ddChange();
-    // this.ddEvt();
-    // this.ddSet();
-    // this.ddModel();
+    this.ddKeyup();
+    this.ddChange();
+    this.ddEvt();
+    this.ddSet();
+    this.ddModel();
 
 
-    this._debug('render', `--------- render (end) -- dd_id: ${dd_id} ------`, 'green', '#D9FC9B');
+    this._debug('render', `--------- render (end) -- attrValQuery: ${attrValQuery} ------`, 'green', '#D9FC9B');
+  }
+
+
+
+  /**
+   * Use render() method multiple times.
+   * @param {string[]|RegExp[]} attrValQuerys - array of the controller property names: ['company.name', /^company\.year/]
+   * @param {number} renderDelay - delay in miliseconds
+   */
+  async renders(attrValQuerys = [], renderDelay = 5) {
+    for (const attrValQuery of attrValQuerys) { await this.render(attrValQuery, renderDelay); }
   }
 
 

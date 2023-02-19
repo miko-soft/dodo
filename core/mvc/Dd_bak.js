@@ -1,42 +1,42 @@
-import DataDdListeners from './DataDdListeners.js';
+import DdListeners from './DdListeners.js';
 
 
 /**
- * Parse HTML elements with the "data-dd-" attribute (non-listeners)
+ * Parse HTML elements with the "dd-" attribute (non-listeners)
  */
-class DataDd extends DataDdListeners {
+class Dd extends DdListeners {
 
   constructor() {
     super();
 
     this.$dd = {
-      separator: '@@', // separator in the data-dd- attribute
+      separator: '--', // separator in the dd- attribute
       elems: {},  // set by ddElem()
-      listeners: [], // collector of the data-dd- listeners  [{attrName, elem, handler, eventName}]
+      listeners: [], // collector of the dd- listeners  [{attrName, elem, handler, eventName}]
       varnameChars: '[a-zA-Z\\d\\$\\_\\.]+' // valid characters in the variable name
     };
   }
 
 
   /**
-   * data-dd-setinitial="<controllerProperty> [@@convertType|convertTypeDont]"
-   * Parse the "data-dd-setinitial" attribute in the form tag.
+   * dd-setinitial="<controllerProperty> [--convertType|convertTypeDont]"
+   * Parse the "dd-setinitial" attribute in the form tag.
    * Get the element value and set the controller property value. The element is input, textarea or select tag.
    * Examples:
-   * data-dd-setinitial="product" or data-dd-setinitial="product @@convertType" - convert data type automatically, for example: '5' convert to Number, or JSON to Object
-   * data-dd-setinitial="employee.name @@convertTypeDont" - do not convert data type automatically
+   * dd-setinitial="product" or dd-setinitial="product --convertType" - convert data type automatically, for example: '5' convert to Number, or JSON to Object
+   * dd-setinitial="employee.name --convertTypeDont" - do not convert data type automatically
    * @returns {void}
    */
   ddSetInitial() {
     this._debug('ddSetInitial', '--------- ddSetInitial ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-setinitial';
+    const attrName = 'dd-setinitial';
     const elems = this._listElements(attrName, '');
     this._debug('ddSetInitial', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName) || ''; // 'controllerProperty @@convertTypeNot'
-      if (!attrVal) { console.error(`ddSetInitial Error:: Attribute has bad definition (data-dd-setinitial="${attrVal}").`); continue; }
+      const attrVal = elem.getAttribute(attrName) || ''; // 'controllerProperty --convertTypeNot'
+      if (!attrVal) { console.error(`ddSetInitial Error:: Attribute has bad definition (dd-setinitial="${attrVal}").`); continue; }
 
       const attrValSplited = attrVal.split(this.$dd.separator);
 
@@ -55,21 +55,21 @@ class DataDd extends DataDdListeners {
 
   /************** GENERATORS (create or remove HTML elements) *************/
   /**
-   * data-dd-for="<controllerProperty> [@@<priority>]"
-   * Parse the "data-dd-for" attribute. Multiply element by the controllerProperty array value.
+   * dd-for="<controllerProperty> [--<priority>]"
+   * Parse the "dd-for" attribute. Multiply element by the controllerProperty array value.
    * Element with the higher priprity will be parsed before.
    * Examples:
-   * data-dd-for="companies"
-   * data-dd-for="company.employers"
-   * data-dd-for="company.employers @@ 2" --> priority is 2
+   * dd-for="companies"
+   * dd-for="company.employers"
+   * dd-for="company.employers --2" --> priority is 2
    * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
    * @returns {void}
    */
   ddFor(attrValQuery) {
     this._debug('ddFor', `--------- ddFor (start) ------`, 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-for';
-    this._removeParentElements(attrName, attrValQuery);
+    const attrName = 'dd-for';
+    this._removeParentGenElements(attrName, attrValQuery);
     let elems = this._listElements(attrName, attrValQuery);
     elems = this._sortElementsByPriority(elems, attrName); // first render elements with higher priority
     this._debug('ddFor', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
@@ -117,18 +117,18 @@ class DataDd extends DataDdListeners {
 
 
   /**
-   * data-dd-repeat="controllerProperty"
-   * Parse the "data-dd-repeat" attribute. Repeat the element n times wher n is defined in the controller property.
+   * dd-repeat="controllerProperty"
+   * Parse the "dd-repeat" attribute. Repeat the element n times wher n is defined in the controller property.
    * It's same as ddFor() except the controller property is not array but number.
    * Examples:
-   * data-dd-repeat="totalRows"
+   * dd-repeat="totalRows"
    * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
    * @returns {void}
    */
   ddRepeat(attrValQuery) {
     this._debug('ddRepeat', `--------- ddRepeat (start) ------`, 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-repeat';
+    const attrName = 'dd-repeat';
     const elems = this._listElements(attrName, attrValQuery);
     this._debug('ddRepeat', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
@@ -140,7 +140,7 @@ class DataDd extends DataDdListeners {
       const val = +this._getControllerValue(prop);
       this._debug('ddRepeat', `Element will be repeated ${val} times.`, 'navy');
 
-      if (val === undefined || val === null) { continue; } // don't render elements with undefined controller's value
+      if (val === undefined || val === null) { elem.style.display = 'none'; continue; } // don't render elements with undefined controller's value
 
       // remove all gen elems
       this._genElem_remove(elem, attrName, attrVal);
@@ -168,24 +168,23 @@ class DataDd extends DataDdListeners {
 
 
   /**
-   * data-dd-print="<controllerProperty> [@@ inner|outer|sibling|prepend|append]"
-   * data-dd-print="company.name @@ inner"
-   * data-dd-print="company.name @@ inner @@ keep"   - keep the innerHTML when value is undefined
-   * Parse the "data-dd-print" attribute. Print the controller's property to view.
+   * dd-text="<controllerProperty> [--prepend|append]"
+   * Print pure text in the dd-text element.
    * Examples:
-   * data-dd-print="product" - product is the controller property
-   * data-dd-print="product.name @@ outer"
-   * data-dd-print="product.name @@ sibling"
-   * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
-   * for example product.name in the data-dd-print="product.name @@ inner". This speed up parsing because it's limited only to one element.
+   * dd-text="firstName"            - firstName is the controller property, it can also be model $model.firstname
+   * dd-text="firstName --append"   - append the text to the existing text
+   * dd-text="product___{{id}}"     - dynamic controller property name
+   *
+   * @param {string|RegExp} attrValQuery - controller property, query for the attribute value
+   * for example product.name in the dd-text="product.name -- inner". This speed up parsing because it's limited only to one element.
    * @returns {void}
    */
-  ddPrint(attrValQuery) {
-    this._debug('ddPrint', `--------- ddPrint (start) ------`, 'navy', '#B6ECFF');
+  ddText(attrValQuery) {
+    this._debug('ddText', `--------- ddText (start) ------`, 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-print';
+    const attrName = 'dd-text';
     const elems = this._listElements(attrName, attrValQuery);
-    this._debug('ddPrint', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
+    this._debug('ddText', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
 
     for (const elem of elems) {
@@ -198,16 +197,23 @@ class DataDd extends DataDdListeners {
       const prop = propPipeSplitted[0].trim(); // company.name
       let val = this._getControllerValue(prop);
 
-      if (val === undefined || val === null) { continue; } // don't render elements with undefined controller's value
+      // define action
+      let act = attrValSplited[1] || 'overwrite';
+      act = act.trim();
 
-      // correct val
+      this._debug('ddText', `ddText:: ${propPipe} = ${val} -- act::"${act}"`, 'navy');
+
+      // don't render elements with undefined controller's value
+      if (val === undefined || val === null) { elem.textContent = ''; continue; }
+
+      // convert controller val to string
       if (typeof val === 'string') { val = val; }
       else if (typeof val === 'number') { val = +val; }
       else if (typeof val === 'boolean') { val = val.toString(); }
       else if (typeof val === 'object') { val = JSON.stringify(val); }
       else { val = val; }
 
-      // apply pipe, for example: data-dd-print="val | slice(0,130)"
+      // apply pipe function, for example: dd-text="val | slice(0,130)"
       let pipe_funcDef = propPipeSplitted[1]; // slice(0, 130), json, ...
       if (!!pipe_funcDef && !!val) {
         pipe_funcDef = pipe_funcDef.trim();
@@ -215,9 +221,66 @@ class DataDd extends DataDdListeners {
         if (typeof val[funcName] === 'function') { val = val[funcName](...funcArgs); }
       }
 
+      // remove all gen elems
+      this._genElem_remove(elem, attrName, attrVal);
+
+      // generate new element and place it in the sibling position
+      let newElem;
+      if (act !== 'overwrite') {
+        newElem = this._genElem_define(elem, attrName, attrVal);
+        elem.parentNode.insertBefore(newElem, elem.nextSibling);
+      }
+
+
+      // load content in the element
+      if (act === 'overwrite') {
+        elem.textContent = val;
+      } else if (act === 'prepend') {
+        newElem.textContent = val + elem.textContent;
+      } else if (act === 'append') {
+        newElem.textContent = elem.textContent + val;
+      } else {
+        elem.textContent = val;
+      }
+    }
+
+    this._debug('ddText', '--------- ddText (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+
+  /**
+   * dd-html="<controllerProperty> [--inner|outer|sibling|prepend|append]"
+   * Embed HTML node in the DOM at a place marked with dd-html attribute.
+   * Examples:
+   * dd-html="product" or dd-html="product.name --inner"   - insert in the element (product is the controller property)
+   * dd-html="product.name --outer"  - replace the element
+   * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value for example product.name in the dd-html="product.name --inner".
+   * @returns {void}
+   */
+  ddHtml(attrValQuery) {
+    this._debug('ddHtml', `--------- ddHtml (start) ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-html';
+    const elems = this._listElements(attrName, attrValQuery);
+    this._debug('ddHtml', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
+
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const attrValSplited = attrVal.split(this.$dd.separator);
+      const prop = attrValSplited[0].trim(); // company.name
+      const val = this._getControllerValue(prop);
+
       // define action
       let act = attrValSplited[1] || 'inner';
       act = act.trim();
+
+      this._debug('ddHtml', `ddHtml:: ${prop} = ${val} -- act::"${act}"`, 'navy');
+
+      // don't render elements with undefined controller's value
+      if (val === undefined || val === null) { elem.innerHTML = ''; continue; }
 
       // remove all gen elems
       this._genElem_remove(elem, attrName, attrVal);
@@ -234,12 +297,12 @@ class DataDd extends DataDdListeners {
       if (act === 'inner') {
         elem.innerHTML = val;
       } else if (act === 'outer') {
-        const id2 = newElem.getAttribute('data-dd-print-id');
-        newElem.outerHTML = `<span data-dd-print-gen="${attrVal}" data-dd-print-id="${id2}">${val}</span>`;
+        const id2 = newElem.getAttribute('dd-html-id');
+        newElem.outerHTML = `<span dd-html-gen="${attrVal}" dd-html-id="${id2}">${val}</span>`;
       } else if (act === 'sibling') {
         elem.style.display = '';
-        const id2 = newElem.getAttribute('data-dd-print-id');
-        newElem.outerHTML = `<span data-dd-print-gen="${attrVal}" data-dd-print-id="${id2}">${val}</span>`;
+        const id2 = newElem.getAttribute('dd-html-id');
+        newElem.outerHTML = `<span dd-html-gen="${attrVal}" dd-html-id="${id2}">${val}</span>`;
       } else if (act === 'prepend') {
         newElem.innerHTML = val + ' ' + elem.innerHTML;
       } else if (act === 'append') {
@@ -250,10 +313,9 @@ class DataDd extends DataDdListeners {
         elem.innerHTML = val;
       }
 
-      this._debug('ddPrint', `ddPrint:: ${propPipe} = ${val} -- act::"${act}"`, 'navy');
     }
 
-    this._debug('ddPrint', '--------- ddPrint (end) ------', 'navy', '#B6ECFF');
+    this._debug('ddHtml', '--------- ddHtml (end) ------', 'navy', '#B6ECFF');
   }
 
 
@@ -261,89 +323,90 @@ class DataDd extends DataDdListeners {
 
   /************ NON-GENERATORS (will not generate new HTML elements or remove existing - will not change the DOM structure) ***********/
   /**
-   * data-dd-if="<controllerProperty>"
-   * Parse the "data-dd-if" attribute. Show or hide the HTML element by setting display:none.
+   * dd-show="<controllerProperty>"
+   * Parse the "dd-show" attribute. Show or hide the HTML element by setting display:none.
    * Examples:
-   * data-dd-if="this.ifAge" - rend() will not be triggered when this.ifAge is changed
-   * data-dd-if="$model.ifAge $eq(22)" - rend() will be triggered when $model.ifAge is changed
+   * dd-show="this.ifAge" - __rend() will not be triggered when this.ifAge is changed
+   * dd-show="$model.ifAge $eq(22)" - __rend() will be triggered when $model.ifAge is changed
    * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
    * @returns {void}
    */
-  ddIf(attrValQuery) {
-    this._debug('ddIf', '--------- ddIf (start) ------', 'navy', '#B6ECFF');
+  ddShow(attrValQuery) {
+    this._debug('ddShow', '--------- ddShow (start) ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-if';
+    const attrName = 'dd-show';
     const elems = this._listElements(attrName, attrValQuery);
-    this._debug('ddIf', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
+    this._debug('ddShow', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName).trim(); // age_tf , $model.age === 3, age > this.myAge , age < $model.yourAge , age $lt($model.age)
-      if (!attrVal) { console.error(`Attribute "data-dd-if" has bad definition (data-dd-if="${attrVal}").`); continue; }
+      if (!attrVal) { console.error(`Attribute "dd-show" has bad definition (dd-show="${attrVal}").`); continue; }
 
       /* define tf */
       let tf = false;
       if (/\!|<|>|=/.test(attrVal)) {
-        // parse data-dd-if with = < > && ||: data-dd-if="5<2", data-dd-if="$model.age >= $model.myAge", data-dd-if="this.age > 3" (this. will not be rendered)
+        // parse dd-show with = < > && ||: dd-show="5<2", dd-show="$model.age >= $model.myAge", dd-show="this.age > 3" (this. will not be rendered)
         tf = this._calcComparison_A(attrVal);
       } else {
-        // parse data-dd-if with pure controller value: data-dd-if="is_active"
-        // parse data-dd-if with the comparison operators: $not(), $eq(22), $ne(22), ...  --> data-dd-if="age $eq(5)" , data-dd-if="$model.age $eq($model.myAge)", data-dd-if="$model.age $gt(this.myNum)"
+        // parse dd-show with pure controller value: dd-show="is_active"
+        // parse dd-show with the comparison operators: $not(), $eq(22), $ne(22), ...  --> dd-show="age $eq(5)" , dd-show="$model.age $eq($model.myAge)", dd-show="$model.age $gt(this.myNum)"
         tf = this._calcComparison_B(attrVal);
       }
 
       /* hide/show elem */
       if (tf) {
-        const dataddPrint_attrVal = elem.getAttribute('data-dd-print');
-        if (!!dataddPrint_attrVal && /outer|sibling|prepend|append|inset/.test(dataddPrint_attrVal)) { elem.style.display = 'none'; } // element with data-dd-print should stay hidden because of _genElem_define()
+        const ddText_attrVal = elem.getAttribute('dd-text');
+        if (!!ddText_attrVal && /outer|sibling|prepend|append|inset/.test(ddText_attrVal)) { elem.style.display = 'none'; } // element with dd-text should stay hidden because of _genElem_define()
         else { elem.style.display = ''; }
       } else {
         elem.style.display = 'none';
       }
 
-      this._debug('ddIf', `ddIf:: <${elem.tagName} data-dd-if="${attrVal}"> => tf: ${tf} -- outerHTML: ${elem.outerHTML}`, 'navy');
+      this._debug('ddShow', `ddShow:: <${elem.tagName} dd-show="${attrVal}"> => tf: ${tf} -- outerHTML: ${elem.outerHTML}`, 'navy');
     }
 
-    this._debug('ddIf', '--------- ddIf (end) ------', 'navy', '#B6ECFF');
+    this._debug('ddShow', '--------- ddShow (end) ------', 'navy', '#B6ECFF');
   }
 
 
 
-  /**
-   * data-dd-spinner="<controllerProperty>"
-   * Parse the "data-dd-spinner" attribute. Load the spinner inside data-dd-spinner element when expression with $model is true.
-   * This method acts like ddIf.
+
+  /** EXPERIMENTAL
+   * dd-spinner="<controllerProperty>"
+   * Parse the "dd-spinner" attribute. Load the spinner inside dd-spinner element when expression with $model is true.
+   * This method acts like ddShow.
    * @param {string} bool - to show or hide the element
    * @returns {void}
    */
   ddSpinner(attrValQuery) {
     this._debug('ddSpinner', '--------- ddSpinner (start) ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-spinner';
+    const attrName = 'dd-spinner';
     const elems = this._listElements(attrName, attrValQuery);
     this._debug('ddSpinner', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName).trim(); // ifAge
-      if (!attrVal) { console.error(`Attribute "data-dd-spinner" has bad definition (data-dd-spinner="${attrVal}").`); continue; }
+      if (!attrVal) { console.error(`Attribute "dd-spinner" has bad definition (dd-spinner="${attrVal}").`); continue; }
 
       /* define tf */
       let tf = false;
       if (/\!|<|>|=/.test(attrVal)) {
-        // parse data-dd-if with = < > && ||: data-dd-if="5<2", data-dd-if="$model.age >= $model.myAge", data-dd-if="this.age > 3" (this. will not be rendered)
+        // parse dd-show with = < > && ||: dd-show="5<2", dd-show="$model.age >= $model.myAge", dd-show="this.age > 3" (this. will not be rendered)
         tf = this._calcComparison_A(attrVal);
       } else {
-        // parse data-dd-if with pure controller value: data-dd-if="is_active"
-        // parse data-dd-if with the comparison operators: $not(), $eq(22), $ne(22), ...  --> data-dd-if="age $eq(5)" , data-dd-if="$model.age $eq($model.myAge)", data-dd-if="$model.age $gt(this.myNum)"
+        // parse dd-show with pure controller value: dd-show="is_active"
+        // parse dd-show with the comparison operators: $not(), $eq(22), $ne(22), ...  --> dd-show="age $eq(5)" , dd-show="$model.age $eq($model.myAge)", dd-show="$model.age $gt(this.myNum)"
         tf = this._calcComparison_B(attrVal);
       }
 
       /* hide/show spinner */
       if (tf) {
         const styleScoped = `
-        <span data-dd-spinner-gen>
+        <span dd-spinner-gen>
           <style scoped>
-            [data-dd-spinner]>span:after {
+            [dd-spinner]>span:after {
               content: '';
               display: block;
               font-size: 10px;
@@ -379,7 +442,7 @@ class DataDd extends DataDdListeners {
 
         // 2. center span spinner in the parent element
         const elemRect = elem.getBoundingClientRect(); // {x,y,width,height}}
-        const spinnerElem = elem.querySelector('span[data-dd-spinner-gen]');
+        const spinnerElem = elem.querySelector('span[dd-spinner-gen]');
 
         spinnerElem.style.position = 'relative';
 
@@ -395,7 +458,7 @@ class DataDd extends DataDdListeners {
         elem.innerHTML = '';
       }
 
-      this._debug('ddSpinner', `ddSpinner:: <${elem.tagName} data-dd-spinner="${attrVal}"> => tf: ${tf}`, 'navy');
+      this._debug('ddSpinner', `ddSpinner:: <${elem.tagName} dd-spinner="${attrVal}"> => tf: ${tf}`, 'navy');
     }
 
     this._debug('ddSpinner', '--------- ddSpinner (end) ------', 'navy', '#B6ECFF');
@@ -404,25 +467,25 @@ class DataDd extends DataDdListeners {
 
 
   /**
-   * data-dd-switch="<controllerProperty> [@@ multiple]"
-   * Parse the "data-dd-switch" attribute. Show or hide elements depending if "data-dd-switchcase" value matches controller property.
+   * dd-switch="<controllerProperty> [-- multiple]"
+   * Parse the "dd-switch" attribute. Show or hide elements depending if "dd-switchcase" value matches controller property.
    * Examples:
-   * data-dd-switch="ctrlprop" - ctrlprop is string, number or boolean
-   * data-dd-switch="ctrlprop @@ multiple" - ctrlprop is array of string, number or boolean
-   * Notice @@ multiple can select multiple switchcases.
+   * dd-switch="ctrlprop" - ctrlprop is string, number or boolean
+   * dd-switch="ctrlprop -- multiple" - ctrlprop is array of string, number or boolean
+   * Notice -- multiple can select multiple switchcases.
    * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
    * @returns {void}
    */
   ddSwitch(attrValQuery) {
     this._debug('ddSwitch', '--------- ddSwitch (start) ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-switch';
+    const attrName = 'dd-switch';
     const elems = this._listElements(attrName, attrValQuery);
     this._debug('ddSwitch', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
 
     for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName) || ''; // 'controllerProperty @@ multiple'
+      const attrVal = elem.getAttribute(attrName) || ''; // 'controllerProperty -- multiple'
       const attrValSplited = attrVal.split(this.$dd.separator);
 
       const isMultiple = !!attrValSplited[1] ? attrValSplited[1].trim() === 'multiple' : false;
@@ -432,27 +495,27 @@ class DataDd extends DataDdListeners {
 
       if (val === undefined || val === null) { continue; } // don't render elements with undefined controller's value
 
-      // get data-dd-switchcase and data-dd-switchdefault attribute values
-      const switchcaseElems = elem.querySelectorAll('[data-dd-switch] > [data-dd-switchcase]');
-      const switchdefaultElem = elem.querySelector('[data-dd-switch] > [data-dd-switchdefault]');
+      // get dd-switchcase and dd-switchdefault attribute values
+      const switchcaseElems = elem.querySelectorAll('[dd-switch] > [dd-switchcase]');
+      const switchdefaultElem = elem.querySelector('[dd-switch] > [dd-switchdefault]');
 
-      // set data-dd-switchcase
-      let isMatched = false; // is data-dd-switchcase value matched
+      // set dd-switchcase
+      let isMatched = false; // is dd-switchcase value matched
       for (const switchcaseElem of switchcaseElems) {
-        let switchcaseAttrVal = switchcaseElem.getAttribute('data-dd-switchcase');
+        let switchcaseAttrVal = switchcaseElem.getAttribute('dd-switchcase');
         switchcaseAttrVal = switchcaseAttrVal.trim();
 
         if (!isMultiple && switchcaseAttrVal === val) { switchcaseElem.style.display = ''; isMatched = true; }
         else if (isMultiple && val && val.indexOf(switchcaseAttrVal) !== -1) { switchcaseElem.style.display = ''; isMatched = true; }
         else { switchcaseElem.style.display = 'none'; }
 
-        this._debug('ddSwitch', `data-dd-switch="${attrVal}" data-dd-switchcase="${switchcaseAttrVal}" --val:: "${val}" --isMatched: ${isMatched}`, 'navy');
+        this._debug('ddSwitch', `dd-switch="${attrVal}" dd-switchcase="${switchcaseAttrVal}" --val:: "${val}" --isMatched: ${isMatched}`, 'navy');
       }
 
-      // set data-dd-switchdefault
+      // set dd-switchdefault
       if (!!switchdefaultElem) { !isMatched ? switchdefaultElem.style.display = '' : switchdefaultElem.style.display = 'none'; }
 
-      this._debug('ddSwitch', `data-dd-switch="${attrVal}" data-dd-switchdefault --isMatched: ${isMatched}`, 'navy');
+      this._debug('ddSwitch', `dd-switch="${attrVal}" dd-switchdefault --isMatched: ${isMatched}`, 'navy');
     }
 
     this._debug('ddSwitch', '--------- ddSwitch (end) ------', 'navy', '#B6ECFF');
@@ -461,34 +524,34 @@ class DataDd extends DataDdListeners {
 
 
   /**
-   * data-dd-disabled="<controllerProperty>"
-   * Parse the "data-dd-disabled" attribute. set the element to disabled state.
+   * dd-disabled="<controllerProperty>"
+   * Parse the "dd-disabled" attribute. set the element to disabled state.
    * Examples:
-   * data-dd-disabled="ifAge"
-   * data-dd-disabled="ifAge $eq(22)"
+   * dd-disabled="ifAge"
+   * dd-disabled="ifAge $eq(22)"
    * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
    * @returns {void}
    */
   ddDisabled(attrValQuery) {
     this._debug('ddDisabled', '--------- ddDisabled (start) ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-disabled';
+    const attrName = 'dd-disabled';
     const elems = this._listElements(attrName, attrValQuery);
     this._debug('ddDisabled', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName).trim(); // ifAge
-      if (!attrVal) { console.error(`ddDisabled Error:: Attribute has bad definition (data-dd-disabled="${attrVal}").`); continue; }
+      if (!attrVal) { console.error(`ddDisabled Error:: Attribute has bad definition (dd-disabled="${attrVal}").`); continue; }
 
       /* define tf */
       let tf = false;
       if (/\!|<|>|=/.test(attrVal)) {
-        // parse data-dd-if with = < > && ||: data-dd-if="5<2", data-dd-if="$model.age >= $model.myAge", data-dd-if="this.age > 3" (this. will not be rendered)
+        // parse dd-show with = < > && ||: dd-show="5<2", dd-show="$model.age >= $model.myAge", dd-show="this.age > 3" (this. will not be rendered)
         tf = this._calcComparison_A(attrVal);
       } else {
-        // parse data-dd-if with pure controller value: data-dd-if="is_active"
-        // parse data-dd-if with the comparison operators: $not(), $eq(22), $ne(22), ...  --> data-dd-if="age $eq(5)" , data-dd-if="$model.age $eq($model.myAge)", data-dd-if="$model.age $gt(this.myNum)"
+        // parse dd-show with pure controller value: dd-show="is_active"
+        // parse dd-show with the comparison operators: $not(), $eq(22), $ne(22), ...  --> dd-show="age $eq(5)" , dd-show="$model.age $eq($model.myAge)", dd-show="$model.age $gt(this.myNum)"
         tf = this._calcComparison_B(attrVal);
       }
 
@@ -496,7 +559,7 @@ class DataDd extends DataDdListeners {
       if (tf) { elem.disabled = true; }
       else { elem.disabled = false; }
 
-      this._debug('ddDisabled', `ddDisabled:: data-dd-disabled="${attrVal}" -- outerHTML: ${elem.outerHTML}`, 'navy');
+      this._debug('ddDisabled', `ddDisabled:: dd-disabled="${attrVal}" -- outerHTML: ${elem.outerHTML}`, 'navy');
     }
 
     this._debug('ddDisabled', '--------- ddDisabled (end) ------', 'navy', '#B6ECFF');
@@ -505,24 +568,24 @@ class DataDd extends DataDdListeners {
 
 
   /**
-   * data-dd-value="<controllerProperty>"
-   * Parse the "data-dd-value" attribute. Sets the element's "value" attribute from the controller property value.
+   * dd-value="<controllerProperty>"
+   * Parse the "dd-value" attribute. Sets the element's "value" attribute from the controller property value.
    * Examples:
-   * data-dd-value="product"
-   * data-dd-value="$model.employee.name"
+   * dd-value="product"
+   * dd-value="$model.employee.name"
    * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
    * @returns {void}
    */
   ddValue(attrValQuery) {
     this._debug('ddValue', '--------- ddValue ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-value';
+    const attrName = 'dd-value';
     const elems = this._listElements(attrName, attrValQuery);
     this._debug('ddValue', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
-      if (!attrVal) { console.error(`ddValue Error:: Attribute has bad definition (data-dd-value="${attrVal}").`); continue; }
+      if (!attrVal) { console.error(`ddValue Error:: Attribute has bad definition (dd-value="${attrVal}").`); continue; }
 
       const prop = attrVal.trim();
       const val = this._getControllerValue(prop);
@@ -537,26 +600,26 @@ class DataDd extends DataDdListeners {
 
 
   /**
-   * data-dd-checked="<controllerProperty>"
+   * dd-checked="<controllerProperty>"
    * Sets the "checked" attribute with the controller property value.
    * The controller property is an array. If the checkbox value is in that array then the checkbox is checked.
    * Use it for checkboxes only.
    * Examples:
-   * data-dd-checked="selectedProducts"
+   * dd-checked="selectedProducts"
    * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
    * @returns {void}
    */
   ddChecked(attrValQuery) {
     this._debug('ddChecked', '--------- ddChecked ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-checked';
+    const attrName = 'dd-checked';
     const elems = this._listElements(attrName, attrValQuery);
     this._debug('ddChecked', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
-      if (!attrVal) { console.error(`ddChecked Error:: Attribute has bad definition (data-dd-checked="${attrVal}").`); continue; }
+      if (!attrVal) { console.error(`ddChecked Error:: Attribute has bad definition (dd-checked="${attrVal}").`); continue; }
 
       const prop = attrVal.trim();
       const val = this._getControllerValue(prop); // val must be array
@@ -575,19 +638,19 @@ class DataDd extends DataDdListeners {
 
 
   /**
-   * data-dd-class="<controllerProperty> [@@ add|replace]"
-   * Parse the "data-dd-class" attribute. Set element class attribute.
+   * dd-class="<controllerProperty> [-- add|replace]"
+   * Parse the "dd-class" attribute. Set element class attribute.
    * Examples:
-   * data-dd-class="myKlass" - add new classes to existing classes
-   * data-dd-class="myKlass @@ add" - add new classes to existing classes
-   * data-dd-class="myKlass @@ replace" - replace existing classes with new classes
+   * dd-class="myKlass" - add new classes to existing classes
+   * dd-class="myKlass -- add" - add new classes to existing classes
+   * dd-class="myKlass -- replace" - replace existing classes with new classes
    * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
    * @returns {void}
    */
   ddClass(attrValQuery) {
     this._debug('ddClass', '--------- ddClass ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-class';
+    const attrName = 'dd-class';
     const elems = this._listElements(attrName, attrValQuery);
     this._debug('ddClass', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
@@ -609,26 +672,26 @@ class DataDd extends DataDdListeners {
       if (act == 'replace' && !!valArr.length) { elem.removeAttribute('class'); }
       for (const val of valArr) { elem.classList.add(val); }
 
-      this._debug('ddClass', `data-dd-class="${attrVal}" --- ctrlProp:: ${prop} | ctrlVal:: ${valArr} | act:: ${act}`, 'navy');
+      this._debug('ddClass', `dd-class="${attrVal}" --- ctrlProp:: ${prop} | ctrlVal:: ${valArr} | act:: ${act}`, 'navy');
     }
   }
 
 
 
   /**
-   * data-dd-style="<controllerProperty> [@@ add|replace]"
-   * Parse the "data-dd-style" attribute. Set element style attribute.
+   * dd-style="<controllerProperty> [-- add|replace]"
+   * Parse the "dd-style" attribute. Set element style attribute.
    * Examples:
-   * data-dd-style="myStyl" - add new styles to existing sytles
-   * data-dd-style="myStyl @@ add" - add new styles to existing sytles
-   * data-dd-style="myStyl @@ replace" - replace existing styles with new styles
+   * dd-style="myStyl" - add new styles to existing sytles
+   * dd-style="myStyl -- add" - add new styles to existing sytles
+   * dd-style="myStyl -- replace" - replace existing styles with new styles
    * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
    * @returns {void}
    */
   ddStyle(attrValQuery) {
     this._debug('ddStyle', '--------- ddStyle ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-style';
+    const attrName = 'dd-style';
     const elems = this._listElements(attrName, attrValQuery);
     this._debug('ddStyle', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
@@ -653,24 +716,24 @@ class DataDd extends DataDdListeners {
         for (const styleProp of styleProps) { elem.style[styleProp] = valObj[styleProp]; }
       }
 
-      this._debug('ddStyle', `data-dd-style="${attrVal}" --- prop:: "${prop}" | styleProps:: "${styleProps}" | act:: "${act}"`, 'navy');
+      this._debug('ddStyle', `dd-style="${attrVal}" --- prop:: "${prop}" | styleProps:: "${styleProps}" | act:: "${act}"`, 'navy');
     }
   }
 
 
 
   /**
-   * data-dd-src"<controllerProperty> [@@<defaultSrc>]"
-   * Parse the "data-dd-src" attribute. Set element src attribute.
+   * dd-src"<controllerProperty> [--<defaultSrc>]"
+   * Parse the "dd-src" attribute. Set element src attribute.
    * Examples:
-   * data-dd-src="imageURL" - define <img src="">
+   * dd-src="imageURL" - define <img src="">
    * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
    * @returns {void}
    */
   ddSrc(attrValQuery) {
     this._debug('ddSrc', '--------- ddSrc ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-src';
+    const attrName = 'dd-src';
     const elems = this._listElements(attrName, attrValQuery);
     this._debug('ddSrc', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
@@ -691,30 +754,30 @@ class DataDd extends DataDdListeners {
       const src = val || defaultSrc;
       elem.src = src;
 
-      this._debug('ddSrc', `data-dd-src="${attrVal}" --prop:: "${prop}" --src:: "${src}"`, 'navy');
+      this._debug('ddSrc', `dd-src="${attrVal}" --prop:: "${prop}" --src:: "${src}"`, 'navy');
     }
   }
 
 
 
   /**
-  * data-dd-attr"<controllerProperty> [@@<attributeName>]"
-  * Parse the "data-dd-attr" attribute. Set element's attribute value.
+  * dd-attr"<controllerProperty> [--<attributeName>]"
+  * Parse the "dd-attr" attribute. Set element's attribute value.
   * Examples:
-  * data-dd-attr="pageURL @@ href" - define <a href="">
+  * dd-attr="pageURL -- href" - define <a href="">
   * @param {string|RegExp} attrValQuery - controller property name, query for the attribute value
   * @returns {void}
   */
   ddAttr(attrValQuery) {
     this._debug('ddAttr', '--------- ddAttr ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-attr';
+    const attrName = 'dd-attr';
     const elems = this._listElements(attrName, attrValQuery);
     this._debug('ddAttr', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
 
     for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName) || ''; // pageURL @@ href
+      const attrVal = elem.getAttribute(attrName) || ''; // pageURL -- href
       const attrValSplited = attrVal.split(this.$dd.separator);
 
       const prop = attrValSplited[0].trim();
@@ -727,24 +790,24 @@ class DataDd extends DataDdListeners {
 
       elem.setAttribute(attribute_name, val);
 
-      this._debug('ddAttr', `data-dd-attr="${attrVal}" --prop:: "${prop}" --val:: "${val}" --> added ${attribute_name}="${val}"`, 'navy');
+      this._debug('ddAttr', `dd-attr="${attrVal}" --prop:: "${prop}" --val:: "${val}" --> added ${attribute_name}="${val}"`, 'navy');
     }
   }
 
 
 
   /**
-   * data-dd-elem="<ddElemsProp>"     --> ddElemsProp is the property of the this.$dd.elems, for example data-dd-elem="myElement" => this.$dd.elems.myElement
-   * Parse the "data-dd-elem" attribute. Transfer the DOM element to the controller property "this.$dd.elems".
+   * dd-elem="<ddElemsProp>"     --> ddElemsProp is the property of the this.$dd.elems, for example dd-elem="myElement" => this.$dd.elems.myElement
+   * Parse the "dd-elem" attribute. Transfer the DOM element to the controller property "this.$dd.elems".
    * Examples:
-   * data-dd-elem="paragraf" -> fetch it with this.$dd.elems['paragraf']
+   * dd-elem="paragraf" -> fetch it with this.$dd.elems['paragraf']
    * @param {string|RegExp} attrValQuery - query for the attribute value
    * @returns {void}
    */
   ddElem(attrValQuery) {
     this._debug('ddElem', '--------- ddElem ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-elem';
+    const attrName = 'dd-elem';
     const elems = this._listElements(attrName, attrValQuery);
     this._debug('ddElem', `found elements:: ${elems.length} | attrValQuery:: ${attrValQuery}`, 'navy');
 
@@ -758,34 +821,42 @@ class DataDd extends DataDdListeners {
 
 
   /**
-   * data-dd-echo="<text>"
-   * Parse the "data-dd-echo" attribute. Prints the "text" in the HTML element as innerHTML.
+   * dd-echo="<text> [--html]"
+   * Parse the "dd-echo" attribute. Prints the "text" in the HTML element as innerHTML.
    * Examples:
-   * data-dd-echo="$i+1"  --> prints the iteration number
+   * dd-echo="$i+1"  --> prints the iteration number
    * @returns {void}
    */
   ddEcho() {
     this._debug('ddEcho', '--------- ddEcho (start) ------', 'navy', '#B6ECFF');
 
-    const attrName = 'data-dd-echo';
+    const attrName = 'dd-echo';
     const elems = this._listElements(attrName, '');
     this._debug('ddEcho', `found elements:: ${elems.length}`, 'navy');
 
 
     for (const elem of elems) {
-      let txt = elem.getAttribute('data-dd-echo');
+      const attrVal = elem.getAttribute(attrName) || '';
+
+      let txt = attrVal.trim();
+      let hasHtmlOption = false;
+      if (/--html|-- html$/.test(attrVal)) {
+        txt = txt.replace(/--html|-- html$/, '').trim();
+        hasHtmlOption = true;
+      }
 
       this._debug('ddEcho', `ddEcho txt before: ${txt}`, 'navy', '#B6ECFF');
 
-      txt = this._solveInterpolated(txt); // parse interpolated text in the variable name, for example: pet_{{$model.pets.$i0._id}}
-      txt = this._solveMath(txt); // calculte for example solveMath/$i0 + 1/
-      txt = txt.replace(/\[/g, '<').replace(/\]/g, '>'); // solve html tags, [b style='color:red']3[/b]
+      txt = this._solveInterpolated(txt); // parse interpolated text, for example: {{$model.pets.$i0._id}}
+      txt = this._solveMath(txt); // calculate for example solveMath/$i0 + 1/
 
       if (txt.includes('$i')) { txt = ''; } // don't show txt if the $i is not rendered
 
       this._debug('ddEcho', `ddEcho txt after: ${txt}\n`, 'navy', '#B6ECFF');
 
-      elem.innerHTML = txt;
+      if (hasHtmlOption) { elem.innerHTML = txt; }
+      else { elem.textContent = txt; }
+
     }
 
     this._debug('ddEcho', '--------- ddEcho (end) ------', 'navy', '#B6ECFF');
@@ -805,4 +876,4 @@ class DataDd extends DataDdListeners {
 }
 
 
-export default DataDd;
+export default Dd;

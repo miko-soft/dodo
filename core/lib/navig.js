@@ -48,13 +48,13 @@ class Navig {
 
 
   /**
-   * Reset the previous controller properties and execute destroy()
+   * Reset the previous controller properties and execute __destroy()
    * @param {object} trx - DoDo router transitional variable (defined in router.js -> _exe())
    */
   async resetPreviousController(trx) {
     const ctrl_prev = this.previous.ctrl;
     if (!!ctrl_prev) {
-      await ctrl_prev.destroy(trx); // execute destroy() defined in the previous controller
+      await ctrl_prev.__destroy(trx); // execute __destroy() defined in the previous controller
       ctrl_prev.ddKILL(); // kill the previous controller event listeners
       ctrl_prev.emptyModel(); // empty the previous controller $model
 
@@ -153,7 +153,7 @@ class Navig {
   /********** EVENT LISTENERS ************/
   /**
    * Listen for the 'pushstate' event.
-   * The pushstate hapen when element with data-dd-href attribute is clicked.
+   * The pushstate hapen when element with dd-href attribute is clicked.
    * @param {Function} listener - callback function with event parameter, for example pevent => { ... }
    * @returns {void}
    */

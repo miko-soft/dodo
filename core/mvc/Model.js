@@ -19,9 +19,10 @@ class Model extends View {
         // console.log('obj-before::', { ...obj });
         // console.log('prop::', prop);
         // console.log('value::', value);
-        const tf = Reflect.set(obj, prop, value);
+        const tf = Reflect.set(obj, prop, value); // set obj.prop = value;
         // console.log('obj-after::', obj);
-        this.render('$model.' + prop);
+        const dd_id = this._ddid(`$model.${prop}`); // see Aux.js
+        this.render(dd_id);
         return tf;
       }
     };

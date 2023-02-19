@@ -20,12 +20,13 @@ export default {
   loadHead: false,
   ddLazyjs: false,
 
-  // DataDd.js
+  // Dd.js
   ddFor: false,
   ddRepeat: false,
-  ddPrint: false,
+  ddText: false,
+  ddHtml: false,
 
-  ddIf: false,
+  ddShow: false,
   ddSpinner: false,
   ddSwitch: false,
   ddDisabled: false,
@@ -38,7 +39,7 @@ export default {
   ddElem: false,
   ddEcho: false,
 
-  // DataDdListeners.js
+  // DdListeners.js
   ddKILL: false,
   ddHref: false,
   ddClick: false,
