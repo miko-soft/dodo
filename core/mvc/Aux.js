@@ -213,6 +213,54 @@ class Aux {
   }
 
 
+  /**
+   * Execute the function. It can be the controller method or the function defined in the controller proerty.
+   * @param {string} funcName - function name, for example: runKEYUP or products.list
+   * @param {any[]} funcArgs - function argumants
+   * @return {void}
+   */
+  async _funcExe(funcName, funcArgs) {
+    try {
+      if (/\./.test(funcName)) {
+        // execute the function in the controller property, for example: this.print.inConsole = () => {...}
+        const propSplitted = funcName.split('.'); // ['print', 'inConsole']
+        let func = this;
+        for (const prop of propSplitted) { func = func[prop]; }
+        await func(...funcArgs);
+      } else {
+        // execute the controller method
+        if (!this[funcName]) { throw new Error(`Method "${funcName}" is not defined in the "${this.constructor.name}" controller.`); }
+        await this[funcName](...funcArgs);
+      }
+
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+
+  /**
+   * Execute multiple functions, for example: dd-click="f1(); f2(a, b);";
+   * @param {string} funcDefs - definition of the functions: func1();func2(a, b);
+   * @param {HTMLElement} elem - element where is the dd-... attribute
+   * @param {Event} event - the DOM Event object
+   */
+  async _funcsExe(funcDefs, elem, event) {
+    const statement_reg = /\w\s*\=\s*[a-zA-z0-9\'\"\$]+/; // regexp for statement, for example age = 3
+    if (statement_reg.test(funcDefs)) {
+      const assignment = funcDefs;
+      this._assignmentExe(assignment, elem, event);
+      return;
+    }
+
+    const funcDefs_arr = funcDefs.split(';').filter(funcDef => !!funcDef).map(funcDef => funcDef.trim());
+    for (const funcDef of funcDefs_arr) {
+      const { funcName, funcArgs } = this._funcParse(funcDef, elem, event);
+      await this._funcExe(funcName, funcArgs);
+    }
+  }
+
+
 
 
   /***** MISC *****/
