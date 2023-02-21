@@ -16,13 +16,13 @@ class Model extends View {
   proxifyModel() {
     const trapHandler = {
       set: (obj, prop, value) => {
-        // console.log('obj-before::', { ...obj });
-        // console.log('prop::', prop);
-        // console.log('value::', value);
+        if (this.$debugOpts.model) { console.log(`%c $model`, `color:Navy;background:#99aaff;`); console.log('obj-before::', { ...obj }); }
         const tf = Reflect.set(obj, prop, value); // set obj.prop = value;
-        // console.log('obj-after::', obj);
-        const dd_id = this._ddid(`$model.${prop}`); // see Aux.js
+        if (this.$debugOpts.model) { console.log('obj-after::', { ...obj }); }
+
+        const dd_id = this._uid(`$model.${prop}`); // see Aux.js
         this.render(dd_id);
+
         return tf;
       }
     };
