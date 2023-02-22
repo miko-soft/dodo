@@ -1,7 +1,9 @@
 import Model from './Model.js';
 import navig from '../lib/navig.js';
 
-
+/**
+ * Controller controls the whole HTML document, not just component like in other SPA frameworks.
+ */
 class Controller extends Model {
 
   // controller properties: $auth, $baseURIhost, $dd, $debugOpts, $fridge, $httpClient, $model, $modeler, $navig, $viewsCached, $preflight, $postflight
@@ -82,7 +84,6 @@ class Controller extends Model {
     // controller processes
     await this.ddInc(true);
     try { await this.__loader(trx); } catch (err) { console.error(err); }
-    await this.ddInc(false);
     // this.ddSetInitial(); // parse dd-setinitial
     try { await this.__init(trx); } catch (err) { console.error(err); }
     try { await this.__rend(trx); } catch (err) { console.error(err); }

@@ -18,7 +18,7 @@ class Dd extends DdListeners {
 
 
   /**
-   * dd-text="<controllerProperty> [--prepend|append]"
+   * dd-text="<controllerProperty> [--overwrite|remain|prepend|append]"
    * Print pure text in the dd-text element.
    * Examples:
    * dd-text="firstName"            - firstName is the controller property, it can also be model $model.firstname
@@ -35,13 +35,17 @@ class Dd extends DdListeners {
 
     this._debug('ddText', `found elements:: ${elems.length} | dd_id:: ${dd_id}`, 'navy');
 
+    // remove old dd-text-gen elements
+    this._genElem_purge(attrName, dd_id);
+
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { prop, opts } = this._decomposeAttribute(attrVal);
 
-      let prop2 = this._solveMustache(prop);
-      prop2 = prop2.replace(/^this\./, '');
+      // solve the controller property name
+      let prop2 = prop.replace(/^this\./, ''); // remove this. --> dd-text="this.product_{{this.pid}}"
+      prop2 = this._solveMustache(prop2); // dd-text="product_{{this.pid}}"
 
       let val = this._getControllerValue(prop2);
       this._debug('ddText', `ddText:: ${prop} --> ${prop2} = "${val}"  --opts::"${opts}"`, 'navy');
@@ -53,29 +57,26 @@ class Dd extends DdListeners {
       val = this._val2str(val);
 
       // remove all gen elems and create new elements which are siblings to elem (which is initially hidden)
-      this._genElem_remove(attrName, dd_id);
-      const newElem = this._genElem_define(elem, attrName, attrVal);
+      const dd_id2 = this._origElem_dd_id(elem, attrName);
+      const newElem = this._genElem_create(elem, attrName, dd_id2);
       elem.parentNode.insertBefore(newElem, elem.nextSibling);
 
-      // apply pipe option (val must be a string)
+      // apply pipe option, for example: --pipe:slice(0,10).trim() (val must be a string)
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
-      if (!!pipeOpt) {
-        const pipeFunc = pipeOpt.replace('pipe:', '').trim();
-        const { funcName, funcArgs } = this._funcParse(pipeFunc, newElem);
-        if (typeof val[funcName] === 'function') { val = val[funcName](...funcArgs); }
-      }
+      if (!!pipeOpt) { val = this._pipeExe(val, pipeOpt); }
 
       // load content in the element
       if (opts.includes('overwrite')) {
-        newElem.textContent = val;
+        newElem.textContent = val; // take controller value and replace element value
+      } else if (opts.includes('remain')) {
+        newElem.textContent = elem.textContent; // take element value i.e. leave it as is
       } else if (opts.includes('prepend')) {
-        newElem.textContent = val + elem.textContent;
+        newElem.textContent = val + elem.textContent; // take controller value and append it to element value
       } else if (opts.includes('append')) {
-        newElem.textContent = elem.textContent + val;
+        newElem.textContent = elem.textContent + val; // take controller value and prepend it to element value
       } else {
-        newElem.textContent = val;
+        newElem.textContent = val; // default
       }
-
     }
 
     this._debug('ddText', '--------- ddText (end) ------', 'navy', '#B6ECFF');

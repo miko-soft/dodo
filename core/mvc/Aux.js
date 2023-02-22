@@ -75,16 +75,10 @@ class Aux {
    * The cloned element gets dd-xyz-gen and dd-xyz-id attributes.
    * @param {Element} elem - original element
    * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
-   * @param {string} attrVal - attribute value: '$model.continent --append'
    * @param {string} dd_id - dodo unique id
    * @returns {HTMLElement}
    */
-  _genElem_define(elem, attrName, attrVal, dd_id) {
-    if (!dd_id) {
-      const { prop } = this._decomposeAttribute(attrVal);
-      dd_id = this._uid(prop);
-    }
-
+  _genElem_create(elem, attrName, dd_id) {
     // clone the dd-xyz element
     const newElem = elem.cloneNode(true);
 
@@ -105,13 +99,26 @@ class Aux {
    * Remove element with the specific dd-xyz-gen attributes.
    * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
    * @param {string} dd_id - dodo unique id
-   * @returns
+   * @returns {void}
    */
-  _genElem_remove(attrName, dd_id) {
+  _genElem_purge(attrName, dd_id) {
     if (!dd_id) { return; }
     const genAttr_sel = `[${attrName}-gen="${dd_id}"]`;
     const genElems = document.querySelectorAll(genAttr_sel);
     for (const genElem of genElems) { genElem.remove(); }
+  }
+
+
+  /**
+   * get dodo id from the original HTML element. The original element is the element with dd-... attribute, for example dd-text, dd-html
+   * @param {Element} elem - element with dd-id, i.e. orig elem
+   * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text, dd-html
+   * @returns {string}
+   */
+  _origElem_dd_id(elem, attrName) {
+    let dd_id = elem.getAttribute(`${attrName}-id`) || '';
+    dd_id = dd_id.trim();
+    return dd_id;
   }
 
 
@@ -214,7 +221,7 @@ class Aux {
 
 
   /**
-   * Execute the function. It can be the controller method or the function defined in the controller proerty.
+   * Execute the function. It can be the controller method or the function defined in the controller property.
    * @param {string} funcName - function name, for example: runKEYUP or products.list
    * @param {any[]} funcArgs - function argumants
    * @return {void}
@@ -258,6 +265,20 @@ class Aux {
       const { funcName, funcArgs } = this._funcParse(funcDef, elem, event);
       await this._funcExe(funcName, funcArgs);
     }
+  }
+
+
+  /**
+   *
+   * @param {strin} str - the string value which sjhould be converted by the pipe: functions
+   * @param {string} pipeOpt - pipe option, for example: pipe:slice(0,10).replace(/as/, '').trim()
+   */
+  _pipeExe(str, pipeOpt) {
+    if (str === undefined || str === null || (!!str && typeof str !== 'string')) { return ''; }
+    const pipeFuncs = pipeOpt.replace('pipe:', '').trim();
+    const func = new Function(`const str = '${str}'.${pipeFuncs}; return str;`);
+    str = func();
+    return str;
   }
 
 

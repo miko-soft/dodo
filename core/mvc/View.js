@@ -35,7 +35,7 @@ class View extends Dd {
    * @returns {void}
    */
   async ddInc(delIncgens = true) {
-    const elems = document.querySelectorAll('[dd-inc]:not([dd-cni])');
+    const elems = document.querySelectorAll('[dd-inc]:not([dd-cni])'); // dd-cni marks that rendering was done (render only children dd-inc in the next iteration)
     this._debug('ddInc', '--------- ddInc ------', '#8B0892', '#EDA1F1');
     this._debug('ddInc', `elems found: ${elems.length}`, '#8B0892');
     if (!elems.length) { return; }
@@ -49,11 +49,11 @@ class View extends Dd {
 
     for (const elem of elems) {
       // extract attribute data
-      const attrValue = elem.getAttribute('dd-inc');
-      const path_dest_cssSel = attrValue.replace(/\s+/g, '').replace(/^\//, '').split(this.$dd.separator); // remove empty spaces and leading /
-      const viewPath = !!path_dest_cssSel && !!path_dest_cssSel.length ? 'inc/' + path_dest_cssSel[0] : '';
-      const dest = !!path_dest_cssSel && path_dest_cssSel.length >= 2 ? path_dest_cssSel[1] : 'inner';
-      const cssSel = !!path_dest_cssSel && path_dest_cssSel.length === 3 ? path_dest_cssSel[2] : '';
+      const attrVal = elem.getAttribute('dd-inc');
+      const { prop, opts } = this._decomposeAttribute(attrVal);
+      const viewPath = 'inc/' + prop.replace(/^\//, '');
+      const dest = opts.find(opt => /inner|outer|prepend|append|sibling/.test(opt)) || 'inner';
+      const cssSel = opts.find(opt => !/inner|outer|prepend|append|sibling/.test(opt)) || '';
       if (this._debug().ddInc) { console.log('\n******** path_dest_cssSel:: ', viewPath, dest, cssSel, '********'); }
       if (!viewPath) { console.error('viewPath is not defined'); return; }
 
@@ -146,7 +146,7 @@ class View extends Dd {
    * @param {string} viewPath - view file path (relative to /view/ directory): 'pages/home/main.html'
    * @param {string} dest - destination where to place the view: inner, outer, sibling, prepend, append
    * @param {string} cssSel - CSS selector to load part of the view file: 'div > p.bolded:nth-child(2)'
-   * @returns {elem:Element, str:string, nodes:Node[]}
+   * @returns {void}
    */
   async loadView(viewName, viewPath, dest = 'inner', cssSel) {
     const attrSel = `[dd-view="${viewName}"]`;
@@ -154,7 +154,6 @@ class View extends Dd {
     // get a HTML element with dd-view attribute
     const elem = document.querySelector(attrSel);
     this._debug('loadView', `--------- loadView ${attrSel} -- ${viewPath} ---------`, '#8B0892', '#EDA1F1');
-    if (this._debug().loadView) { console.log('elem::', elem); }
     if (!elem) { throw new Error(`Element ${attrSel} not found.`); }
     if (!viewPath) { throw new Error(`View path is not defined.`); }
 
@@ -178,9 +177,7 @@ class View extends Dd {
       console.log('nodes loaded::', nodes);
     }
 
-
     str = this._invisible_id(str);
-
 
     // empty content from the element by removing the dd-viewgen elements
     this.emptyView(viewName, dest);
@@ -225,7 +222,8 @@ class View extends Dd {
 
     }
 
-    return { elem, str, nodes };
+    // render dd-inc elements after load
+    if (/dd-inc/.test(str)) { await this.ddInc(false); }
   }
 
 
