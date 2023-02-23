@@ -111,7 +111,7 @@ class Controller extends Model {
     // this.ddFor(attrValQuery);
     // this.ddRepeat(attrValQuery);
     this.ddText(dd_id);
-    // this.ddHtml(attrValQuery);
+    this.ddHtml(dd_id);
 
     await new Promise(r => setTimeout(r, renderDelay));
 

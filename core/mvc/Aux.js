@@ -102,8 +102,8 @@ class Aux {
    * @returns {void}
    */
   _genElem_purge(attrName, dd_id) {
-    if (!dd_id) { return; }
-    const genAttr_sel = `[${attrName}-gen="${dd_id}"]`;
+    let genAttr_sel = `[${attrName}-gen]`;
+    if (!!dd_id) { genAttr_sel = `[${attrName}-gen="${dd_id}"]`; }
     const genElems = document.querySelectorAll(genAttr_sel);
     for (const genElem of genElems) { genElem.remove(); }
   }
