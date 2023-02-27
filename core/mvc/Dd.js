@@ -153,6 +153,39 @@ class Dd extends DdListeners {
   }
 
 
+
+  /**
+   * dd-mustache
+   * Solve mustaches in the element's innerHTML.
+   * The mustache can contain only controller property {{this.$model.name}} or expression like {{this.id + 1}}.
+   */
+  ddMustache() {
+    this._debug('ddMustache', `--------- ddMustache (start) ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-mustache';
+    const elems = this._listElements(attrName);
+
+    this._debug('ddMustache', `found elements:: ${elems.length}`, 'navy');
+
+    this._genElem_purge(attrName); // remove old dd-mustache-gen elements
+
+    for (const elem of elems) {
+      const innerHTML = elem.innerHTML;
+      const innerHTML_solved = this._solveMustache(innerHTML);
+
+      this._debug('ddMustache', `ddMustache:: ${innerHTML} --> ${innerHTML_solved}`, 'navy');
+
+      // generate element which is sibling to orig elem (elem is hidden in the template.js)
+      const dd_id_found = this._origElem_dd_id(elem, attrName);
+      const newElem = this._genElem_create(elem, attrName, dd_id_found);
+      newElem.innerHTML = innerHTML_solved;
+      elem.parentNode.insertBefore(newElem, elem.nextSibling);
+    }
+
+    this._debug('ddMustache', '--------- ddMustache (end) ------', 'navy', '#B6ECFF');
+  }
+
+
 }
 
 

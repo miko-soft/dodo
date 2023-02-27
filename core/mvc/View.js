@@ -692,7 +692,7 @@ class View extends Dd {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = htmlString;
 
-    const attributes = ['dd-text', 'dd-html'];
+    const attributes = ['dd-text', 'dd-html', 'dd-mustache'];
 
     for (const attribute of attributes) {
       const dd_elems = wrapper.querySelectorAll(`[${attribute}]`);
@@ -703,8 +703,8 @@ class View extends Dd {
         // add id attribute for example dd-text-id
         const attrVal = dd_elem.getAttribute(attribute) || ''; // '$model.companies --append'
         const { prop } = this._decomposeAttribute(attrVal); // '$model.companies'
-        const dd_id = this._uid(prop);
-        // console.log('_invisible_id::', prop, ' --> ', dd_id);
+        const dd_id = this._uid(prop); // if prop is '' then dd_id is '0'
+        // console.log('_invisible_id::', prop, ' --> ', typeof dd_id, dd_id);
         dd_elem.setAttribute(`${attribute}-id`, dd_id);
       }
     }

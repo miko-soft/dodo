@@ -112,6 +112,7 @@ class Controller extends Model {
     // this.ddRepeat(attrValQuery);
     this.ddText(dd_id);
     this.ddHtml(dd_id);
+    this.ddMustache();
 
     await new Promise(r => setTimeout(r, renderDelay));
 

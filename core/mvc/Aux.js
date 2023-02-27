@@ -44,7 +44,7 @@ class Aux {
    * List DOM elements which has "dd-..." attribute. If dd_id is defined then filter elements where is dd-...-id="dd_id".
    * For example in dd-for="$model.companies.$i0.{{fields.$i1}}" the attrName will be 'dd-for'. And if dd_id is baf11221 then take only elements with dd-for-id="baf11221"
    * @param {string} attrName - attribute name -> 'dd-for'
-   * @param {string} dd_id - dodo unique id
+   * @param {string|undefined} dd_id - dodo unique id
    * @returns {HTMLElement[]}
    */
   _listElements(attrName, dd_id) {
@@ -75,7 +75,7 @@ class Aux {
    * The cloned element gets dd-xyz-gen and dd-xyz-id attributes.
    * @param {Element} elem - original element
    * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
-   * @param {string} dd_id - dodo unique id
+   * @param {string} dd_id - dodo unique id (if dd_id is '0' that means the dd- attribute doesn't have value like in dd-mustache)
    * @returns {HTMLElement}
    */
   _genElem_create(elem, attrName, dd_id) {
@@ -98,7 +98,7 @@ class Aux {
   /**
    * Remove element with the specific dd-xyz-gen attributes.
    * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
-   * @param {string} dd_id - dodo unique id
+   * @param {string|undefined} dd_id - dodo unique id
    * @returns {void}
    */
   _genElem_purge(attrName, dd_id) {
@@ -289,9 +289,9 @@ class Aux {
    * Create unique dodo id based on text.
    * - max 4294967295 combinations to prevent collision
    * @param {string} txt2hash - some text usually the controller property name, for example: '$model.first_name'
-   * @return {string} - 8 bytes unique hash, for example baf11221
+   * @return {string} - 8 bytes unique hash, for example baf11221 (if txt2hash is '' then returned value is '0')
    */
-  _uid(txt2hash) {
+  _uid(txt2hash = '') {
     let hash = 0;
     for (let charIndex = 0; charIndex < txt2hash.length; ++charIndex) {
       hash += txt2hash.charCodeAt(charIndex);
