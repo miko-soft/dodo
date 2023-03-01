@@ -20,7 +20,11 @@ class Model extends View {
         const tf = Reflect.set(obj, prop, value); // set obj.prop = value;
         if (this.$debugOpts.model) { console.log('obj-after::', { ...obj }); }
 
-        const dd_id = this._uid(`$model.${prop}`); // see Aux.js
+        // define dodo id (based only on first $model property)
+        const prop_first_part = prop.replace(/\..+/, ''); // company.employer.first_name --> company
+        const prop_for_uid = `$model.${prop_first_part}`; // $model.company
+        const dd_id = this._uid(prop_for_uid); // see Aux.js
+
         this.render(dd_id);
 
         return tf;

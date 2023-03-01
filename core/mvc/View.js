@@ -692,18 +692,28 @@ class View extends Dd {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = htmlString;
 
-    const attributes = ['dd-text', 'dd-html', 'dd-mustache'];
+    const attributes = ['dd-text', 'dd-html', 'dd-mustache', 'dd-show'];
 
     for (const attribute of attributes) {
       const dd_elems = wrapper.querySelectorAll(`[${attribute}]`);
       for (const dd_elem of dd_elems) {
-        // make element invisible
+        /*** 1)  make element invisible ***/
         dd_elem.style.display = 'none';
 
-        // add id attribute for example dd-text-id
-        const attrVal = dd_elem.getAttribute(attribute) || ''; // '$model.companies --append'
-        const { prop } = this._decomposeAttribute(attrVal); // '$model.companies'
-        const dd_id = this._uid(prop); // if prop is '' then dd_id is '0'
+        /*** 2) add id attribute for example dd-text-id ***/
+        let attrVal = dd_elem.getAttribute(attribute) || ''; // '$model.company.employer.first_name --append' or 'this.num > 5'
+        attrVal = attrVal.trim();
+        let { prop } = this._decomposeAttribute(attrVal); // prop: '$model.company.employer.first_name'
+
+        // define dodo id
+        let dd_id = '0';
+        if (prop.includes('$model.')) {
+          prop = prop.replace('$model.', ''); // $model.company.employer.first_name --> company.employer.first_name
+          const prop_first_part = prop.replace(/\..+/, ''); // company.employer.first_name --> company
+          const prop_for_uid = `$model.${prop_first_part}`; // $model.company
+          dd_id = this._uid(prop_for_uid); // if attribute value doesn't contain $model. or if prop (controller property name) is '' then dd_id is '0'
+        }
+
         // console.log('_invisible_id::', prop, ' --> ', typeof dd_id, dd_id);
         dd_elem.setAttribute(`${attribute}-id`, dd_id);
       }

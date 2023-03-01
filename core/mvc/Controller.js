@@ -113,6 +113,7 @@ class Controller extends Model {
     this.ddText(dd_id);
     this.ddHtml(dd_id);
     this.ddMustache();
+    this.ddShow(dd_id);
 
     await new Promise(r => setTimeout(r, renderDelay));
 
