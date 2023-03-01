@@ -157,7 +157,14 @@ class Aux {
   _solveExpression(expr) {
     let func = new Function(`const exprResult = ${expr}; return exprResult;`);
     func = func.bind(this);
-    let exprResult = func();
+
+    let exprResult;
+    try {
+      exprResult = func();
+    } catch (err) {
+      console.error(`Error in expression "${expr}"`);
+      console.error(err);
+    }
 
     if (exprResult === undefined || exprResult === null) { exprResult = ''; }
     else { exprResult = exprResult.toString(); }
