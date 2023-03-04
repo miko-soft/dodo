@@ -56,16 +56,16 @@ class Aux {
 
 
   /**
-   * Decompose attribute to controller property name and attribute options.
-   * For example: dd-text="$model.companies --pipe:slice(0,12).trim() --append" --> prop is '$model.companies' and opts is array ['pipe:slice(0,12).trim()', 'append']
+   * Decompose attribute to base and option values.
+   * For example: dd-text="$model.companies --pipe:slice(0,12).trim() --append" --> base is '$model.companies' and opts is array ['pipe:slice(0,12).trim()', 'append']
    * @param {string} attrVal - attribute value, for example: "$model.names --prepend"
-   * @returns {{prop:string, opts:string[]}} - prop is controller property and opts is attribute options
+   * @returns {{base:string, opts:string[]}} - base is base attribute value (usually controller property) and opts is attribute options
    */
   _decomposeAttribute(attrVal) {
     let opts = attrVal.split('--') || [];
     opts = opts.map(opt => opt.trim());
-    const prop = opts.shift();
-    return { prop, opts };
+    const base = opts.shift();
+    return { base, opts };
   }
 
 
@@ -138,7 +138,8 @@ class Aux {
 
     for (const mustacheExpression of mustacheExpressions) {
       const expr = mustacheExpression.replace(openingChar, '').replace(closingChar, '').trim();
-      const exprResult = this._solveExpression(expr);
+      let exprResult = this._solveExpression(expr);
+      exprResult = exprResult.toString();
       txt = txt.replace(mustacheExpression, exprResult);
 
       // nested mustacheExpression, for example: dd-echo="{{docs.$i.{{fields.$i}}}}"
@@ -167,7 +168,7 @@ class Aux {
     }
 
     if (exprResult === undefined || exprResult === null) { exprResult = ''; }
-    else { exprResult = exprResult.toString(); }
+    else { exprResult = exprResult; }
 
     return exprResult;
   }

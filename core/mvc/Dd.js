@@ -18,8 +18,8 @@ class Dd extends DdListeners {
 
 
   /**
-   * dd-text="<controllerProperty> [--overwrite|remain|prepend|append]"
-   * Print pure text in the dd-text element.
+   * dd-text="controllerProperty [--overwrite|remain|prepend|append]"
+   *  Print pure text in the dd-text element.
    * Examples:
    * dd-text="firstName"                  - firstName is the controller property, it can also be model $model.firstname
    * dd-text="this.firstName"             - this. will not cause the error
@@ -41,14 +41,14 @@ class Dd extends DdListeners {
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
-      const { prop, opts } = this._decomposeAttribute(attrVal);
+      const { base, opts } = this._decomposeAttribute(attrVal);
 
       // solve the controller property name and get the controller property value
-      let prop_solved = prop.replace(/^this\./, ''); // remove this. --> dd-text="this.product_{{this.pid}}"
+      let prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-text="this.product_{{this.pid}}"
       prop_solved = this._solveMustache(prop_solved); // dd-text="product_{{this.pid}}"
       let val = this._getControllerValue(prop_solved);
 
-      this._debug('ddText', `ddText:: ${prop} --> ${prop_solved} = "${val}"  --opts::"${opts}"`, 'navy');
+      this._debug('ddText', `ddText:: ${base} --> ${prop_solved} = "${val}"  --opts::"${opts}"`, 'navy');
 
       // don't render elements with undefined controller's value
       if (val === undefined || val === null) { elem.textContent = ''; continue; }
@@ -56,7 +56,7 @@ class Dd extends DdListeners {
       // convert controller val to string
       val = this._val2str(val);
 
-      // generate element which is sibling to orig elem (elem is hidden in the template.js)
+      // generate element which is sibling to orig elem (elem is hidden when view is loaded)
       const dd_id_found = this._origElem_dd_id(elem, attrName);
       const newElem = this._genElem_create(elem, attrName, dd_id_found);
       elem.parentNode.insertBefore(newElem, elem.nextSibling);
@@ -85,8 +85,8 @@ class Dd extends DdListeners {
 
 
   /**
-   * dd-html="<controllerProperty> [--inner|outer|sibling|prepend|append]"
-   * Embed HTML node in the DOM at a place marked with dd-html attribute.
+   * dd-html="controllerProperty [--inner|outer|sibling|prepend|append]"
+   *  Embed HTML node in the DOM at a place marked with dd-html attribute.
    * Examples:
    * dd-html="product" or dd-html="product.name --inner"    - insert in the element (product is the controller property with HTML tags in the value)
    * dd-html="product.name --outer"                         - replace the element
@@ -106,14 +106,14 @@ class Dd extends DdListeners {
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
-      const { prop, opts } = this._decomposeAttribute(attrVal);
+      const { base, opts } = this._decomposeAttribute(attrVal);
 
       // solve the controller property name and get the controller property value
-      let prop_solved = prop.replace(/^this\./, ''); // remove this. --> dd-html="this.myHTML"
+      let prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-html="this.myHTML"
       prop_solved = this._solveMustache(prop_solved); // dd-html="myHTML"
       let val = this._getControllerValue(prop_solved);
 
-      this._debug('ddHtml', `ddHtml:: ${prop} --> ${prop_solved} = "${val}"  --opts::"${opts}"`, 'navy');
+      this._debug('ddHtml', `ddHtml:: ${base} --> ${prop_solved} = "${val}"  --opts::"${opts}"`, 'navy');
 
       // don't render elements with undefined controller's value
       if (val === undefined || val === null) { elem.textContent = ''; continue; }
@@ -121,7 +121,7 @@ class Dd extends DdListeners {
       // convert controller val to string
       val = this._val2str(val);
 
-      // generate element which is sibling to orig elem (elem is hidden in the template.js)
+      // generate element which is sibling to orig elem (elem is hidden when view is loaded)
       const dd_id_found = this._origElem_dd_id(elem, attrName);
       const newElem = this._genElem_create(elem, attrName, dd_id_found);
       elem.parentNode.insertBefore(newElem, elem.nextSibling);
@@ -156,7 +156,7 @@ class Dd extends DdListeners {
 
   /**
    * dd-mustache
-   * Solve mustaches in the element's innerHTML.
+   *  Solve mustaches in the element's innerHTML.
    * The mustache can contain only controller property {{this.$model.name}} or expression like {{this.id + 1}}.
    */
   ddMustache() {
@@ -175,7 +175,7 @@ class Dd extends DdListeners {
 
       this._debug('ddMustache', `ddMustache:: ${innerHTML} --> ${innerHTML_solved}`, 'navy');
 
-      // generate element which is sibling to orig elem (elem is hidden in the template.js)
+      // generate element which is sibling to orig elem (elem is hidden when view is loaded)
       const dd_id_found = this._origElem_dd_id(elem, attrName);
       const newElem = this._genElem_create(elem, attrName, dd_id_found);
       newElem.innerHTML = innerHTML_solved;
@@ -183,6 +183,65 @@ class Dd extends DdListeners {
     }
 
     this._debug('ddMustache', '--------- ddMustache (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-show="controllerProperty"  or  dd-show="(expression)"
+   *  Show or hide the HTML element by setting display:none.
+   * Examples:
+   * dd-show="isActive"                         - isActive is the controller property, it can also be model $model.isActive
+   * dd-show="this.isActive"                    - this. will not cause the error
+   * dd-show="(this.a < 5 && this.a >= 8)"      - expression
+   * dd-show="(this.$model.name === 'John')"    - expression with model
+   * dd-show="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   *
+   * @param {string} dd_id - unique dodo id which is used when $model is updated to render only elements with that dd_id
+   */
+  ddShow(dd_id) {
+    this._debug('ddShow', `--------- ddShow (start) ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-show';
+    const elems = this._listElements(attrName, dd_id);
+
+    this._debug('ddShow', `found elements:: ${elems.length} | dd_id:: ${dd_id}`, 'navy');
+
+    this._genElem_purge(attrName, dd_id); // remove old dd-show-gen elements
+
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+
+      let val = false;
+      let prop_solved = '';
+      if (/\(.*\)/.test(attrVal)) {
+        // solve the expression
+        const prop_solved = this._solveMustache(base); // dd-show="(product_{{this.pid}} === 'Shoes')"
+        const expr = prop_solved;
+        val = this._solveExpression(expr);
+
+      } else {
+        // solve the controller property name and get the controller property value
+        prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-show="this.product_{{this.pid}}"
+        prop_solved = this._solveMustache(prop_solved); // dd-show="product_{{this.pid}}"
+        val = this._getControllerValue(prop_solved);
+      }
+
+      console.log(typeof val, val);
+      this._debug('ddShow', `ddShow:: ${base} --> ${prop_solved} = "${val}" ; attrVal:: ${attrVal}`, 'navy');
+
+      // generate element which is sibling to orig elem (elem is hidden when view is loaded)
+      const dd_id_found = this._origElem_dd_id(elem, attrName);
+      const newElem = this._genElem_create(elem, attrName, dd_id_found);
+      val ? newElem.style.display = '' : newElem.style.display = 'none';
+      elem.parentNode.insertBefore(newElem, elem.nextSibling);
+
+
+    }
+
+    this._debug('ddShow', '--------- ddShow (end) ------', 'navy', '#B6ECFF');
   }
 
 

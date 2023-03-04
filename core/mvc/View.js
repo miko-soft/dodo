@@ -50,8 +50,8 @@ class View extends Dd {
     for (const elem of elems) {
       // extract attribute data
       const attrVal = elem.getAttribute('dd-inc');
-      const { prop, opts } = this._decomposeAttribute(attrVal);
-      const viewPath = 'inc/' + prop.replace(/^\//, '');
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const viewPath = 'inc/' + base.replace(/^\//, '');
       const dest = opts.find(opt => /inner|outer|prepend|append|sibling/.test(opt)) || 'inner';
       const cssSel = opts.find(opt => !/inner|outer|prepend|append|sibling/.test(opt)) || '';
       if (this._debug().ddInc) { console.log('\n******** path_dest_cssSel:: ', viewPath, dest, cssSel, '********'); }
@@ -684,7 +684,7 @@ class View extends Dd {
   /***** PRIVATES *****/
   /**
    * 1) Make dd element invisible by setting display:none CSS style. After render() this element can become visible.
-   * 2) Add dd-...-id attribute in the dd element.
+   * 2) Add dd-...-id attribute in the dd element. If the element doesn't contain $moedl then dd_id is zero.
    * @param {string} htmlString - string with html tags
    * @returns {string} - modified HTML string
    */
@@ -700,19 +700,28 @@ class View extends Dd {
         /*** 1)  make element invisible ***/
         dd_elem.style.display = 'none';
 
-        /*** 2) add id attribute for example dd-text-id ***/
-        let attrVal = dd_elem.getAttribute(attribute) || ''; // '$model.company.employer.first_name --append' or 'this.num > 5'
+        // get attribute value without option
+        let attrVal = dd_elem.getAttribute(attribute) || ''; // '$model.company.employer.first_name --append' or 'this.num > 5' or '(this.$model.showY.bool === this.myBool)'
         attrVal = attrVal.trim();
-        let { prop } = this._decomposeAttribute(attrVal); // prop: '$model.company.employer.first_name'
+        const { base } = this._decomposeAttribute(attrVal); // base:: '$model.company.employer.first_name'
 
-        // define dodo id
+        /*** 2) check if the attribute value has two different $model properties. For example $model.x and $model.y ****/
+        const models = base.match(/\$model\.[a-zA-Z1-9\_]+/g) || [];
+        const models_set = new Set(models); // {'$model.n1', '$model.n2'}
+        console.log(models_set);
         let dd_id = '0';
-        if (prop.includes('$model.')) {
-          prop = prop.replace('$model.', ''); // $model.company.employer.first_name --> company.employer.first_name
-          const prop_first_part = prop.replace(/\..+/, ''); // company.employer.first_name --> company
-          const prop_for_uid = `$model.${prop_first_part}`; // $model.company
+        if (models_set.size === 0) { // no $model in attribut value
+          dd_id = '0';
+        } else if (models_set.size === 1) { // one $model property in attribute, for example dd-show="(this.$model.n1 > 6 && this.$model.n1 < 10)"
+          const iterator = models_set.values();
+          const prop_for_uid = iterator.next().value; // $model.company
           dd_id = this._uid(prop_for_uid); // if attribute value doesn't contain $model. or if prop (controller property name) is '' then dd_id is '0'
+        } else if (models_set.size > 1) {
+          throw new Error(`Bad definition in ${attribute}="${attrVal}". The attribute value can not contain two different $model properties.`);
         }
+
+        /*** 3) add id attribute for example dd-text-id ***/
+
 
         // console.log('_invisible_id::', prop, ' --> ', typeof dd_id, dd_id);
         dd_elem.setAttribute(`${attribute}-id`, dd_id);

@@ -27,6 +27,7 @@ export default {
   ddText: false,
   ddHtml: false,
   ddMustache: false,
+  ddShow: false,
 
 
 };
