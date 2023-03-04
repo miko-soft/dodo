@@ -100,20 +100,19 @@ class Controller extends Model {
   /**
    * Render the view i.e. the dd- elements with the attrValQuery.
    * For example: dd-text="first_name", where first_name is the controllerProp.
-   * @param {string} dd_id - unique dodo id
    * @param {number} renderDelay - delay in miliseconds
    */
-  async render(dd_id, renderDelay = 5) {
+  async render(renderDelay = 5) {
 
-    this._debug('render', `--------- render (start) -- dd_id: ${dd_id} -- renderDelay: ${renderDelay} -- ctrl: ${this.constructor.name} ------`, 'green', '#D9FC9B');
+    this._debug('render', `--------- render (start) -- renderDelay: ${renderDelay} -- ctrl: ${this.constructor.name} ------`, 'green', '#D9FC9B');
 
     // Render Dd generators.
     // this.ddFor(attrValQuery);
     // this.ddRepeat(attrValQuery);
-    this.ddText(dd_id);
-    this.ddHtml(dd_id);
+    this.ddText();
+    this.ddHtml();
     this.ddMustache();
-    this.ddShow(dd_id);
+    this.ddShow();
 
     await new Promise(r => setTimeout(r, renderDelay));
 
@@ -144,7 +143,7 @@ class Controller extends Model {
     // this.ddModel();
 
 
-    this._debug('render', `--------- render (end) -- dd_id: ${dd_id} ------`, 'green', '#D9FC9B');
+    this._debug('render', `--------- render (end) ------`, 'green', '#D9FC9B');
   }
 
 

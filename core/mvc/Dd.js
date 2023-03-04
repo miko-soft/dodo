@@ -25,19 +25,14 @@ class Dd extends DdListeners {
    * dd-text="this.firstName"             - this. will not cause the error
    * dd-text="firstName --append"         - append the text to the existing text
    * dd-text="$model.product___{{id}}"    - dynamic controller property name
-   *
-   * @param {string} dd_id - unique dodo id which is used when $model is updated to render only elements with that dd_id
    */
-  ddText(dd_id) {
+  ddText() {
     this._debug('ddText', `--------- ddText (start) ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-text';
-    const elems = this._listElements(attrName, dd_id);
-
-    this._debug('ddText', `found elements:: ${elems.length} | dd_id:: ${dd_id}`, 'navy');
-
-    this._genElem_purge(attrName, dd_id); // remove old dd-text-gen elements
-
+    this._genElem_purge(attrName);
+    const elems = this._listElements(attrName);
+    this._debug('ddText', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
@@ -57,8 +52,7 @@ class Dd extends DdListeners {
       val = this._val2str(val);
 
       // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const dd_id_found = this._origElem_dd_id(elem, attrName);
-      const newElem = this._genElem_create(elem, attrName, dd_id_found);
+      const newElem = this._genElem_create(elem, attrName);
       elem.parentNode.insertBefore(newElem, elem.nextSibling);
 
       // apply pipe option, for example: --pipe:slice(0,10).trim() (val must be a string)
@@ -90,19 +84,14 @@ class Dd extends DdListeners {
    * Examples:
    * dd-html="product" or dd-html="product.name --inner"    - insert in the element (product is the controller property with HTML tags in the value)
    * dd-html="product.name --outer"                         - replace the element
-   *
-   * @param {string} dd_id - unique dodo id which is used when $model is updated to render only elements with that dd_id
    */
-  ddHtml(dd_id) {
+  ddHtml() {
     this._debug('ddHtml', `--------- ddHtml (start) ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-html';
-    const elems = this._listElements(attrName, dd_id);
-
-    this._debug('ddHtml', `found elements:: ${elems.length} | dd_id:: ${dd_id}`, 'navy');
-
-    this._genElem_purge(attrName, dd_id); // remove old dd-html-gen elements
-
+    this._genElem_purge(attrName);
+    const elems = this._listElements(attrName);
+    this._debug('ddHtml', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
@@ -122,8 +111,7 @@ class Dd extends DdListeners {
       val = this._val2str(val);
 
       // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const dd_id_found = this._origElem_dd_id(elem, attrName);
-      const newElem = this._genElem_create(elem, attrName, dd_id_found);
+      const newElem = this._genElem_create(elem, attrName);
       elem.parentNode.insertBefore(newElem, elem.nextSibling);
 
       // apply pipe option, for example: --pipe:slice(0,10).trim() (val must be a string)
@@ -138,7 +126,7 @@ class Dd extends DdListeners {
       } else if (opts.includes('sibling')) {
         const docParsed = new DOMParser().parseFromString(val, 'text/html');
         const siblingElem = docParsed.body.childNodes[0];
-        siblingElem.setAttribute('dd-html-gen', dd_id_found);
+        siblingElem.setAttribute('dd-html-gen', '');
         newElem.parentNode.insertBefore(siblingElem, newElem.nextSibling);
       } else if (opts.includes('prepend')) {
         newElem.innerHTML = val + ' ' + newElem.innerHTML; // take controller value and prepend it to element value
@@ -157,17 +145,15 @@ class Dd extends DdListeners {
   /**
    * dd-mustache
    *  Solve mustaches in the element's innerHTML.
-   * The mustache can contain only controller property {{this.$model.name}} or expression like {{this.id + 1}}.
+   *  The mustache can contain only controller property {{this.$model.name}} or expression like {{this.id + 1}}.
    */
   ddMustache() {
     this._debug('ddMustache', `--------- ddMustache (start) ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-mustache';
-    const elems = this._listElements(attrName);
-
-    this._debug('ddMustache', `found elements:: ${elems.length}`, 'navy');
-
     this._genElem_purge(attrName); // remove old dd-mustache-gen elements
+    const elems = this._listElements(attrName);
+    this._debug('ddMustache', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
       const innerHTML = elem.innerHTML;
@@ -176,8 +162,7 @@ class Dd extends DdListeners {
       this._debug('ddMustache', `ddMustache:: ${innerHTML} --> ${innerHTML_solved}`, 'navy');
 
       // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const dd_id_found = this._origElem_dd_id(elem, attrName);
-      const newElem = this._genElem_create(elem, attrName, dd_id_found);
+      const newElem = this._genElem_create(elem, attrName);
       newElem.innerHTML = innerHTML_solved;
       elem.parentNode.insertBefore(newElem, elem.nextSibling);
     }
@@ -196,19 +181,14 @@ class Dd extends DdListeners {
    * dd-show="(this.a < 5 && this.a >= 8)"      - expression
    * dd-show="(this.$model.name === 'John')"    - expression with model
    * dd-show="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
-   *
-   * @param {string} dd_id - unique dodo id which is used when $model is updated to render only elements with that dd_id
    */
-  ddShow(dd_id) {
+  ddShow() {
     this._debug('ddShow', `--------- ddShow (start) ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-show';
-    const elems = this._listElements(attrName, dd_id);
-
-    this._debug('ddShow', `found elements:: ${elems.length} | dd_id:: ${dd_id}`, 'navy');
-
-    this._genElem_purge(attrName, dd_id); // remove old dd-show-gen elements
-
+    const elems = this._listElements(attrName);
+    this._genElem_purge(attrName);
+    this._debug('ddShow', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
@@ -229,23 +209,24 @@ class Dd extends DdListeners {
         val = this._getControllerValue(prop_solved);
       }
 
-      console.log(typeof val, val);
       this._debug('ddShow', `ddShow:: ${base} --> ${prop_solved} = "${val}" ; attrVal:: ${attrVal}`, 'navy');
 
       // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const dd_id_found = this._origElem_dd_id(elem, attrName);
-      const newElem = this._genElem_create(elem, attrName, dd_id_found);
+      const newElem = this._genElem_create(elem, attrName);
       val ? newElem.style.display = '' : newElem.style.display = 'none';
       elem.parentNode.insertBefore(newElem, elem.nextSibling);
-
-
     }
 
     this._debug('ddShow', '--------- ddShow (end) ------', 'navy', '#B6ECFF');
   }
 
 
+
+
+
 }
+
+
 
 
 export default Dd;

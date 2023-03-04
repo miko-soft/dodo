@@ -13,9 +13,6 @@ export default {
   render: false,
   navig: false,
 
-  // Model.js
-  model: false,
-
   // View.js
   ddInc: false,
   loadView: false,

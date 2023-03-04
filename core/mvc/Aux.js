@@ -41,16 +41,12 @@ class Aux {
 
   /***** HTML DOM *****/
   /**
-   * List DOM elements which has "dd-..." attribute. If dd_id is defined then filter elements where is dd-...-id="dd_id".
-   * For example in dd-for="$model.companies.$i0.{{fields.$i1}}" the attrName will be 'dd-for'. And if dd_id is baf11221 then take only elements with dd-for-id="baf11221"
+   * List DOM elements which has "dd-..." attribute.
    * @param {string} attrName - attribute name -> 'dd-for'
-   * @param {string|undefined} dd_id - dodo unique id
    * @returns {HTMLElement[]}
    */
-  _listElements(attrName, dd_id) {
-    let elems = [];
-    if (!!dd_id) { elems = document.querySelectorAll(`[${attrName}][${attrName}-id="${dd_id}"]`); }
-    else { elems = document.querySelectorAll(`[${attrName}]`); }
+  _listElements(attrName) {
+    const elems = document.querySelectorAll(`[${attrName}]`);
     return elems;
   }
 
@@ -70,22 +66,19 @@ class Aux {
 
 
   /**
-   * Define new cloned element.
-   * The original element gets dd-xyz-id , unique ID to distinguish the element from other dd-xyz elements on the page.
-   * The cloned element gets dd-xyz-gen and dd-xyz-id attributes.
+   * Mark new generated (cloned) element with dd-xyz-gen attribute..
    * @param {Element} elem - original element
    * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
-   * @param {string} dd_id - dodo unique id (if dd_id is '0' that means the dd- attribute doesn't have value like in dd-mustache)
    * @returns {HTMLElement}
    */
-  _genElem_create(elem, attrName, dd_id) {
+  _genElem_create(elem, attrName) {
     // clone the dd-xyz element
     const newElem = elem.cloneNode(true);
 
     // remove cloned attributes and add new attributes
     newElem.removeAttribute(attrName);
     newElem.removeAttribute(`${attrName}-id`);
-    newElem.setAttribute(`${attrName}-gen`, dd_id);
+    newElem.setAttribute(`${attrName}-gen`, '');
 
     // redefine style attribute
     newElem.style.display = '';
@@ -98,27 +91,11 @@ class Aux {
   /**
    * Remove element with the specific dd-xyz-gen attributes.
    * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
-   * @param {string|undefined} dd_id - dodo unique id
    * @returns {void}
    */
-  _genElem_purge(attrName, dd_id) {
-    let genAttr_sel = `[${attrName}-gen]`;
-    if (!!dd_id) { genAttr_sel = `[${attrName}-gen="${dd_id}"]`; }
-    const genElems = document.querySelectorAll(genAttr_sel);
+  _genElem_purge(attrName) {
+    const genElems = document.querySelectorAll(`[${attrName}-gen]`);
     for (const genElem of genElems) { genElem.remove(); }
-  }
-
-
-  /**
-   * get dodo id from the original HTML element. The original element is the element with dd-... attribute, for example dd-text, dd-html
-   * @param {Element} elem - element with dd-id, i.e. orig elem
-   * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text, dd-html
-   * @returns {string}
-   */
-  _origElem_dd_id(elem, attrName) {
-    let dd_id = elem.getAttribute(`${attrName}-id`) || '';
-    dd_id = dd_id.trim();
-    return dd_id;
   }
 
 
@@ -293,26 +270,6 @@ class Aux {
 
 
   /***** MISC *****/
-  /**
-   * Create unique dodo id based on text.
-   * - max 4294967295 combinations to prevent collision
-   * @param {string} txt2hash - some text usually the controller property name, for example: '$model.first_name'
-   * @return {string} - 8 bytes unique hash, for example baf11221 (if txt2hash is '' then returned value is '0')
-   */
-  _uid(txt2hash = '') {
-    let hash = 0;
-    for (let charIndex = 0; charIndex < txt2hash.length; ++charIndex) {
-      hash += txt2hash.charCodeAt(charIndex);
-      hash += hash << 10;
-      hash ^= hash >> 6;
-    }
-    hash += hash << 3;
-    hash ^= hash >> 11;
-    const dd_id = (((hash + (hash << 15)) & 4294967295) >>> 0).toString(16);
-    return dd_id;
-  }
-
-
   /**
   * Debug the controller methods.
   * @param {string} tip - debug type: ddText, render, ...
