@@ -107,8 +107,7 @@ class Controller extends Model {
     this._debug('render', `--------- render (start) -- renderDelay: ${renderDelay} -- ctrl: ${this.constructor.name} ------`, 'green', '#D9FC9B');
 
     // Render Dd generators.
-    // this.ddFor(attrValQuery);
-    // this.ddRepeat(attrValQuery);
+    this.ddDECLONE();
     this.ddText();
     this.ddHtml();
     this.ddMustache();

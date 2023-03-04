@@ -66,19 +66,18 @@ class Aux {
 
 
   /**
-   * Mark new generated (cloned) element with dd-xyz-gen attribute..
+   * Mark cloned element with dd-xyz-clone attribute..
    * @param {Element} elem - original element
    * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
    * @returns {HTMLElement}
    */
-  _genElem_create(elem, attrName) {
+  _clone_create(elem, attrName) {
     // clone the dd-xyz element
     const newElem = elem.cloneNode(true);
 
     // remove cloned attributes and add new attributes
     newElem.removeAttribute(attrName);
-    newElem.removeAttribute(`${attrName}-id`);
-    newElem.setAttribute(`${attrName}-gen`, '');
+    newElem.setAttribute(`${attrName}-clone`, '');
 
     // redefine style attribute
     newElem.style.display = '';
@@ -93,8 +92,8 @@ class Aux {
    * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
    * @returns {void}
    */
-  _genElem_purge(attrName) {
-    const genElems = document.querySelectorAll(`[${attrName}-gen]`);
+  _clone_delete(attrName) {
+    const genElems = document.querySelectorAll(`[${attrName}-clone]`);
     for (const genElem of genElems) { genElem.remove(); }
   }
 

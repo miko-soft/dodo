@@ -11,8 +11,26 @@ class Dd extends DdListeners {
 
     this.$dd = {
       elems: {},  // set by ddElem()
-      listeners: [] // collector of the dd- listeners  [{attrName, elem, handler, eventName}]
+      listeners: [], // collector of the dd- listeners  [{attrName, elem, handler, eventName}]
+      attributes: [
+        'dd-text',
+        'dd-html',
+        'dd-mustache',
+        'dd-show'
+      ]
     };
+
+  }
+
+
+  /**
+   * Remove all dd-xyz-clone elements
+   */
+  ddDECLONE() {
+    for (const attribute of this.$dd.attributes) {
+      const dd_elems = document.querySelectorAll(`[${attribute}-clone]`);
+      for (const dd_elem of dd_elems) { dd_elem.remove(); }
+    }
   }
 
 
@@ -30,7 +48,6 @@ class Dd extends DdListeners {
     this._debug('ddText', `--------- ddText (start) ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-text';
-    this._genElem_purge(attrName);
     const elems = this._listElements(attrName);
     this._debug('ddText', `found elements:: ${elems.length}`, 'navy');
 
@@ -52,7 +69,7 @@ class Dd extends DdListeners {
       val = this._val2str(val);
 
       // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const newElem = this._genElem_create(elem, attrName);
+      const newElem = this._clone_create(elem, attrName);
       elem.parentNode.insertBefore(newElem, elem.nextSibling);
 
       // apply pipe option, for example: --pipe:slice(0,10).trim() (val must be a string)
@@ -89,7 +106,6 @@ class Dd extends DdListeners {
     this._debug('ddHtml', `--------- ddHtml (start) ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-html';
-    this._genElem_purge(attrName);
     const elems = this._listElements(attrName);
     this._debug('ddHtml', `found elements:: ${elems.length}`, 'navy');
 
@@ -111,7 +127,7 @@ class Dd extends DdListeners {
       val = this._val2str(val);
 
       // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const newElem = this._genElem_create(elem, attrName);
+      const newElem = this._clone_create(elem, attrName);
       elem.parentNode.insertBefore(newElem, elem.nextSibling);
 
       // apply pipe option, for example: --pipe:slice(0,10).trim() (val must be a string)
@@ -122,11 +138,11 @@ class Dd extends DdListeners {
       if (opts.includes('inner')) {
         newElem.innerHTML = val; // embed HTML in the newElem
       } else if (opts.includes('outer')) {
-        newElem.outerHTML = val; // replace newElem with HTML defined in the controller property
+        newElem.outerHTML = `<span dd-html-clone>${val}</span>`; // wrap in span
       } else if (opts.includes('sibling')) {
         const docParsed = new DOMParser().parseFromString(val, 'text/html');
         const siblingElem = docParsed.body.childNodes[0];
-        siblingElem.setAttribute('dd-html-gen', '');
+        siblingElem.setAttribute('dd-html-clone', '');
         newElem.parentNode.insertBefore(siblingElem, newElem.nextSibling);
       } else if (opts.includes('prepend')) {
         newElem.innerHTML = val + ' ' + newElem.innerHTML; // take controller value and prepend it to element value
@@ -151,7 +167,6 @@ class Dd extends DdListeners {
     this._debug('ddMustache', `--------- ddMustache (start) ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-mustache';
-    this._genElem_purge(attrName); // remove old dd-mustache-gen elements
     const elems = this._listElements(attrName);
     this._debug('ddMustache', `found elements:: ${elems.length}`, 'navy');
 
@@ -162,7 +177,7 @@ class Dd extends DdListeners {
       this._debug('ddMustache', `ddMustache:: ${innerHTML} --> ${innerHTML_solved}`, 'navy');
 
       // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const newElem = this._genElem_create(elem, attrName);
+      const newElem = this._clone_create(elem, attrName);
       newElem.innerHTML = innerHTML_solved;
       elem.parentNode.insertBefore(newElem, elem.nextSibling);
     }
@@ -187,7 +202,6 @@ class Dd extends DdListeners {
 
     const attrName = 'dd-show';
     const elems = this._listElements(attrName);
-    this._genElem_purge(attrName);
     this._debug('ddShow', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -212,7 +226,7 @@ class Dd extends DdListeners {
       this._debug('ddShow', `ddShow:: ${base} --> ${prop_solved} = "${val}" ; attrVal:: ${attrVal}`, 'navy');
 
       // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const newElem = this._genElem_create(elem, attrName);
+      const newElem = this._clone_create(elem, attrName);
       val ? newElem.style.display = '' : newElem.style.display = 'none';
       elem.parentNode.insertBefore(newElem, elem.nextSibling);
     }

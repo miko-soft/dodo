@@ -77,7 +77,7 @@ class View extends Dd {
         // console.log('str loaded::', str);
       }
 
-      str = this._invisible_id(str);
+      str = this._makeInvisible(str);
 
       // load content in the element
       if (dest === 'inner') {
@@ -177,7 +177,7 @@ class View extends Dd {
       console.log('nodes loaded::', nodes);
     }
 
-    str = this._invisible_id(str);
+    str = this._makeInvisible(str);
 
     // empty content from the element by removing the dd-viewgen elements
     this.emptyView(viewName, dest);
@@ -687,18 +687,11 @@ class View extends Dd {
    * @param {string} htmlString - string with html tags
    * @returns {string} - modified HTML string
    */
-  _invisible_id(htmlString) {
+  _makeInvisible(htmlString) {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = htmlString;
 
-    const attributes = [
-      'dd-text',
-      'dd-html',
-      'dd-mustache',
-      'dd-show'
-    ];
-
-    for (const attribute of attributes) {
+    for (const attribute of this.$dd.attributes) {
       const dd_elems = wrapper.querySelectorAll(`[${attribute}]`);
       for (const dd_elem of dd_elems) { dd_elem.style.display = 'none'; }
     }
