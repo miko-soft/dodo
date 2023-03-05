@@ -42,12 +42,37 @@ class Aux {
   /***** HTML DOM *****/
   /**
    * List DOM elements which has "dd-..." attribute.
-   * @param {string} attrName - attribute name -> 'dd-for'
+   * @param {string} attrName - attribute name -> 'dd-text', 'dd.html', ...
    * @returns {HTMLElement[]}
    */
   _listElements(attrName) {
     const elems = document.querySelectorAll(`[${attrName}]`);
     return elems;
+  }
+
+
+  /**
+   * List siblings of the elem with specific attributes (attrNames). The elem is included in the list;
+   * @param {HTMLElement} elem - element for which we are searching siblings
+   * @param {string[]} attrNames - attribute names: ['dd-if', 'dd-elseif', 'dd-else']
+   * @returns
+   */
+  _getSiblings(elem, attrNames) {
+    const siblings = [];
+    if (!elem.parentNode) { return siblings; } // if no parent, return no sibling
+    let sibling = elem.parentNode.firstChild; // first child of the parent node
+    while (sibling) {
+      if (sibling.nodeType === 1) {
+        for (const attrName of attrNames) {
+          if (sibling.hasAttribute(attrName)) {
+            siblings.push(sibling);
+          }
+        }
+
+      }
+      sibling = sibling.nextSibling;
+    }
+    return siblings;
   }
 
 
@@ -66,35 +91,45 @@ class Aux {
 
 
   /**
-   * Mark cloned element with dd-xyz-clone attribute..
+   * Define cloned element. The cloned element must have dd-xyz-clone attribute.
    * @param {Element} elem - original element
    * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
    * @returns {HTMLElement}
    */
-  _clone_create(elem, attrName) {
+  _clone_define(elem, attrName) {
     // clone the dd-xyz element
-    const newElem = elem.cloneNode(true);
+    const clonedElem = elem.cloneNode(true);
 
     // remove cloned attributes and add new attributes
-    newElem.removeAttribute(attrName);
-    newElem.setAttribute(`${attrName}-clone`, '');
+    clonedElem.removeAttribute(attrName);
+    clonedElem.setAttribute(`${attrName}-clone`, '');
 
     // redefine style attribute
-    newElem.style.display = '';
-    if (!newElem.getAttribute('style')) { newElem.removeAttribute('style'); }
+    clonedElem.style.display = '';
+    if (!clonedElem.getAttribute('style')) { clonedElem.removeAttribute('style'); }
 
-    return newElem;
+    return clonedElem;
   }
 
 
   /**
-   * Remove element with the specific dd-xyz-gen attributes.
+   * Insert cloned element in the DOM. The cloned elem is inserted as sibling to orig elem.The cloned element have dd-xyz-clone attribute.
    * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
    * @returns {void}
    */
-  _clone_delete(attrName) {
-    const genElems = document.querySelectorAll(`[${attrName}-clone]`);
-    for (const genElem of genElems) { genElem.remove(); }
+  _clone_insert(elem, clonedElem) {
+    elem.parentNode.insertBefore(clonedElem, elem.nextSibling);
+  }
+
+
+  /**
+   * Remove cloned element from DOM. The cloned element have dd-xyz-clone attribute.
+   * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
+   * @returns {void}
+   */
+  _clone_remove(attrName) {
+    const clonedElems = document.querySelectorAll(`[${attrName}-clone]`);
+    for (const clonedElem of clonedElems) { clonedElem.remove(); }
   }
 
 

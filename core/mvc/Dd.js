@@ -16,7 +16,8 @@ class Dd extends DdListeners {
         'dd-text',
         'dd-html',
         'dd-mustache',
-        'dd-show'
+        'dd-show',
+        'dd-if', 'dd-elseif', 'dd-else'
       ]
     };
 
@@ -68,9 +69,9 @@ class Dd extends DdListeners {
       // convert controller val to string
       val = this._val2str(val);
 
-      // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const newElem = this._clone_create(elem, attrName);
-      elem.parentNode.insertBefore(newElem, elem.nextSibling);
+      // clone orig element
+      const clonedElem = this._clone_define(elem, attrName);
+      this._clone_insert(elem, clonedElem);
 
       // apply pipe option, for example: --pipe:slice(0,10).trim() (val must be a string)
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
@@ -78,15 +79,15 @@ class Dd extends DdListeners {
 
       // load content in the element
       if (opts.includes('overwrite')) {
-        newElem.textContent = val; // take controller value and replace element value
+        clonedElem.textContent = val; // take controller value and replace element value
       } else if (opts.includes('remain')) {
-        newElem.textContent = elem.textContent; // take element value i.e. leave it as is
+        clonedElem.textContent = elem.textContent; // take element value i.e. leave it as is
       } else if (opts.includes('prepend')) {
-        newElem.textContent = val + elem.textContent; // take controller value and prepend it to element value
+        clonedElem.textContent = val + elem.textContent; // take controller value and prepend it to element value
       } else if (opts.includes('append')) {
-        newElem.textContent = elem.textContent + val; // take controller value and append it to element value
+        clonedElem.textContent = elem.textContent + val; // take controller value and append it to element value
       } else {
-        newElem.textContent = val; // overwrite is default
+        clonedElem.textContent = val; // overwrite is default
       }
     }
 
@@ -126,9 +127,9 @@ class Dd extends DdListeners {
       // convert controller val to string
       val = this._val2str(val);
 
-      // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const newElem = this._clone_create(elem, attrName);
-      elem.parentNode.insertBefore(newElem, elem.nextSibling);
+      // clone orig element
+      const clonedElem = this._clone_define(elem, attrName);
+      this._clone_insert(elem, clonedElem);
 
       // apply pipe option, for example: --pipe:slice(0,10).trim() (val must be a string)
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
@@ -136,20 +137,20 @@ class Dd extends DdListeners {
 
       // load content in the element
       if (opts.includes('inner')) {
-        newElem.innerHTML = val; // embed HTML in the newElem
+        clonedElem.innerHTML = val; // embed HTML in the clonedElem
       } else if (opts.includes('outer')) {
-        newElem.outerHTML = `<span dd-html-clone>${val}</span>`; // wrap in span
+        clonedElem.outerHTML = `<span dd-html-clone>${val}</span>`; // wrap in span
       } else if (opts.includes('sibling')) {
         const docParsed = new DOMParser().parseFromString(val, 'text/html');
         const siblingElem = docParsed.body.childNodes[0];
         siblingElem.setAttribute('dd-html-clone', '');
-        newElem.parentNode.insertBefore(siblingElem, newElem.nextSibling);
+        clonedElem.parentNode.insertBefore(siblingElem, clonedElem.nextSibling);
       } else if (opts.includes('prepend')) {
-        newElem.innerHTML = val + ' ' + newElem.innerHTML; // take controller value and prepend it to element value
+        clonedElem.innerHTML = val + ' ' + clonedElem.innerHTML; // take controller value and prepend it to element value
       } else if (opts.includes('append')) {
-        newElem.innerHTML = newElem.innerHTML + ' ' + val; // take controller value and append it to element value
+        clonedElem.innerHTML = clonedElem.innerHTML + ' ' + val; // take controller value and append it to element value
       } else {
-        newElem.innerHTML = val; // inner is default
+        clonedElem.innerHTML = val; // inner is default
       }
     }
 
@@ -176,10 +177,10 @@ class Dd extends DdListeners {
 
       this._debug('ddMustache', `ddMustache:: ${innerHTML} --> ${innerHTML_solved}`, 'navy');
 
-      // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const newElem = this._clone_create(elem, attrName);
-      newElem.innerHTML = innerHTML_solved;
-      elem.parentNode.insertBefore(newElem, elem.nextSibling);
+      // clone orig element
+      const clonedElem = this._clone_define(elem, attrName);
+      clonedElem.innerHTML = innerHTML_solved;
+      this._clone_insert(elem, clonedElem);
     }
 
     this._debug('ddMustache', '--------- ddMustache (end) ------', 'navy', '#B6ECFF');
@@ -222,15 +223,68 @@ class Dd extends DdListeners {
         val = this._getControllerValue(prop_solved);
       }
 
-      this._debug('ddShow', `ddShow:: ${base} --> ${prop_solved} = "${val}" ; attrVal:: ${attrVal}`, 'navy');
+      this._debug('ddShow', `ddShow:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
 
-      // generate element which is sibling to orig elem (elem is hidden when view is loaded)
-      const newElem = this._clone_create(elem, attrName);
-      val ? newElem.style.display = '' : newElem.style.display = 'none';
-      elem.parentNode.insertBefore(newElem, elem.nextSibling);
+      // clone orig element
+      const clonedElem = this._clone_define(elem, attrName);
+      val ? clonedElem.style.display = '' : clonedElem.style.display = 'none';
+      this._clone_insert(elem, clonedElem);
     }
 
     this._debug('ddShow', '--------- ddShow (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-if="controllerProperty"  or  dd-if="(expression)"
+   *  Show or hide the HTML element by setting display:none.
+   * Examples:
+   * dd-if="myBool" ; else
+   */
+  ddIf() {
+    this._debug('ddIf', `--------- ddIf (start) ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-if';
+    const elems = this._listElements(attrName);
+    this._debug('ddIf', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const siblings = this._getSiblings(elem, ['dd-if', 'dd-elseif', 'dd-else']);
+
+      for (const sibling of siblings) {
+        const clonedElem = this._clone_define(sibling, attrName);
+
+        // clone orig element (if sibling is dd-else)
+        if (sibling.hasAttribute('dd-else')) { this._clone_insert(sibling, clonedElem); break; }
+
+        const attrVal = sibling.getAttribute('dd-if') || sibling.getAttribute('dd-elseif') || sibling.getAttribute('dd-else');
+        if (!attrVal) { console.error('No dd-if, dd-elseif nor dd-else attribute in the sibling:', sibling); break; }
+        const { base, opts } = this._decomposeAttribute(attrVal);
+
+        let val = false;
+        let prop_solved = '';
+        if (/\(.*\)/.test(attrVal)) {
+          // solve the expression
+          const prop_solved = this._solveMustache(base); // dd-show="(product_{{this.pid}} === 'Shoes')"
+          const expr = prop_solved;
+          val = this._solveExpression(expr);
+        } else {
+          // solve the controller property name and get the controller property value
+          prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-show="this.product_{{this.pid}}"
+          prop_solved = this._solveMustache(prop_solved); // dd-show="product_{{this.pid}}"
+          val = this._getControllerValue(prop_solved);
+        }
+
+        this._debug('ddIf', `sibling:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
+
+        // clone orig element (if val is truthy)
+        if (val) { this._clone_insert(sibling, clonedElem); break; }
+      }
+
+    }
+
+    this._debug('ddIf', '--------- ddIf (end) ------', 'navy', '#B6ECFF');
   }
 
 
