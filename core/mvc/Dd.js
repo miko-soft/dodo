@@ -215,7 +215,6 @@ class Dd extends DdListeners {
         const prop_solved = this._solveMustache(base); // dd-show="(product_{{this.pid}} === 'Shoes')"
         const expr = prop_solved;
         val = this._solveExpression(expr);
-
       } else {
         // solve the controller property name and get the controller property value
         prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-show="this.product_{{this.pid}}"
