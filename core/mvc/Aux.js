@@ -113,12 +113,27 @@ class Aux {
 
 
   /**
-   * Insert cloned element in the DOM. The cloned elem is inserted as sibling to orig elem.The cloned element have dd-xyz-clone attribute.
-   * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
+   * Insert cloned element in the DOM.
+   * The cloned elem is inserted as sibling to orig elem.
+   * The cloned element have dd-xyz-clone attribute.
+   * @param {Element} elem - original element
+   * @param {Element} clonedElem - element which will be cloned and placed in the elem sibling position
    * @returns {void}
    */
   _clone_insert(elem, clonedElem) {
     elem.parentNode.insertBefore(clonedElem, elem.nextSibling);
+  }
+
+  /**
+   * Insert cloned element in the DOM. Every new element will be appended to last added element.
+   * The cloned elem is inserted as sibling to orig elem.
+   * The cloned element have dd-xyz-clone attribute.
+   * @param {Element} elem - original element
+   * @param {Element} clonedElem - element which will be cloned and placed in the elem sibling position
+   * @returns {void}
+   */
+  _clone_insert_append(elem, clonedElem) {
+    elem.parentElement.appendChild(clonedElem);
   }
 
 
@@ -182,6 +197,24 @@ class Aux {
     else { exprResult = exprResult; }
 
     return exprResult;
+  }
+
+
+  /**
+   * Find double dollar annotation in the text and replace it with the real value.
+   * @param {string} text - text which contains double dollar
+   * @param {string} doubleDollarName - name of the $$, for example if doubleDollarName is 'val1' then it's $$val1
+   * @param {any} doubleDollarValue - the value which will replace $$val1
+   * @returns {string}
+   */
+  _solveDoubleDollar(text, doubleDollarName, doubleDollarValue) {
+    doubleDollarValue = this._val2str(doubleDollarValue); // convert to string
+    doubleDollarName = `\\$\\$${doubleDollarName}`;
+    const reg = new RegExp(doubleDollarName, 'g');
+    console.log(text);
+    text = text.replace(reg, doubleDollarValue);
+    console.log(text);
+    return text;
   }
 
 

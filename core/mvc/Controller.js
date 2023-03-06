@@ -108,13 +108,16 @@ class Controller extends Model {
 
     // Render Dd generators.
     this.ddDECLONE();
+    this.ddForeach();
+
+    await new Promise(r => setTimeout(r, renderDelay));
+
     this.ddText();
     this.ddHtml();
     this.ddMustache();
     this.ddShow();
     this.ddIf();
 
-    await new Promise(r => setTimeout(r, renderDelay));
 
     // Render Dd non-generators.
     // this.ddShow(attrValQuery);

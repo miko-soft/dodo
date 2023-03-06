@@ -17,7 +17,8 @@ class Dd extends DdListeners {
         'dd-html',
         'dd-mustache',
         'dd-show',
-        'dd-if', 'dd-elseif', 'dd-else'
+        'dd-if', 'dd-elseif', 'dd-else',
+        'dd-foreach',
       ]
     };
 
@@ -240,7 +241,8 @@ class Dd extends DdListeners {
    * dd-if="controllerProperty"  or  dd-if="(expression)"
    *  Show or hide the HTML element by setting display:none.
    * Examples:
-   * dd-if="myBool" ; else
+   * dd-if="myBool" ; dd-else
+   * dd-if="(this.x > 5)" ; dd-elseif ="(this.x <= 5)" ; dd-else
    */
   ddIf() {
     this._debug('ddIf', `--------- ddIf (start) ------`, 'navy', '#B6ECFF');
@@ -285,6 +287,57 @@ class Dd extends DdListeners {
     }
 
     this._debug('ddIf', '--------- ddIf (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-foreach="controllerProperty"
+   *  Multiply element based on controllerProperty which is an array.
+   * Examples:
+   * dd-foreach="myArr" or dd-foreach="this.myArr"
+   * dd-foreach="$model.myArr" or dd-foreach="this.$model.myArr"
+   */
+  ddForeach() {
+    this._debug('ddForeach', `--------- ddForeach (start) ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-foreach';
+    const elems = this._listElements(attrName);
+    this._debug('ddForeach', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+
+      // solve the controller property name and get the controller property value
+      let prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-foreach="this.names_{{this.pid}}"
+      prop_solved = this._solveMustache(prop_solved); // dd-foreach="names_{{this.pid}}"
+      const val = this._getControllerValue(prop_solved);
+
+      // get forEach callback value and key name from opts, for example: --val1,key1
+      const [cbValName, cbKeyName] = opts[0].split(',').map(v => v.trim()); // ['val1', 'key1']
+
+      this._debug('ddForeach', `ddForeach:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
+
+      // check if val is array
+      if (!Array.isArray(val)) { console.error(`ddForeachError:: Controller property "${base}" is not array. val:`, val); continue; }
+
+      val.forEach((arrElemVal, arrElemKey) => {
+        console.log('arrElemVal::', arrElemVal);
+        // define cloned element
+        const clonedElem = this._clone_define(elem, attrName);
+
+        // solve double dollars in the cloned element
+        clonedElem.innerHTML = this._solveDoubleDollar(clonedElem.innerHTML, cbValName, arrElemVal); // solve $$val1
+        clonedElem.innerHTML = this._solveDoubleDollar(clonedElem.innerHTML, cbKeyName, arrElemKey); // solve $$key1
+
+        // clone orig element
+        this._clone_insert_append(elem, clonedElem);
+      });
+
+    }
+
+    this._debug('ddForeach', '--------- ddForeach (end) ------', 'navy', '#B6ECFF');
   }
 
 
