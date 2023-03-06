@@ -211,9 +211,7 @@ class Aux {
     doubleDollarValue = this._val2str(doubleDollarValue); // convert to string
     doubleDollarName = `\\$\\$${doubleDollarName}`;
     const reg = new RegExp(doubleDollarName, 'g');
-    console.log(text);
     text = text.replace(reg, doubleDollarValue);
-    console.log(text);
     return text;
   }
 
@@ -338,6 +336,19 @@ class Aux {
 
   /***** MISC *****/
   /**
+   * Check if the text has substring which will block rendering.
+   * The text can have HTML tags. In most cases the block string is doubledollar $$.
+   * This method should block rendering of the $$ variables in the dd-foreach orig element. The $$ variables in cloned dd-foreach element will be solved by _solveDoubleDollar()
+   * @param {string} text - the text which is under test
+   * @param {string} blockString - the string which will block the rendering, usually '$$'
+   * @returns {boolean}
+   */
+  _hasBlockString(text, blockString = '$$') {
+    return text.includes(blockString);
+  }
+
+
+  /**
   * Debug the controller methods.
   * @param {string} tip - debug type: ddText, render, ...
   * @param {string} text - the printed text
@@ -351,8 +362,12 @@ class Aux {
   }
 
 
-  _printError(text) {
-    console.log(`%c ERROR:: ${text}`, `color:Orangered; background:Yellow`);
+  /**
+   * Print the error message in the console.
+   * @param {string} errMessage - the error message
+   */
+  _printError(errMessage) {
+    console.log(`%c ERROR:: ${errMessage}`, `color:Orangered; background:Yellow`);
   }
 
 

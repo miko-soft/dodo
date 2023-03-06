@@ -106,12 +106,11 @@ class Controller extends Model {
 
     this._debug('render', `--------- render (start) -- renderDelay: ${renderDelay} -- ctrl: ${this.constructor.name} ------`, 'green', '#D9FC9B');
 
-    // Render Dd generators.
-    this.ddDECLONE();
-    this.ddForeach();
-
     await new Promise(r => setTimeout(r, renderDelay));
 
+    // Render Dd elements.
+    this.ddDECLONE();
+    this.ddForeach();
     this.ddText();
     this.ddHtml();
     this.ddMustache();
@@ -120,8 +119,6 @@ class Controller extends Model {
 
 
     // Render Dd non-generators.
-    // this.ddShow(attrValQuery);
-    // this.ddSpinner(attrValQuery);
     // this.ddSwitch(attrValQuery);
     // this.ddDisabled(attrValQuery);
     // this.ddValue(attrValQuery);
