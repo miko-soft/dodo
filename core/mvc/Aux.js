@@ -208,10 +208,18 @@ class Aux {
    * @returns {string}
    */
   _solveDoubleDollar(text, doubleDollarName, doubleDollarValue) {
-    doubleDollarValue = this._val2str(doubleDollarValue); // convert to string
-    doubleDollarName = `\\$\\$${doubleDollarName}`;
-    const reg = new RegExp(doubleDollarName, 'g');
-    text = text.replace(reg, doubleDollarValue);
+    // find full double dollar path in the text, for example: $$val1.name or $$company.employer.last_name
+    const doubleDollarNameWithPath = `\\$\\$${doubleDollarName}[\.a-zA-Z\$\_]*`;
+    const reg = new RegExp(doubleDollarNameWithPath, 'g');
+    const matches = text.match(reg); // ['$$val1.name', '$$val1.size']
+
+    // solve dollar value and replace it in the text
+    for (const m of matches) {
+      const func = new Function(`$$${doubleDollarName}`, `return ${m};`); // function ($$val1) { return $$val1.name; }
+      const solvedValue = func(doubleDollarValue);
+      text = text.replace(reg, solvedValue);
+    }
+
     return text;
   }
 
@@ -330,7 +338,6 @@ class Aux {
     str = func();
     return str;
   }
-
 
 
 

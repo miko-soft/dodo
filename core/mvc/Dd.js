@@ -323,18 +323,20 @@ class Dd extends DdListeners {
       if (this._hasBlockString(base)) { continue; } // block rendering if the element contains $$
 
       // solve the controller property name and get the controller property value
-      let prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-foreach="this.names_{{this.pid}}"
-      prop_solved = this._solveMustache(prop_solved); // dd-foreach="names_{{this.pid}}"
-      const val = this._getControllerValue(prop_solved);
+      let prop_solved = base.replace(/^this\./, ''); // remove this. from dd-foreach="this.names_{{this.pid}} --val,key"
+      prop_solved = this._solveMustache(prop_solved); // solve mustache in the controller property name --> names_1212
+      const val = this._getControllerValue(prop_solved) || [];
 
-      // get forEach callback value and key name from opts, for example: --val1,key1
-      const [cbValName, cbKeyName] = opts[0].split(',').map(v => v.trim()); // ['val1', 'key1']
-
-      this._debug('ddForeach', `ddForeach:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
+      this._debug('ddForeach', `ddForeach:: attrVal:: ${attrVal} ; ${base} --> ${prop_solved} = ${val}`, 'navy');
 
       // check if val is array
       if (!Array.isArray(val)) { console.error(`ddForeachError:: Controller property "${base}" is not array. val:`, val); continue; }
 
+      // get forEach callback value and key name from opts, for example: --val1,key1
+      const [cbValName, cbKeyName] = opts[0].split(',').map(v => v.trim()); // ['val1', 'key1']
+
+      // create wrap element in which clones will be appended one by one.
+      const wrapElement = document.createElement('div');
       val.forEach((arrElemVal, arrElemKey) => {
         // define cloned element
         const clonedElem = this._clone_define(elem, attrName);
@@ -343,10 +345,14 @@ class Dd extends DdListeners {
         clonedElem.innerHTML = this._solveDoubleDollar(clonedElem.innerHTML, cbValName, arrElemVal); // solve $$val1
         clonedElem.innerHTML = this._solveDoubleDollar(clonedElem.innerHTML, cbKeyName, arrElemKey); // solve $$key1
 
-        // clone orig element
-        this._clone_insert_append(elem, clonedElem);
+        wrapElement.appendChild(clonedElem);
       });
 
+      // clone orig element
+      this._clone_insert(elem, wrapElement);
+
+      // remove wrap element i.e. replace it with it's children
+      wrapElement.replaceWith(...wrapElement.children); // TODO
     }
 
     this._debug('ddForeach', '--------- ddForeach (end) ------', 'navy', '#B6ECFF');
