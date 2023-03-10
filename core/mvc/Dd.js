@@ -314,9 +314,13 @@ class Dd extends DdListeners {
 
     const attrName = 'dd-foreach';
     const elems = this._listElements(attrName);
+
     this._debug('ddForeach', `found elements:: ${elems.length}`, 'navy');
 
-    for (const elem of elems) {
+    // reverse elems because we want to render child dd-foreach first
+    const elems_reversed = [...elems].reverse();
+
+    for (const elem of elems_reversed) {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
 
@@ -341,9 +345,13 @@ class Dd extends DdListeners {
         // define cloned element
         const clonedElem = this._clone_define(elem, attrName);
 
+
         // solve double dollars in the cloned element
-        clonedElem.innerHTML = this._solveDoubleDollar(clonedElem.innerHTML, cbValName, arrElemVal); // solve $$val1
-        clonedElem.innerHTML = this._solveDoubleDollar(clonedElem.innerHTML, cbKeyName, arrElemKey); // solve $$key1
+        let text = clonedElem.innerHTML.replace(/\n\s/g, '').trim();
+        text = this._solveDoubleDollar(text, cbValName, arrElemVal); // solve $$val1
+        text = this._solveDoubleDollar(text, cbKeyName, arrElemKey); // solve $$key1
+        clonedElem.innerHTML = text;
+
 
         wrapElement.appendChild(clonedElem);
       });

@@ -207,18 +207,30 @@ class Aux {
    * @param {any} doubleDollarValue - the value which will replace $$val1
    * @returns {string}
    */
-  _solveDoubleDollar(text, doubleDollarName, doubleDollarValue) {
+  _solveDoubleDollar(text = '', doubleDollarName, doubleDollarValue) {
     // find full double dollar path in the text, for example: $$val1.name or $$company.employer.last_name
-    const doubleDollarNameWithPath = `\\$\\$${doubleDollarName}[\.a-zA-Z\$\_]*`;
-    const reg = new RegExp(doubleDollarNameWithPath, 'g');
-    const matches = text.match(reg); // ['$$val1.name', '$$val1.size']
+    const reg = new RegExp(`\\$\\$${doubleDollarName}(\\.[a-zA-Z0-9\_]+)+|\\$\\$${doubleDollarName}`, 'g');
+    const matches = text.match(reg) || []; // ['$$val1.name', '$$val1.size']
+    matches.reverse();
+
+    console.log('----------------------------------------');
+    console.log(reg);
+    console.log(text, doubleDollarName, doubleDollarValue);
+    console.log('matches::', matches);
 
     // solve dollar value and replace it in the text
-    for (const m of matches) {
+    for (let m of matches) {
       const func = new Function(`$$${doubleDollarName}`, `return ${m};`); // function ($$val1) { return $$val1.name; }
       const solvedValue = func(doubleDollarValue);
-      text = text.replace(reg, solvedValue);
+      console.log('matched::', m, `-- doubleDollarName:: $$${doubleDollarName}`, '-->', solvedValue);
+      if (solvedValue === undefined) { continue; }
+      m = m.replace(/\$/g, '\\$');
+      const reg2 = new RegExp(m, 'g');
+      console.log('reg2::', reg2);
+      text = text.replace(reg2, solvedValue);
     }
+
+    console.log(text);
 
     return text;
   }
