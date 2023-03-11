@@ -19,6 +19,7 @@ class Dd extends DdListeners {
         'dd-show',
         'dd-if', 'dd-elseif', 'dd-else',
         'dd-foreach',
+        'dd-repeat',
       ]
     };
 
@@ -187,6 +188,7 @@ class Dd extends DdListeners {
 
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName);
+      if (this._hasAnyOfAttributes(clonedElem)) { clonedElem.style.display = 'none'; }
       clonedElem.innerHTML = innerHTML_solved;
       this._clone_insert(elem, clonedElem);
     }
@@ -215,13 +217,13 @@ class Dd extends DdListeners {
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
-      const { base, opts } = this._decomposeAttribute(attrVal);
+      const { base } = this._decomposeAttribute(attrVal);
 
       if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
 
       let val = false;
       let prop_solved = '';
-      if (/\(.*\)/.test(attrVal)) {
+      if (/\(.*\)/.test(base)) {
         // solve the expression
         const prop_solved = this._solveMustache(base); // dd-show="(product_{{this.pid}} === 'Shoes')"
         const expr = prop_solved;
@@ -278,7 +280,7 @@ class Dd extends DdListeners {
 
         let val = false;
         let prop_solved = '';
-        if (/\(.*\)/.test(attrVal)) {
+        if (/\(.*\)/.test(base)) {
           // solve the expression
           const prop_solved = this._solveMustache(base); // dd-show="(product_{{this.pid}} === 'Shoes')"
           const expr = prop_solved;
@@ -371,6 +373,63 @@ class Dd extends DdListeners {
     }
 
     this._debug('ddForeach', '--------- ddForeach (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-repeat="controllerProperty" or dd-repeat="<number>" or dd-repeat="(expression)"
+   *  Multiply element based on controllerProperty, on number or expression.
+   * Examples:
+   * dd-repeat="myNumber" or dd-repeat="this.myNumber"
+   * dd-repeat="$model.myNumber" or dd-repeat="this.$model.myNumber"
+   * dd-repeat="5"
+   * dd-repeat="(this.myNumber + 1)"
+   */
+  ddRepeat() {
+    this._debug('ddRepeat', `--------- ddRepeat (start) ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-repeat';
+    const elems = this._listElements(attrName);
+
+    this._debug('ddRepeat', `found elements:: ${elems.length}`, 'navy');
+
+    // reverse elems because we want to render child dd-repeat first
+    const elems_reversed = [...elems].reverse();
+
+    for (const elem of elems_reversed) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base } = this._decomposeAttribute(attrVal);
+
+      let val = 0;
+      let prop_solved = '';
+      if (/^\d+$/.test(base)) { // number
+        val = +base;
+      } else if (/\(.*\)/.test(base)) { // expression
+        const prop_solved = this._solveMustache(base); // dd-repeat="(product_{{this.pid}} === 'Shoes')"
+        const expr = prop_solved;
+        val = +this._solveExpression(expr);
+      } else { // controller property
+        prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-repeat="this.product_{{this.pid}}"
+        prop_solved = this._solveMustache(prop_solved); // dd-repeat="product_{{this.pid}}"
+        val = +this._getControllerValue(prop_solved);
+      }
+
+      this._debug('ddRepeat', `ddRepeat:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
+
+      // clone orig element
+
+
+      if (!!val && val > 0) {
+        for (let i = 1; i <= val; i++) {
+          const clonedElem = this._clone_define(elem, attrName);
+          if (this._hasAnyOfAttributes(clonedElem)) { clonedElem.style.display = 'none'; }
+          this._clone_insert(elem, clonedElem);
+        }
+      }
+    }
+
+    this._debug('ddRepeat', '--------- ddRepeat (end) ------', 'navy', '#B6ECFF');
   }
 
 
