@@ -116,7 +116,10 @@ class Controller extends Model {
     this.ddText();
     this.ddHtml();
     this.ddMustache();
+
+    // non-cloners
     this.ddShow();
+    this.ddDisable();
 
 
     // Render Dd non-generators.

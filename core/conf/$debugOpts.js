@@ -21,12 +21,15 @@ export default {
   ddLazyjs: false,
 
   // Dd.js
+  ddForeach: false,
+  ddRepeat: false,
+  ddIf: false,
   ddText: false,
   ddHtml: false,
   ddMustache: false,
+
   ddShow: false,
-  ddIf: false,
-  ddForeach: false,
+  ddDisable: false,
 
 
 };

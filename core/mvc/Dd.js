@@ -13,18 +13,26 @@ class Dd extends DdListeners {
       elems: {},  // set by ddElem()
       listeners: [], // collector of the dd- listeners  [{attrName, elem, handler, eventName}]
       attributes: [
+        // cloners
         'dd-text',
         'dd-html',
         'dd-mustache',
-        'dd-show',
         'dd-if', 'dd-elseif', 'dd-else',
         'dd-foreach',
         'dd-repeat',
+
+        // non-cloners
+        'dd-show',
+        'dd-disable',
       ]
     };
 
   }
 
+
+  /***********************************************
+   ************** CLONERS ************************
+   ***********************************************/
 
   /**
    * Remove all dd-xyz-clone elements
@@ -194,56 +202,6 @@ class Dd extends DdListeners {
     }
 
     this._debug('ddMustache', '--------- ddMustache (end) ------', 'navy', '#B6ECFF');
-  }
-
-
-
-  /**
-   * dd-show="controllerProperty"  or  dd-show="(expression)"
-   *  Show or hide the HTML element by setting display:none.
-   * Examples:
-   * dd-show="isActive"                         - isActive is the controller property, it can also be model $model.isActive
-   * dd-show="this.isActive"                    - this. will not cause the error
-   * dd-show="(this.a < 5 && this.a >= 8)"      - expression
-   * dd-show="(this.$model.name === 'John')"    - expression with model
-   * dd-show="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
-   */
-  ddShow() {
-    this._debug('ddShow', `--------- ddShow (start) ------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-show';
-    const elems = this._listElements(attrName);
-    this._debug('ddShow', `found elements:: ${elems.length}`, 'navy');
-
-    for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName);
-      const { base } = this._decomposeAttribute(attrVal);
-
-      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
-
-      let val = false;
-      let prop_solved = '';
-      if (/\(.*\)/.test(base)) {
-        // solve the expression
-        const prop_solved = this._solveMustache(base); // dd-show="(product_{{this.pid}} === 'Shoes')"
-        const expr = prop_solved;
-        val = this._solveExpression(expr);
-      } else {
-        // solve the controller property name and get the controller property value
-        prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-show="this.product_{{this.pid}}"
-        prop_solved = this._solveMustache(prop_solved); // dd-show="product_{{this.pid}}"
-        val = this._getControllerValue(prop_solved);
-      }
-
-      this._debug('ddShow', `ddShow:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
-
-      // clone orig element
-      const clonedElem = this._clone_define(elem, attrName);
-      val ? clonedElem.style.display = '' : clonedElem.style.display = 'none';
-      this._clone_insert(elem, clonedElem);
-    }
-
-    this._debug('ddShow', '--------- ddShow (end) ------', 'navy', '#B6ECFF');
   }
 
 
@@ -430,6 +388,113 @@ class Dd extends DdListeners {
     }
 
     this._debug('ddRepeat', '--------- ddRepeat (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+
+  /***********************************************
+   ************** NON-CLONERS ********************
+   ***********************************************/
+  /**
+   * dd-show="controllerProperty"  or  dd-show="(expression)"
+   *  Show or hide the HTML element by setting display:none.
+   * Examples:
+   * dd-show="isActive"                         - isActive is the controller property, it can also be model $model.isActive
+   * dd-show="this.isActive"                    - this. will not cause the error
+   * dd-show="(this.a < 5 && this.a >= 8)"      - expression
+   * dd-show="(this.$model.name === 'John')"    - expression with model
+   * dd-show="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   */
+  ddShow() {
+    this._debug('ddShow', `--------- ddShow (start) ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-show';
+    const elems = this._listElements(attrName);
+    this._debug('ddShow', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base } = this._decomposeAttribute(attrVal);
+
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
+
+      let val = false;
+      let prop_solved = '';
+      if (/\(.*\)/.test(base)) {
+        // solve the expression
+        const prop_solved = this._solveMustache(base); // dd-show="(product_{{this.pid}} === 'Shoes')"
+        const expr = prop_solved;
+        val = this._solveExpression(expr);
+      } else {
+        // solve the controller property name and get the controller property value
+        prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-show="this.product_{{this.pid}}"
+        prop_solved = this._solveMustache(prop_solved); // dd-show="product_{{this.pid}}"
+        val = this._getControllerValue(prop_solved);
+      }
+
+      this._debug('ddShow', `ddShow:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
+
+      // hide orig element
+      val ? elem.style.display = '' : elem.style.display = 'none';
+
+      // remove style
+      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+    }
+
+    this._debug('ddShow', '--------- ddShow (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-disable="controllerProperty"  or  dd-disable="(expression)"
+   *  Disable the HTML element by setting disabled attribute.
+   * Examples:
+   * dd-disable="isActive"                         - isActive is the controller property, it can also be model $model.isActive
+   * dd-disable="this.isActive"                    - this. will not cause the error
+   * dd-disable="(this.a < 5 && this.a >= 8)"      - expression
+   * dd-disable="(this.$model.name === 'John')"    - expression with model
+   * dd-disable="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   */
+  ddDisable() {
+    this._debug('ddDisable', `--------- ddDisable (start) ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-disable';
+    const elems = this._listElements(attrName);
+    this._debug('ddDisable', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base } = this._decomposeAttribute(attrVal);
+
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
+
+      let val = false;
+      let prop_solved = '';
+      if (/\(.*\)/.test(base)) {
+        // solve the expression
+        const prop_solved = this._solveMustache(base); // dd-show="(product_{{this.pid}} === 'Shoes')"
+        const expr = prop_solved;
+        val = this._solveExpression(expr);
+      } else {
+        // solve the controller property name and get the controller property value
+        prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-show="this.product_{{this.pid}}"
+        prop_solved = this._solveMustache(prop_solved); // dd-show="product_{{this.pid}}"
+        val = this._getControllerValue(prop_solved);
+      }
+
+      this._debug('ddDisable', `ddDisable:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
+
+      // hide orig element
+      elem.disabled = val;
+
+      // show element & remove style
+      elem.style.display = '';
+      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+    }
+
+    this._debug('ddDisable', '--------- ddDisable (end) ------', 'navy', '#B6ECFF');
   }
 
 
