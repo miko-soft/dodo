@@ -190,7 +190,7 @@ class Aux {
       exprResult = func();
     } catch (err) {
       console.error(`Error in expression "${expr}"`);
-      console.error(err);
+      // console.error(err);
     }
 
     if (exprResult === undefined || exprResult === null) { exprResult = ''; }
@@ -374,6 +374,23 @@ class Aux {
    */
   _hasBlockString(text, blockString = '$$') {
     return text.includes(blockString);
+  }
+
+
+  /**
+   * Check if the HTMl element has any of dd-... attributes
+   * @param {HTMLElement} elem - element where is the dd-... attribute
+   * @returns {boolean}
+   */
+  _hasAnyOfAttributes(elem) {
+    let tf = false;
+    for (const ddAttribute of this.$dd.attributes) {
+      if (elem.hasAttribute(ddAttribute)) {
+        tf = true;
+        break;
+      }
+    }
+    return tf;
   }
 
 

@@ -57,7 +57,7 @@ class Dd extends DdListeners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
 
-      if (this._hasBlockString(base)) { continue; } // block rendering if the element contains $$
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
 
       // solve the controller property name and get the controller property value
       let prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-text="this.product_{{this.pid}}"
@@ -117,7 +117,7 @@ class Dd extends DdListeners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
 
-      if (this._hasBlockString(base)) { continue; } // block rendering if the element contains $$
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
 
       // solve the controller property name and get the controller property value
       let prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-html="this.myHTML"
@@ -179,7 +179,7 @@ class Dd extends DdListeners {
     for (const elem of elems) {
       const innerHTML = elem.innerHTML;
 
-      if (this._hasBlockString(innerHTML)) { continue; } // block rendering if the element contains $$
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
 
       const innerHTML_solved = this._solveMustache(innerHTML);
 
@@ -217,7 +217,7 @@ class Dd extends DdListeners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
 
-      if (this._hasBlockString(base)) { continue; } // block rendering if the element contains $$
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
 
       let val = false;
       let prop_solved = '';
@@ -274,7 +274,7 @@ class Dd extends DdListeners {
         if (!attrVal) { console.error('No dd-if, dd-elseif nor dd-else attribute in the sibling:', sibling); break; }
         const { base } = this._decomposeAttribute(attrVal);
 
-        if (this._hasBlockString(base)) { continue; } // block rendering if the element contains $$
+        if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
 
         let val = false;
         let prop_solved = '';
@@ -325,7 +325,7 @@ class Dd extends DdListeners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
 
-      if (this._hasBlockString(base)) { continue; } // block rendering if the element contains $$
+      // if (this._hasBlockString(base)) { continue; } // block rendering if the element contains $$
 
       // solve the controller property name and get the controller property value
       let prop_solved = base.replace(/^this\./, ''); // remove this. from dd-foreach="this.names_{{this.pid}} --val,key"
@@ -356,11 +356,15 @@ class Dd extends DdListeners {
         this._debug('ddForeach', `-ddForeach:: text-after:: ${text}\n `, 'navy');
         clonedElem.innerHTML = text;
 
+        // hide element if it has the dd-... attribute, for example <p dd-foreach="$model.companies --val1,key1" dd-mustache>
+        if (this._hasAnyOfAttributes(clonedElem)) { clonedElem.style.display = 'none'; }
+
         wrapElement.appendChild(clonedElem);
       });
 
       // clone orig element
       this._clone_insert(elem, wrapElement);
+
 
       // remove wrap element i.e. replace it with it's children
       wrapElement.replaceWith(...wrapElement.children);
