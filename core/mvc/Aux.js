@@ -202,35 +202,45 @@ class Aux {
 
   /**
    * Find double dollar annotation in the text and replace it with the real value.
-   * @param {string} text - text which contains double dollar
-   * @param {string} doubleDollarName - name of the $$, for example if doubleDollarName is 'val1' then it's $$val1
+   * @param {string} text - HTML text which contains double dollar
+   * @param {string} doubleDollarName - name of the $$, for example if doubleDollarName is 'val1' then it's $$val1 in the HTML text
    * @param {any} doubleDollarValue - the value which will replace $$val1
    * @returns {string}
    */
   _solveDoubleDollar(text = '', doubleDollarName, doubleDollarValue) {
-    // find full double dollar path in the text, for example: $$val1.name or $$company.employer.last_name
-    const reg = new RegExp(`\\$\\$${doubleDollarName}(\\.[a-zA-Z0-9\_]+)+|\\$\\$${doubleDollarName}`, 'g');
-    const matches = text.match(reg) || []; // ['$$val1.name', '$$val1.size']
-    matches.reverse();
+    // find double dollar expressions in the text, for example: $$customer.name or $$company.employer.last_name  or  $$company.$$field
+    const reg1 = new RegExp(`\\$\\$${doubleDollarName}(\\.[a-zA-Z0-9\\_\\$]+)+`, 'g'); // $$company.$$field   (nested double dollar whose value is string)
+    const matches1 = text.match(reg1) || [];
 
+    const reg2 = new RegExp(`\\$\\$${doubleDollarName}(\\[\\'[a-zA-Z0-9\\_\\.\\$]+\\'\\])+`, 'g'); // $$company['$$field']  or  $$company['$$field.prop']  (nested double dollar whose value is object)
+    const matches2 = text.match(reg2) || [];
+
+    const reg3 = new RegExp(`\\$\\$${doubleDollarName}`, 'g'); // $$company  or  $$customer  (no nested double dollar)
+    const matches3 = (matches1 && matches1.length) || (matches2 && matches2.length) ? [] : text.match(reg3) || [];
+
+    const matches = [...matches1, ...matches2, ...matches3]; // ['$$val1.name', '$$val1.size', '$$val1.size'] --> $$val1.size found two time in the text
+
+    /*
     console.log('----------------------------------------');
-    console.log(reg);
-    console.log(text, doubleDollarName, doubleDollarValue);
+    console.log('text-before', text);
+    console.log('doubleDollarName::', typeof doubleDollarName, doubleDollarName);
+    console.log('doubleDollarValue::', doubleDollarValue);
+    console.log('matches1::', matches1);
+    console.log('matches2::', matches2);
+    console.log('matches3::', matches3);
     console.log('matches::', matches);
+    */
 
     // solve dollar value and replace it in the text
-    for (let m of matches) {
+    for (const m of matches) {
       const func = new Function(`$$${doubleDollarName}`, `return ${m};`); // function ($$val1) { return $$val1.name; }
       const solvedValue = func(doubleDollarValue);
-      console.log('matched::', m, `-- doubleDollarName:: $$${doubleDollarName}`, '-->', solvedValue);
+      // console.log('matched::', m, `-- doubleDollarName:: $$${doubleDollarName}`, '--> solvedValue::', solvedValue);
       if (solvedValue === undefined) { continue; }
-      m = m.replace(/\$/g, '\\$');
-      const reg2 = new RegExp(m, 'g');
-      console.log('reg2::', reg2);
-      text = text.replace(reg2, solvedValue);
+      text = text.replace(m, solvedValue);
     }
 
-    console.log(text);
+    // console.log('text-after', text);
 
     return text;
   }

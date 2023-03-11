@@ -111,11 +111,11 @@ class Controller extends Model {
     // Render Dd elements.
     this.ddDECLONE();
     this.ddForeach();
+    this.ddIf();
     this.ddText();
     this.ddHtml();
     this.ddMustache();
     this.ddShow();
-    this.ddIf();
 
 
     // Render Dd non-generators.

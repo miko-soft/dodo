@@ -249,6 +249,7 @@ class Dd extends DdListeners {
   /**
    * dd-if="controllerProperty"  or  dd-if="(expression)"
    *  Show or hide the HTML element by setting display:none.
+   *  The expression must be encolsed in round brackets.
    * Examples:
    * dd-if="myBool" ; dd-else
    * dd-if="(this.x > 5)" ; dd-elseif ="(this.x <= 5)" ; dd-else
@@ -261,7 +262,7 @@ class Dd extends DdListeners {
     this._debug('ddIf', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
-      const siblings = this._getSiblings(elem, ['dd-if', 'dd-elseif', 'dd-else']);
+      const siblings = this._getSiblings(elem, ['dd-if', 'dd-elseif', 'dd-else']); // get siblings of dd-if (dd-if included)
 
       for (const sibling of siblings) {
         const clonedElem = this._clone_define(sibling, attrName);
@@ -271,7 +272,7 @@ class Dd extends DdListeners {
 
         const attrVal = sibling.getAttribute('dd-if') || sibling.getAttribute('dd-elseif') || sibling.getAttribute('dd-else');
         if (!attrVal) { console.error('No dd-if, dd-elseif nor dd-else attribute in the sibling:', sibling); break; }
-        const { base, opts } = this._decomposeAttribute(attrVal);
+        const { base } = this._decomposeAttribute(attrVal);
 
         if (this._hasBlockString(base)) { continue; } // block rendering if the element contains $$
 
@@ -306,8 +307,8 @@ class Dd extends DdListeners {
    * dd-foreach="controllerProperty"
    *  Multiply element based on controllerProperty which is an array.
    * Examples:
-   * dd-foreach="myArr" or dd-foreach="this.myArr"
-   * dd-foreach="$model.myArr" or dd-foreach="this.$model.myArr"
+   * dd-foreach="myArr --val,key" or dd-foreach="this.myArr --val,key"
+   * dd-foreach="$model.myArr --val,key" or dd-foreach="this.$model.myArr --val,key"
    */
   ddForeach() {
     this._debug('ddForeach', `--------- ddForeach (start) ------`, 'navy', '#B6ECFF');
@@ -331,27 +332,29 @@ class Dd extends DdListeners {
       prop_solved = this._solveMustache(prop_solved); // solve mustache in the controller property name --> names_1212
       const val = this._getControllerValue(prop_solved) || [];
 
-      this._debug('ddForeach', `ddForeach:: attrVal:: ${attrVal} ; ${base} --> ${prop_solved} = ${val}`, 'navy');
+      this._debug('ddForeach', `ddForeach:: attrVal:: ${attrVal} ; base:: ${base}`, 'navy');
+      if (this.$debugOpts.ddForeach) { console.log(` -prop_solved:: ${prop_solved} -->`, val); }
 
-      // check if val is array
-      if (!Array.isArray(val)) { console.error(`ddForeachError:: Controller property "${base}" is not array. val:`, val); continue; }
+      // check if the val is array or if the val is empty array
+      if (!Array.isArray(val) || (Array.isArray(val) && !val.length)) { console.error(`ddForeachError:: Controller property "${base}" is not array. val:`, val); continue; }
 
-      // get forEach callback value and key name from opts, for example: --val1,key1
+      // get forEach callback value and key name from opts, for example: --val1,key1 --> ['val1', 'key1']
       const [cbValName, cbKeyName] = opts[0].split(',').map(v => v.trim()); // ['val1', 'key1']
 
-      // create wrap element in which clones will be appended one by one.
+
+      // create wrap element in which clones will be appended one by one
       const wrapElement = document.createElement('div');
       val.forEach((arrElemVal, arrElemKey) => {
         // define cloned element
         const clonedElem = this._clone_define(elem, attrName);
 
-
         // solve double dollars in the cloned element
         let text = clonedElem.innerHTML.replace(/\n\s/g, '').trim();
-        text = this._solveDoubleDollar(text, cbValName, arrElemVal); // solve $$val1
-        text = this._solveDoubleDollar(text, cbKeyName, arrElemKey); // solve $$key1
+        this._debug('ddForeach', `-ddForeach:: text-before:: ${text}`, 'navy');
+        if (cbValName !== undefined) { text = this._solveDoubleDollar(text, cbValName, arrElemVal); } // solve $$val1
+        if (cbKeyName !== undefined) { text = this._solveDoubleDollar(text, cbKeyName, arrElemKey); } // solve $$key1
+        this._debug('ddForeach', `-ddForeach:: text-after:: ${text}\n `, 'navy');
         clonedElem.innerHTML = text;
-
 
         wrapElement.appendChild(clonedElem);
       });
@@ -360,7 +363,7 @@ class Dd extends DdListeners {
       this._clone_insert(elem, wrapElement);
 
       // remove wrap element i.e. replace it with it's children
-      wrapElement.replaceWith(...wrapElement.children); // TODO
+      wrapElement.replaceWith(...wrapElement.children);
     }
 
     this._debug('ddForeach', '--------- ddForeach (end) ------', 'navy', '#B6ECFF');
