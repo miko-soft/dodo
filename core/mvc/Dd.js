@@ -300,6 +300,48 @@ class Dd extends DdCloners {
 
 
 
+  /**
+   * dd-src="<controllerProperty> [--<defaultSrc>]"
+   * Set element src attribute.
+   * The controller property value should be a string.
+   * Examples:
+   * dd-src="imageURL"
+   */
+  ddSrc() {
+    this._debug('ddSrc', '--------- ddSrc ------', 'navy', '#B6ECFF');
+
+    const attrName = 'dd-src';
+    const elems = this._listElements(attrName);
+    this._debug('ddSrc', `found elements:: ${elems.length}`, 'navy');
+
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+
+      // show element & remove style
+      elem.style.display = '';
+      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
+
+      // solve the controller property name and get the controller property value
+      let prop_solved = base.replace(/^this\./, '');
+      prop_solved = this._solveMustache(prop_solved);
+      const val = this._getControllerValue(prop_solved); // val must be array
+
+      const defaultSrc = opts[0] || '';
+      const src = val || defaultSrc;
+      elem.src = src;
+
+      this._debug('ddSrc', `dd-style="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | src:: ${src}`, 'navy');
+    }
+
+    this._debug('ddSrc', '--------- ddSrc (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
 
 
 

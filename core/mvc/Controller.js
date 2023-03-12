@@ -123,6 +123,7 @@ class Controller extends Model {
     this.ddChecked();
     this.ddClass();
     this.ddStyle();
+    this.ddSrc();
 
 
     // Render Dd non-generators.
