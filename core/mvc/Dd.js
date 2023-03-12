@@ -289,8 +289,6 @@ class Dd extends DdCloners {
         for (const styleProp of Object.keys(val_obj)) {
           elem.style[styleProp] = val_obj[styleProp];
         }
-      } else {
-        elem.removeAttribute('style');
       }
 
 
