@@ -18,6 +18,7 @@ class Dd extends DdCloners {
         'dd-show',
         'dd-disabled',
         'dd-checked',
+        'dd-class',
 
         // cloner directives
         'dd-text',
@@ -70,7 +71,7 @@ class Dd extends DdCloners {
         val = this._getControllerValue(prop_solved);
       }
 
-      this._debug('ddShow', `ddShow:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
+      this._debug('ddShow', `dd-show="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
       // hide orig element
       val ? elem.style.display = '' : elem.style.display = 'none';
@@ -120,12 +121,12 @@ class Dd extends DdCloners {
         val = this._solveExpression(expr);
       } else {
         // solve the controller property name and get the controller property value
-        prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-show="this.product_{{this.pid}}"
-        prop_solved = this._solveMustache(prop_solved); // dd-show="product_{{this.pid}}"
+        prop_solved = base.replace(/^this\./, '');
+        prop_solved = this._solveMustache(prop_solved);
         val = this._getControllerValue(prop_solved);
       }
 
-      this._debug('ddDisabled', `ddDisabled:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
+      this._debug('ddDisabled', `dd-disabled="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
       // hide orig element
       elem.disabled = val;
@@ -166,8 +167,8 @@ class Dd extends DdCloners {
       if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
 
       // solve the controller property name and get the controller property value
-      let prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-show="this.product_{{this.pid}}"
-      prop_solved = this._solveMustache(prop_solved); // dd-show="product_{{this.pid}}"
+      let prop_solved = base.replace(/^this\./, '');
+      prop_solved = this._solveMustache(prop_solved);
       const val = this._getControllerValue(prop_solved);
 
       if (val === undefined) { continue; }
@@ -190,10 +191,57 @@ class Dd extends DdCloners {
         }
       }
 
-      this._debug('ddChecked', `ddChecked:: ${prop_solved} = ${val} ; elem.value: ${elem.value} ; elem.checked: ${elem.checked}`, 'navy');
+      this._debug('ddChecked', `dd-checked="${attrVal}" :: ${base} --> ${prop_solved} = ${val} ; elem.value: ${elem.value} ; elem.checked: ${elem.checked}`, 'navy');
     }
 
     this._debug('ddChecked', '--------- ddChecked (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-class="<controllerProperty> [--replace]"
+   * Sets the "class" attribute with the controller property value.
+   * The controller property value should be an array of strings, for example: ['red-bold', 'centered-text']
+   * Examples:
+   * dd-class="myKlass"             - add new classes to existing classes
+   * dd-class="myKlass --replace"   - replace existing classes with new classes
+   */
+  ddClass() {
+    this._debug('ddClass', '--------- ddClass ------', 'navy', '#B6ECFF');
+
+    const attrName = 'dd-class';
+    const elems = this._listElements(attrName);
+    this._debug('ddClass', `found elements:: ${elems.length}`, 'navy');
+
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+
+      // show element & remove style
+      elem.style.display = '';
+      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
+
+      // solve the controller property name and get the controller property value
+      let prop_solved = base.replace(/^this\./, '');
+      prop_solved = this._solveMustache(prop_solved);
+      const val_arr = this._getControllerValue(prop_solved); // val must be array
+
+      // checks
+      if (val_arr === undefined) { continue; }
+      if (!Array.isArray(val_arr)) { console.log(`%c ddClassWarn:: The controller property "${base}" is not an array.`, `color:Maroon; background:LightYellow`); continue; }
+
+      const act = opts[0] || 'add';
+      if (act === 'replace' && !!val_arr.length) { elem.removeAttribute('class'); }
+      for (const val of val_arr) { elem.classList.add(val); }
+
+      this._debug('ddClass', `dd-class="${attrVal}" :: ${base} --> ${prop_solved} = ${val_arr} | act:: ${act}`, 'navy');
+    }
+
+    this._debug('ddClass', '--------- ddClass (end) ------', 'navy', '#B6ECFF');
   }
 
 
