@@ -55,7 +55,7 @@ class Navig {
     const ctrl_prev = this.previous.ctrl;
     if (!!ctrl_prev) {
       await ctrl_prev.__destroy(trx); // execute __destroy() defined in the previous controller
-      ctrl_prev.ddKILL(); // kill the previous controller event listeners
+      ctrl_prev.ddUNLISTEN(); // kill the previous controller event listeners
       ctrl_prev.emptyModel(); // empty the previous controller $model
 
       // purge non-standard controller properties

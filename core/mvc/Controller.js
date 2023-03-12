@@ -63,7 +63,7 @@ class Controller extends Model {
   /**
    * Main router middleware.
    * 1) __destroy() - execute the __destroy() of the previous controller
-   * 3) ddKILL() - kill the previous controller event listeners
+   * 3) ddUNLISTEN() - kill the previous controller event listeners
    * 2)  $model = {} - reset the pevious and current $model
    * @param {object} navig - navigation stages {uri:string, ctrl:Controller}
    * @param {object} trx - DoDo router transitional variable (defined in router.js -> _exe())
@@ -136,8 +136,8 @@ class Controller extends Model {
 
     await new Promise(r => setTimeout(r, renderDelay));
 
-    // Render DdListeners. First remove all listeners with the ddKILL() and after that associate listeners to dd- elements.
-    await this.ddKILL();
+    // Render DdListeners. First remove all listeners with the ddUNLISTEN() and after that associate listeners to dd- elements.
+    await this.ddUNLISTEN();
     this.ddHref();
     this.ddClick();
     // this.ddKeyup();

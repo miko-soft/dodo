@@ -17,22 +17,22 @@ class DdListeners extends Aux {
    * when controller is destroyed i.e. when URL is changed. See /core/router/Router.js
    * @returns {void}
    */
-  async ddKILL() {
-    // this._debug().ddKILL = true;
-    this._debug('ddKILL', `------- ddKILL (start) ctrl: ${this.constructor.name} -------`, 'orange', '#FFD8B6');
+  async ddUNLISTEN() {
+    // this._debug().ddUNLISTEN = true;
+    this._debug('ddUNLISTEN', `------- ddUNLISTEN (start) ctrl: ${this.constructor.name} -------`, 'orange', '#FFD8B6');
 
     const promises = [];
     let i = 1;
     for (const ddListener of this.$dd.listeners) {
       ddListener.elem.removeEventListener(ddListener.eventName, ddListener.handler);
-      this._debug('ddKILL', `${i}. killed:: ${ddListener.attrName} --- ${ddListener.eventName} --- ${ddListener.elem.localName} -- ${ddListener.elem.innerHTML} -- ctrl:: ${this.constructor.name}`, 'orange');
+      this._debug('ddUNLISTEN', `${i}. killed:: ${ddListener.attrName} --- ${ddListener.eventName} --- ${ddListener.elem.localName} -- ${ddListener.elem.innerHTML} -- ctrl:: ${this.constructor.name}`, 'orange');
       promises.push(Promise.resolve(true));
       i++;
     }
 
     await Promise.all(promises);
     this.$dd.listeners = [];
-    this._debug('ddKILL', '------- ddKILL (end) -------', 'orange', '#FFD8B6');
+    this._debug('ddUNLISTEN', '------- ddUNLISTEN (end) -------', 'orange', '#FFD8B6');
   }
 
 
@@ -42,7 +42,7 @@ class DdListeners extends Aux {
    * <a href="/product/12" dd-href>Product 12</a> - when link is hovered the URL will be shown in browser status bar
    * <a href="" dd-href="/product/12">Product 12</a>
    * Href listeners and changing URLs (browser history states).
-   * NOTICE: The click on dd-href element will destroy current controller i.e. ddKILL() will be invoked.
+   * NOTICE: The click on dd-href element will destroy current controller i.e. ddUNLISTEN() will be invoked.
    * @returns {void}
    */
   ddHref() {
