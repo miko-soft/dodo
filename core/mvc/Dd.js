@@ -19,6 +19,9 @@ class Dd extends DdCloners {
         'dd-disabled',
         'dd-checked',
         'dd-class',
+        'dd-style',
+        'dd-src',
+        'dd-attr',
 
         // cloner directives
         'dd-text',
@@ -291,7 +294,6 @@ class Dd extends DdCloners {
         }
       }
 
-
       this._debug('ddStyle', `dd-style="${attrVal}" :: ${base} --> ${prop_solved} = ${JSON.stringify(val_obj)} | act:: ${act}`, 'navy');
     }
 
@@ -339,6 +341,58 @@ class Dd extends DdCloners {
 
     this._debug('ddSrc', '--------- ddSrc (end) ------', 'navy', '#B6ECFF');
   }
+
+
+
+
+  /**
+   * dd-attr="<controllerProperty> [--attributeName]"
+   * Sets any attribute with the controller property value.
+   * The controller property value should a string.
+   * Examples:
+   * dd-attr="$model.myURL --href"     - sets href in the A tag
+   */
+  ddAttr() {
+    this._debug('ddAttr', '--------- ddAttr ------', 'navy', '#B6ECFF');
+
+    const attrName = 'dd-attr';
+    const elems = this._listElements(attrName);
+    this._debug('ddAttr', `found elements:: ${elems.length}`, 'navy');
+
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+
+      // show element & remove style
+      elem.style.display = '';
+      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
+
+      // solve the controller property name and get the controller property value
+      let prop_solved = base.replace(/^this\./, '');
+      prop_solved = this._solveMustache(prop_solved);
+      const val = this._getControllerValue(prop_solved); // val must be array
+
+      // checks
+      if (val === undefined || val === null) { continue; }
+      if (typeof val !== 'string') { console.log(`%c ddAttr Warn:: The controller property "${base}" is not a string.`, `color:Maroon; background:LightYellow`); continue; }
+
+      const attributeName = opts[0] || '';
+      if (!attributeName) { console.log(`%c ddAttr Warn:: The attribute name is not defined in dd-attr="${attrVal}"`, `color:Maroon; background:LightYellow`); continue; }
+
+      elem.setAttribute(attributeName, val);
+
+      this._debug('ddAttr', `dd-style="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | attributeName:: ${attributeName}`, 'navy');
+    }
+
+    this._debug('ddAttr', '--------- ddAttr (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+
 
 
 

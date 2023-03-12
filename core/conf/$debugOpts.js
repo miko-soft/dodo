@@ -24,6 +24,10 @@ export default {
   ddShow: false,
   ddDisabled: false,
   ddChecked: false,
+  ddClass: false,
+  ddStyle: false,
+  ddSrc: false,
+  ddAttr: false,
 
   // DdCloners.js
   ddForeach: false,

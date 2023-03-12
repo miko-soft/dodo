@@ -124,6 +124,7 @@ class Controller extends Model {
     this.ddClass();
     this.ddStyle();
     this.ddSrc();
+    this.ddAttr();
 
 
     // Render Dd non-generators.
