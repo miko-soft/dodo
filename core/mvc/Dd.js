@@ -23,7 +23,7 @@ class Dd extends DdListeners {
 
         // non-cloners
         'dd-show',
-        'dd-disable',
+        'dd-disabled',
       ]
     };
 
@@ -446,23 +446,23 @@ class Dd extends DdListeners {
   }
 
 
-
+  /******************************************************* ATTRIBUTERS *******************************************************/
   /**
-   * dd-disable="controllerProperty"  or  dd-disable="(expression)"
+   * dd-disabled="controllerProperty"  or  dd-disabled="(expression)"
    *  Disable the HTML element by setting disabled attribute.
    * Examples:
-   * dd-disable="isActive"                         - isActive is the controller property, it can also be model $model.isActive
-   * dd-disable="this.isActive"                    - this. will not cause the error
-   * dd-disable="(this.a < 5 && this.a >= 8)"      - expression
-   * dd-disable="(this.$model.name === 'John')"    - expression with model
-   * dd-disable="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   * dd-disabled="isActive"                         - isActive is the controller property, it can also be model $model.isActive
+   * dd-disabled="this.isActive"                    - this. will not cause the error
+   * dd-disabled="(this.a < 5 && this.a >= 8)"      - expression
+   * dd-disabled="(this.$model.name === 'John')"    - expression with model
+   * dd-disabled="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
    */
-  ddDisable() {
-    this._debug('ddDisable', `--------- ddDisable (start) ------`, 'navy', '#B6ECFF');
+  ddDisabled() {
+    this._debug('ddDisabled', `--------- ddDisabled (start) ------`, 'navy', '#B6ECFF');
 
-    const attrName = 'dd-disable';
+    const attrName = 'dd-disabled';
     const elems = this._listElements(attrName);
-    this._debug('ddDisable', `found elements:: ${elems.length}`, 'navy');
+    this._debug('ddDisabled', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
@@ -484,7 +484,7 @@ class Dd extends DdListeners {
         val = this._getControllerValue(prop_solved);
       }
 
-      this._debug('ddDisable', `ddDisable:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
+      this._debug('ddDisabled', `ddDisabled:: ${base} --> ${prop_solved} = ${val} ; attrVal:: ${attrVal}`, 'navy');
 
       // hide orig element
       elem.disabled = val;
@@ -494,7 +494,7 @@ class Dd extends DdListeners {
       if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
     }
 
-    this._debug('ddDisable', '--------- ddDisable (end) ------', 'navy', '#B6ECFF');
+    this._debug('ddDisabled', '--------- ddDisabled (end) ------', 'navy', '#B6ECFF');
   }
 
 

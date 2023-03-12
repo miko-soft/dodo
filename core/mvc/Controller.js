@@ -119,7 +119,7 @@ class Controller extends Model {
 
     // non-cloners
     this.ddShow();
-    this.ddDisable();
+    this.ddDisabled();
 
 
     // Render Dd non-generators.
