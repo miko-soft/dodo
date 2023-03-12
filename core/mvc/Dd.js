@@ -232,9 +232,10 @@ class Dd extends DdCloners {
 
       // checks
       if (val_arr === undefined) { continue; }
-      if (!Array.isArray(val_arr)) { console.log(`%c ddClassWarn:: The controller property "${base}" is not an array.`, `color:Maroon; background:LightYellow`); continue; }
+      if (!Array.isArray(val_arr)) { console.log(`%c ddClass Warn:: The controller property "${base}" is not an array.`, `color:Maroon; background:LightYellow`); continue; }
 
-      const act = opts[0] || 'add';
+      const act = opts[0] || '';
+
       if (act === 'replace' && !!val_arr.length) { elem.removeAttribute('class'); }
       for (const val of val_arr) { elem.classList.add(val); }
 
@@ -242,6 +243,61 @@ class Dd extends DdCloners {
     }
 
     this._debug('ddClass', '--------- ddClass (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+  /**
+   * dd-style="<controllerProperty> [--replace]"
+   * Sets the "class" attribute with the controller property value.
+   * The controller property value should be an object, for example: {'font-size': '25px'} or null.
+   * Examples:
+   * dd-style="myStyle"             - add new styles to existing styles
+   * dd-style="myStyle --replace"   - replace existing styles with new styles
+   */
+  ddStyle() {
+    this._debug('ddStyle', '--------- ddStyle ------', 'navy', '#B6ECFF');
+
+    const attrName = 'dd-style';
+    const elems = this._listElements(attrName);
+    this._debug('ddStyle', `found elements:: ${elems.length}`, 'navy');
+
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+
+      // show element & remove style
+      elem.style.display = '';
+      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
+
+      // solve the controller property name and get the controller property value
+      let prop_solved = base.replace(/^this\./, '');
+      prop_solved = this._solveMustache(prop_solved);
+      const val_obj = this._getControllerValue(prop_solved); // val must be array
+
+      // checks
+      if (val_obj === undefined) { continue; }
+      if (typeof val_obj !== 'object' || (typeof val_obj === 'object' && Array.isArray(val_obj))) { console.log(`%c ddStyle Warn:: The controller property "${base}" is not an object.`, `color:Maroon; background:LightYellow`); continue; }
+
+      const act = opts[0] || '';
+
+      if (act === 'replace') { elem.removeAttribute('style'); }
+
+      if (val_obj !== null) {
+        for (const styleProp of Object.keys(val_obj)) {
+          elem.style[styleProp] = val_obj[styleProp];
+        }
+      } else {
+        elem.removeAttribute('style');
+      }
+
+
+      this._debug('ddStyle', `dd-style="${attrVal}" :: ${base} --> ${prop_solved} = ${JSON.stringify(val_obj)} | act:: ${act}`, 'navy');
+    }
+
+    this._debug('ddStyle', '--------- ddStyle (end) ------', 'navy', '#B6ECFF');
   }
 
 

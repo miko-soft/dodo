@@ -122,6 +122,7 @@ class Controller extends Model {
     this.ddDisabled();
     this.ddChecked();
     this.ddClass();
+    this.ddStyle();
 
 
     // Render Dd non-generators.
