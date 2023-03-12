@@ -3,7 +3,7 @@ import DdCloners from './DdCloners.js';
 
 /**
  * Non-cloner dd- directives.
- * The methods are erlated on managing attributes like: disabled, src, ...
+ * The methods are mostly related on managing attributes like: disabled, src, ...
  */
 class Dd extends DdCloners {
 
@@ -14,17 +14,18 @@ class Dd extends DdCloners {
       elems: {},  // set by ddElem()
       listeners: [], // collector of the dd- listeners  [{attrName, elem, handler, eventName}]
       attributes: [
-        // cloners
+        // non-cloner directives
+        'dd-show',
+        'dd-disabled',
+        'dd-checked',
+
+        // cloner directives
         'dd-text',
         'dd-html',
         'dd-mustache',
         'dd-if', 'dd-elseif', 'dd-else',
         'dd-foreach',
-        'dd-repeat',
-
-        // non-cloners
-        'dd-show',
-        'dd-disabled',
+        'dd-repeat'
       ]
     };
 
@@ -50,10 +51,10 @@ class Dd extends DdCloners {
     this._debug('ddShow', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
+
       const attrVal = elem.getAttribute(attrName);
       const { base } = this._decomposeAttribute(attrVal);
-
-      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
 
       let val = false;
       let prop_solved = '';
@@ -82,7 +83,11 @@ class Dd extends DdCloners {
   }
 
 
-  /******************************************************* ATTRIBUTERS *******************************************************/
+
+
+  /********************************* ATTRIBUTE MANAGERS **********************************/
+  /***************************************************************************************/
+
   /**
    * dd-disabled="controllerProperty"  or  dd-disabled="(expression)"
    *  Disable the HTML element by setting disabled attribute.
@@ -101,10 +106,10 @@ class Dd extends DdCloners {
     this._debug('ddDisabled', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
+
       const attrVal = elem.getAttribute(attrName);
       const { base } = this._decomposeAttribute(attrVal);
-
-      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
 
       let val = false;
       let prop_solved = '';
@@ -132,6 +137,66 @@ class Dd extends DdCloners {
 
     this._debug('ddDisabled', '--------- ddDisabled (end) ------', 'navy', '#B6ECFF');
   }
+
+
+  /**
+   * dd-checked="<controllerProperty>"
+   * Sets the "checked" attribute with the controller property value.
+   * Use it for checkbox or radio input elements.
+   * CHECKBOX --> The controller value should be array of strings.
+   * RADIO --> The controller value should be a string.
+   * Example:
+   * dd-checked="selectedProducts"
+   */
+  ddChecked() {
+    this._debug('ddChecked', '--------- ddChecked ------', 'navy', '#B6ECFF');
+
+    const attrName = 'dd-checked';
+    const elems = this._listElements(attrName);
+    this._debug('ddChecked', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base } = this._decomposeAttribute(attrVal);
+
+      // show element & remove style
+      elem.style.display = '';
+      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+
+      if (this._hasBlockString(elem.outerHTML)) { continue; } // block rendering if the element contains $$
+
+      // solve the controller property name and get the controller property value
+      let prop_solved = base.replace(/^this\./, ''); // remove this. --> dd-show="this.product_{{this.pid}}"
+      prop_solved = this._solveMustache(prop_solved); // dd-show="product_{{this.pid}}"
+      const val = this._getControllerValue(prop_solved);
+
+      if (val === undefined) { continue; }
+
+      if (elem.type === 'checkbox') { // CHECKBOX
+        if (Array.isArray(val) && val.indexOf(elem.value) !== -1) {
+          elem.checked = true;
+          elem.setAttribute('checked', '');
+        } else {
+          elem.checked = false;
+          elem.removeAttribute('checked');
+        }
+      } else if (elem.type === 'radio') { // RADIO
+        if (val === elem.value) {
+          elem.checked = true;
+          elem.setAttribute('checked', '');
+        } else {
+          elem.checked = false;
+          elem.removeAttribute('checked');
+        }
+      }
+
+      this._debug('ddChecked', `ddChecked:: ${prop_solved} = ${val} ; elem.value: ${elem.value} ; elem.checked: ${elem.checked}`, 'navy');
+    }
+
+    this._debug('ddChecked', '--------- ddChecked (end) ------', 'navy', '#B6ECFF');
+  }
+
+
 
 
 
