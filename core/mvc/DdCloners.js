@@ -19,7 +19,7 @@ class DdCloners extends DdListeners {
   /**
    * Remove all dd-xyz-clone elements
    */
-  ddDECLONE() {
+  ddUNCLONE() {
     for (const attribute of this.$dd.attributes) {
       const dd_elems = document.querySelectorAll(`[${attribute}-clone]`);
       for (const dd_elem of dd_elems) { dd_elem.remove(); }

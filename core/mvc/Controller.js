@@ -109,7 +109,7 @@ class Controller extends Model {
     await new Promise(r => setTimeout(r, renderDelay));
 
     // Render Dd elements.
-    this.ddDECLONE();
+    this.ddUNCLONE();
     this.ddForeach();
     this.ddRepeat();
     this.ddIf();
