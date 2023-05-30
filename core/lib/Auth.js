@@ -42,7 +42,7 @@ class Auth {
       headers: {
         'authorization': '',
         'accept': '*/*', // 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'
-        'content-type': 'text/html; charset=UTF-8'
+        'content-type': 'text/html; charset=UTF-8' // in a request such as PUT or POST, you pass the Content-Type header to tell the server what type of data it is receiving
       },
       responseType: '' // 'blob' for file download (https://developer.mozillfullnamea.org/en-US/docs/Web/API/XMLHttpRequest/responseType)
     };

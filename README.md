@@ -10,19 +10,19 @@ Built in modern ES 6+ Javascript.
 
 
 ## Features
-- no npm package dependencies (build apps which will not depend on 3rd party code)
-- no typescript, no heavy compiling, no bullshit
-- create lightweight applications - small app file size (<100kB only)
+- blazing fast
+- no typescript
+- fast compiling powered by [Vite](https://vitejs.dev/)
+- create lightweight applications - small app file size
 - use import &amp; export <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules" target="_blank">ES Modules</a> to build complex apps with clear and readable code
 - Model-View-Controller (MVC), intuitive app structure
 - easy to learn and easy to use
-- create very fast applications with reactive features
-- shorten your development time rapidly
-- steep learning curve (you'll reach high programming skills very fast)
+- create reactive web pages and apps
+- be more productive
 
 
 ## Libraries
-The framework contains many pre-built libraries:
+The framework contains a pre-built libraries:
 - Auth - authentication, route guards (protect routes from unauthorized access)
 - BrowserStorage
 - Cookie
@@ -41,7 +41,7 @@ The framework contains many pre-built libraries:
 
 ## Installation
 ```bash
-$ npm install @mikosoft/dodo
+$ npm install --save @mikosoft/dodo
 ```
 
 
@@ -49,7 +49,7 @@ $ npm install @mikosoft/dodo
 *How to start a new project in DoDo framework ?*
 Very simple. Just run the command and the boilerplate code will be installed.
 ```bash
-$ npm init dodo "yourProjectName"
+$ npm init dodo
 ```
 
 
@@ -61,7 +61,7 @@ $ npm init dodo "yourProjectName"
 import { App, corelib } from '@mikosoft/dodo';
 
 // conf
-import { $debugOpts, $viewsCached, $auth, $httpClient } from './app/conf/index.js';
+import { $debugOpts, $auth, $httpClient } from './app/conf/index.js';
 
 
 // controllers
@@ -79,9 +79,8 @@ const $routes = [
 
 
 // app
-const app = new App();
+const app = new App('myApplication);
 app
-  .viewsCached($viewsCached)
   .auth($auth)
   .httpClient($httpClient)
   .debug($debugOpts);

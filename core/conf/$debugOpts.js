@@ -10,9 +10,8 @@ const $debugOpts = {
 
   // View.js
   loadView: false,
-  emptyView: false,
+  unloadView: false,
   ddLazyjs: false,
-  loadHead: false,
 
   // Dd.js
   ddSetinitial: false,

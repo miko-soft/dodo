@@ -181,20 +181,6 @@ class App extends Router {
 
 
 
-  /*============================== GLOBAL CONSTANTS ==============================*/
-  /**
-   * Inject cached views i.e. HTML contents (strings) converted to JSON.
-   * Useful to speed up the HTML view load time.
-   * @param {object} $viewsCached - HTML content as JS object: {'inc/footer.html':'<b>footer<b>', ...}
-   * @return {App}
-  */
-  viewsCached($viewsCached) {
-    window[this.$appName].$viewsCached = $viewsCached;
-    return this;
-  }
-
-
-
   /*============================== PRIVATES ==============================*/
   /**
    * 1) Assign defined controller constants to all controllers.

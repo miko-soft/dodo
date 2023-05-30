@@ -21,8 +21,7 @@ class HTTPClient {
         maxRedirects: 3,
         headers: {
           'authorization': '',
-          'accept': '*/*', // 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'
-          'content-type': 'text/html; charset=UTF-8'
+          'accept': '*/*' // 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'
         }
       };
     } else {
@@ -253,8 +252,8 @@ class HTTPClient {
 
     // JSON request headers
     this.setReqHeaders({
-      'content-type': 'application/json; charset=utf-8',
-      'accept': 'application/json'
+      'accept': 'application/json',
+      'content-type': 'application/json; charset=utf-8'
     });
 
     const answer = await this.askOnce(url, method, body_obj);
@@ -281,8 +280,8 @@ class HTTPClient {
    */
   async askHTML(url) {
     this.setReqHeaders({
-      'content-type': 'text/html',
-      'accept': 'text/html'
+      'accept': 'text/html',
+      'content-type': 'text/html'
     });
     const answer = await this.askOnce(url, 'GET');
     return answer;
@@ -297,8 +296,8 @@ class HTTPClient {
    */
   async askJS(url) {
     this.setReqHeaders({
-      'content-type': 'application/javascript; charset=utf-8',
-      'accept': 'application/javascript'
+      'accept': 'application/javascript',
+      'content-type': 'application/javascript; charset=utf-8'
     });
     const answer = await this.askOnce(url, 'GET');
     return answer;
@@ -321,8 +320,8 @@ class HTTPClient {
   async sendFormData(url, formData) {
     // content-type should be removed for multipart/form-data as defined at https://fetch.spec.whatwg.org/#typedefdef-xmlhttprequestbodyinit
     this.setReqHeaders({
-      'content-type': `multipart/form-data`,
-      'accept': '*/*'
+      'accept': '*/*',
+      'content-type': `multipart/form-data`
     });
     this.delReqHeaders(['content-type']);
 
