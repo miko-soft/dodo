@@ -94,8 +94,6 @@ class Controller extends Model {
   async render(renderDelay = 5) {
     this._debug('render', `--------- render (start) -- ctrl: ${this.constructor.name} -- renderDelay: ${renderDelay}  ------`, 'green', '#D9FC9B');
 
-    await new Promise(r => setTimeout(r, renderDelay));
-
     // DdCloners.js
     this.ddUNCLONE();
     this.ddForeach();

@@ -39,6 +39,8 @@ class Navig {
     const ctrl_prev = this.previous.ctrl;
     if (!ctrl_prev) { return; }
 
+    await ctrl_prev.__destroy(); // execute __destroy() defined in the previous controller
+
     ctrl_prev.ddUNLISTEN(); // kill the previous controller event listeners
     ctrl_prev.emptyModel(); // empty the previous controller $model
 
@@ -64,7 +66,6 @@ class Navig {
       }
     }
 
-    await ctrl_prev.__destroy(); // execute __destroy() defined in the previous controller
   }
 
 

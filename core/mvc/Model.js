@@ -18,10 +18,10 @@ class Model extends View {
   proxifyModel() {
     const trapHandler = {
       set: (obj, modelName, modelValue) => {
+        if (this.$debugOpts.model) { console.log(`DEBUG: Model set trigered. this.$model.${modelName} = `, modelValue); }
         const tf = Reflect.set(obj, modelName, modelValue); // set obj.modelName = modelValue i.e. this.$model.modelName = modelValue
         this.$dd.__initFinished && this.render(); // prevent $model rendering in __init()
         eventEmitter.emit('model-change', { modelName, modelValue });
-        if (this.$debugOpts.model) { console.log(`DEBUG: Model set trigered. this.$model.${modelName} = `, modelValue); }
         return tf;
       }
     };
