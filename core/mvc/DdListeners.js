@@ -33,7 +33,7 @@ class DdListeners extends Aux {
 
 
   /**
-   * dd-href
+   * dd-href  |  dd-href="<url>"
    *  Href listeners and changing URLs (browser history states).
    *  NOTICE: The click on dd-href element will destroy current controller i.e. ddUNLISTEN() will be invoked.
    * Examples:
@@ -75,7 +75,7 @@ class DdListeners extends Aux {
 
   /**
    * dd-set="controllerProperty [--convertType]"
-   *  Get the value from elements like INPUT, SELECT, TEXTAREA, .... when value is chnaged ("input" event) and set the controller property i.e. $model.
+   *  Get the value from the form elements like INPUT, SELECT, TEXTAREA and when value is changed ("input" event) set the controller property i.e. $model.
    * Examples:
    *  <input dd-set="myPet">
    *  <select dd-set="$model.age --convertType">
@@ -179,6 +179,7 @@ class DdListeners extends Aux {
    *  Option --preventDefault is usually used to block link to be opened.
    * Examples:
    *  <button dd-click="myFunc()">CLICK ME</button>
+   *  <button button dd-click="(alert('some alert'))">ALERT ME</button>
    */
   ddClick() {
     this._debug('ddClick', '--------- ddClick ------', 'orange', '#F4EA9E');
@@ -209,7 +210,7 @@ class DdListeners extends Aux {
 
   /**
    * dd-keyup="<controllerMethod | expression> [--keyCode]"
-   *  Parse the "dd-keyup" attribute. Listen for the keyup event on certain element and execute the controller method.
+   *  Parse the "dd-keyup" attribute. Listen for the keyup event on certain element and execute the controller method or expression.
    * Examples:
    *  <input type="text" dd-keyup="myFunc()"> - it will execute myFunc on every key
    *  <input type="text" dd-keyup="myFunc() --enter"> - it will execute myFunc on Enter
@@ -244,7 +245,7 @@ class DdListeners extends Aux {
 
   /**
    * dd-change="<controllerMethod | expression>"
-   *  Listen for change and execute the controller method.
+   *  Listen for HTML element value change (HTML form elements) and execute the controller method or expression.
    * Examples:
    *  <select dd-change="myFunc()">
    */
@@ -278,7 +279,7 @@ class DdListeners extends Aux {
   *  Listen for specific event and execute the controller method or JS expression.
   *  A complex event executions can be made by chaining multiple commands.
   * Example:
-  *  dd-evt="mouseenter -- myFunc($element, $event, 25, 'some text')"  - $element and $event are the DOM objects of the dd-evt element
+  *  dd-evt="myFunc($element, $event, 25, 'some text') --mouseenter"  - $element and $event are the DOM objects of the dd-evt element
   * @returns {void}
   */
   ddEvt() {

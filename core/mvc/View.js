@@ -152,7 +152,6 @@ class View extends Dd {
    * <script src="..." dd-lazyjs>
    * Parse the "dd-lazyjs" attribute.
    * Reload all SCRIPT elements with dd-lazyjs attribute. Remove all SCRIPT tags with the dd-lazyjs attributes and immediatelly reload them.
-   * @returns {Promise<void>}
    */
   ddLazyjs() {
     this._debug('ddLazyjs', '--------- ddLazyjs ------', 'navy', '#B6ECFF');
@@ -178,8 +177,8 @@ class View extends Dd {
 
 
   /**
-   * Fetch js script content and evaluate it. The <script> tag will not be created like it is in loadJS().
-   * This can work only for local files from the /public/ folder due to CORS.
+   * Wrap JS content in the async function and execute it. The <script> tag will not be created like it is in loadJS().
+   * NOTICE: the content can be fetched from local files (usually from /public/ folder) due to CORS.
    * @param {string} jsContent - the content of the JS file. Use raw vite option: import jsContent from '/public/test.js?raw'
    */
   async exeJS(jsContent = '') {

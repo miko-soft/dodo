@@ -343,7 +343,7 @@ class Dd extends DdCloners {
 
   /**
    * dd-style="controllerProperty [--replace]" | dd-style="(expression) [--replace]"
-   *  Sets the "class" attribute with the controller property value.
+   *  Sets the "style" attribute with the controller property value.
    *  The controller property value should be an object, for example: {'font-size': '25px'}
    * Examples:
    * dd-style="myStyle"             - add new styles to existing styles

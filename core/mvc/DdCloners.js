@@ -126,8 +126,7 @@ class DdCloners extends DdListeners {
 
   /**
    * dd-if="controllerProperty" | dd-if="(expression)"
-   *  Show or hide the HTML element by setting display:none.
-   *  The expression must be encolsed in round brackets.
+   *  Create a cloned element when the controllerProperty or expression has truthy value.
    * Examples:
    * dd-if="myBool" ; dd-else
    * dd-if="(this.x > 5)" ; dd-elseif="(this.x <= 5)" ; dd-else
@@ -282,7 +281,7 @@ class DdCloners extends DdListeners {
   /**
    * dd-mustache
    *  Solve mustaches in the element's innerHTML.
-   *  The mustache can contain only controller property {{this.$model.name}} or expression like {{this.id + 1}}.
+   *  The mustache can contain standalone controller property {{this.$model.name}} or expression {{this.id + 1}}. The this. must be used.
    */
   ddMustache() {
     this._debug('ddMustache', `--------- ddMustache(start)------`, 'navy', '#B6ECFF');
