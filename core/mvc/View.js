@@ -324,6 +324,17 @@ class View extends Dd {
   }
 
 
+  /**
+   * Fetch text from language file and set the this.$model.$i18n variable. The language file is in the /i18n/ folder.
+   * @param {string} langCode - 'en' | 'fr' | 'de' | ...
+   */
+  loadI18n(langCode) {
+    const langObj = window[this.$appName].i18n[langCode];
+    if (!langObj) { throw new Error(`The language "${langCode}" is not defined. Please create languagge files in i18n/${langCode} folder.`); }
+    this.$model.$i18n = langObj;
+  }
+
+
 
 
   /***** PRIVATES *****/

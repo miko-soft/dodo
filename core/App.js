@@ -8,7 +8,7 @@ class App extends Router {
     super();
 
     this.$appName = appName || 'dodoApp';
-    window[this.$appName] = {}; // window.dodoApp
+    window[this.$appName] = { i18n: {} }; // window.dodoApp
 
     this.$debugOpts = {};
 
@@ -74,6 +74,40 @@ class App extends Router {
     this.$debugOpts = $debugOpts;
     this.ctrlConstants.$debugOpts = this.$debugOpts;
     return this;
+  }
+
+
+
+  /**
+   * Set the global, window i18n property.
+   * Object i18n can be loaded from database, files, browser storage or some other sources.
+   * If input argument "i18n" is undefined the Vite Glob Import https://vitejs.dev/guide/features.html will be used by default.
+   * @param {object} i18n - object with language translations, for example {de: {common: {USERNAME: 'Nutzername'}, home: {TITLE: 'Startseite', LOGIN: 'Anmeldung'}}}
+   */
+  async i18n(i18n) {
+    if (!i18n) {
+      const modules = await import.meta.glob('/i18n/**/*.json');
+
+      i18n = {};
+
+      for (const path in modules) { // path: /i18n/en/home.json
+        const module = await modules[path]();
+        const path_parts = path.split('/');
+        const lang = path_parts[2];
+        const jsonFile = path_parts[3].replace('.json', '');
+
+        if (!i18n[lang]) {
+          i18n[lang] = {};
+          i18n[lang][jsonFile] = module;
+        } else {
+          i18n[lang][jsonFile] = module;
+        }
+
+      }
+
+    }
+
+    window[this.$appName].i18n = i18n;
   }
 
 
