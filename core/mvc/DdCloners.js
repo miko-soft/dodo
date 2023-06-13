@@ -280,7 +280,7 @@ class DdCloners extends DdListeners {
 
   /**
    * dd-mustache
-   *  Solve mustaches in the element's innerHTML.
+   *  Solve mustaches in the element's innerHTML and attributes.
    *  The mustache can contain standalone controller property {{this.$model.name}} or expression {{this.id + 1}}. The this. must be used.
    */
   ddMustache() {
@@ -293,13 +293,20 @@ class DdCloners extends DdListeners {
     for (const elem of elems) {
       const innerHTML = elem.innerHTML;
       const innerHTML_solved = this._solveMustache(innerHTML);
-      this._debug('ddMustache', `ddMustache:: ${innerHTML} --> ${innerHTML_solved} `, 'navy');
+      this._debug('ddMustache', `ddMustache-innerHTML:: ${innerHTML} --> ${innerHTML_solved} `, 'navy');
 
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName);
       if (this._hasAnyOfClonerDirectives(clonedElem)) { continue; }
       clonedElem.innerHTML = innerHTML_solved;
       this._clone_insert(elem, clonedElem);
+
+      // solve mustache in attributes
+      for (const attribute of clonedElem.attributes) {
+        attribute.value = this._solveMustache(attribute.value);
+      }
+
+      this._debug('ddMustache', `ddMustache-outerHTML:: ${clonedElem.outerHTML}`, 'navy');
     }
 
     this._debug('ddMustache', '--------- ddMustache (end) ------', 'navy', '#B6ECFF');
