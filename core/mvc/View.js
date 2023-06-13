@@ -325,7 +325,9 @@ class View extends Dd {
 
 
   /**
-   * Fetch text from language file and set the this.$model.$i18n variable. The language file is in the /i18n/ folder.
+   * Fetch text from language file and set the this.$model.$i18n variable.
+   * The language file is in the /i18n/ folder.
+   * To set the window[this.$appName].i18n the App.i18n() method is used.
    * @param {string} langCode - 'en' | 'fr' | 'de' | ...
    */
   loadI18n(langCode) {

@@ -80,7 +80,7 @@ class App extends Router {
 
   /**
    * Set the global, window i18n property.
-   * Object i18n can be loaded from database, files, browser storage or some other sources.
+   * Language object can be loaded from database, files, browser storage or some other sources.
    * If input argument "i18n" is undefined the Vite Glob Import https://vitejs.dev/guide/features.html will be used by default.
    * @param {object} i18n - object with language translations, for example {de: {common: {USERNAME: 'Nutzername'}, home: {TITLE: 'Startseite', LOGIN: 'Anmeldung'}}}
    */
