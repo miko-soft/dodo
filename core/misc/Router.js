@@ -119,13 +119,13 @@ class Router {
       const routeParsed = this._routeParser(routeDef_found.route); // {full, segments, base}
       trx.query = uriParsed.queryObject;
       trx.params = !!routeParsed ? this._getParams(routeParsed.full, uriParsed.path) : {};
-      for (const func of routeDef_found.funcs) { await func(trx); }
+      for (const func of routeDef_found.funcs) { this._isFunction(func); await func(trx); }
     } else if (!!routeDef_notfound) {
-      for (const func of routeDef_notfound.funcs) { await func(trx); }
+      for (const func of routeDef_notfound.funcs) { this._isFunction(func); await func(trx); }
     }
 
     if (!!routeDef_do && !!routeDef_do.funcs && !!routeDef_do.funcs.length) {
-      for (const func of routeDef_do.funcs) { await func(trx); }
+      for (const func of routeDef_do.funcs) { this._isFunction(func); await func(trx); }
     }
 
     const end = new Date();
@@ -306,6 +306,15 @@ class Router {
     });
 
     return params;
+  }
+
+
+  /**
+   * Check if route middleware is function.
+   * @param {any} func
+   */
+  _isFunction(func) {
+    if (typeof func !== 'function') { throw new Error(`ERR_Router:: The func parameter with value "${func}" is not a function`); }
   }
 
 
