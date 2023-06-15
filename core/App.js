@@ -10,7 +10,9 @@ class App extends Router {
     this.$appName = appName || 'dodoApp';
     window[this.$appName] = { i18n: {} }; // window.dodoApp
 
-    this.$debugOpts = {};
+    this.$debugOpts = {}; // select what debugger messages to show
+    this.$preflight = []; // array of preflight functions, will be executed on every route before the controller's __loader()
+    this.$postflight = []; // array of postflight functions, will be executed on every route ater the controller's __postrend()
 
     this.ctrls = {}; // { HomeCtrl: {}, Page1Ctrl: {}, ...}
     this.ctrlConstants = { $appName: this.$appName, $fridge: {} }; // {$appName, $fridge, $httpClient, $auth, $debugOpts,   $model, $modeler,   $dd}
@@ -77,6 +79,32 @@ class App extends Router {
   }
 
 
+  /*============================== MISC ==============================*/
+  /**
+   * Setup the preflight functions which will be executed before controller __loader() hook.
+   * @param {Function[]} $preflight - array of functions
+   * @return {App}
+   */
+  preflight($preflight) {
+    if (!Array.isArray($preflight)) { throw new Error('The $preflight is not array'); }
+    for (const func of $preflight) { if (typeof func !== 'function') { throw new Error(`The $preflight func "${func}" is not a function`); } }
+    this.$preflight = $preflight;
+    return this;
+  }
+
+
+  /**
+   * Setup the postflight functions which will be executed after controller __postrend() hook.
+   * @param {Function[]} $postflight - array of functions
+   * @return {App}
+   */
+  postflight($postflight) {
+    if (!Array.isArray($postflight)) { throw new Error('The $postflight is not array'); }
+    for (const func of $postflight) { if (typeof func !== 'function') { throw new Error(`The $postflight func "${func}" is not a function`); } }
+    this.$postflight = $postflight;
+    return this;
+  }
+
 
   /**
    * Set the global, window i18n property.
@@ -137,9 +165,11 @@ class App extends Router {
         /* route middlewares */
         const navigMdw = navig.navigMdw.bind(navig, ctrl);
         const authGuards = routeOpts.authGuards || [];
+        const preflight = this.$preflight;
         const controllerMdw = ctrl.controllerMdw.bind(ctrl);
+        const postflight = this.$postflight;
 
-        this.when(route, ...authGuards, navigMdw, controllerMdw);
+        this.when(route, ...authGuards, navigMdw, ...preflight, controllerMdw, ...postflight);
 
 
       } else if (cmd === 'notfound') {
