@@ -508,10 +508,19 @@ class Aux {
     try {
       if (/\./.test(funcName)) {
         // execute the function in the controller property, for example: this.print.inConsole = () => {...}
-        const propSplitted = funcName.split('.'); // ['print', 'inConsole']
+        let propSplitted = funcName.split('.') || []; // ['print', 'inConsole']
+        propSplitted = propSplitted.filter(prop => prop !== 'this'); // remove this keyword
+
         let func = this;
-        for (const prop of propSplitted) { func = func[prop]; }
+        let bindObj;
+        for (const prop of propSplitted) {
+          func = func[prop];
+          if (typeof func === 'object') { bindObj = func; }
+        }
+        func = func.bind(bindObj); // bind the function to corresponding object, for example: $auth.logout() bind to $auth
+
         await func(...funcArgs);
+
       } else {
         // execute the controller method
         if (!this[funcName]) { throw new Error(`Method "${funcName}" is not defined in the "${this.constructor.name}" controller.`); }
