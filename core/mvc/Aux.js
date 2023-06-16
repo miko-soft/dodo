@@ -391,9 +391,10 @@ class Aux {
     const matches2 = text.match(reg2) || [];
 
     const reg3 = new RegExp(`\\$\\$${doubleDollarName}`, 'g'); // $$company  or  $$customer  (no nested double dollar)
-    const matches3 = (matches1 && matches1.length) || (matches2 && matches2.length) ? [] : text.match(reg3) || [];
+    const matches3 = text.match(reg3) || [];
 
-    const matches = [...matches1, ...matches2, ...matches3]; // ['$$val1.name', '$$val1.size', '$$val1.size'] --> $$val1.size found two time in the text
+    // remove duplicates with Set()
+    const matches = new Set([...matches1, ...matches2, ...matches3,]); // ['$$val1', '$$val1.name', '$$val1.size', '$$val1.size'] --> $$val1.size found two time in the text
 
     /*
     console.log('----------------------------------------');
@@ -406,13 +407,20 @@ class Aux {
     console.log('matches::', matches);
     */
 
-    // solve dollar value and replace it in the text
+    // solve doubledollar value and replace it in the text
     for (const m of matches) {
       const func = new Function(`$$${doubleDollarName}`, `return ${m};`); // function ($$val1) { return $$val1.name; }
-      const solvedValue = func(doubleDollarValue);
-      // console.log('matched::', m, `-- doubleDollarName:: $$${doubleDollarName}`, '--> solvedValue::', solvedValue);
+      let solvedValue = func(doubleDollarValue);
+      // console.log('\nmatch::', m, `-- doubleDollarName:: $$${doubleDollarName}`, '--> solvedValue::', solvedValue);
       if (solvedValue === undefined) { continue; }
-      text = text.replace(m, solvedValue);
+
+      solvedValue = this._val2str(solvedValue); // convert any value to string
+
+      const m_fixed = m.replace(/\$/g, '\\$').replace(/\./g, '\\.'); // $$val1 -> \\$\\$val1 or $$val.name -> \\$\\$val\.name
+      const m_reg = new RegExp(`${m_fixed}(?!\\.)`, 'g'); // (?!\\.) is negative lookahead -> don't match string which has . at the end, for example $$val. --> /\$\$val(?!\.)/g  or  /\$\$val\.name(?!\.)/g
+      // console.log('found for replacement:', m_reg, ' --- ', text.match(m_reg));
+      text = text.replace(m_reg, solvedValue);
+      // console.log('text::', text);
     }
 
     // console.log('text-after', text);
