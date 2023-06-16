@@ -12,6 +12,7 @@ class Controller extends Model {
 
   constructor() {
     super();
+    this.__initFinished = false; // is __init() lifecycle hook executed
   }
 
 
@@ -29,7 +30,7 @@ class Controller extends Model {
     try { await this.__loader(trx); } catch (err) { console.error(err); }
     this.ddSetinitial(); // parse dd-setinitial
     try { await this.__init(trx); } catch (err) { console.error(err); }
-    this.$dd.__initFinished = true;
+    this.__initFinished = true;
     try { await this.__rend(trx); } catch (err) { console.error(err); }
     try { await this.__postrend(trx); } catch (err) { console.error(err); }
 

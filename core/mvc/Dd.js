@@ -11,7 +11,6 @@ class Dd extends DdCloners {
     super();
 
     this.$dd = {
-      __initFinished: false, // is __init() lifecycle hook executed
       elems: {},  // set by ddElem()
       listeners: [], // collector of the dd- listeners  [{attrName, elem, handler, eventName}]
       noncloner_directives: [

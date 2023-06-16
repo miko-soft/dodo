@@ -44,15 +44,15 @@ class Navig {
     ctrl_prev.ddUNLISTEN(); // kill the previous controller event listeners
     ctrl_prev.emptyModel(); // empty the previous controller $model
 
-    // purge non-standard controller properties
+    // purge non-standard controller properties i.e. proprties without $ prefix
     const ctrlProps = Object.keys(ctrl_prev);
     for (const ctrlProp of ctrlProps) {
       if (
         // App.js
         ctrlProp !== '$appName' &&
+        ctrlProp !== '$auth' &&
         ctrlProp !== '$fridge' &&
         ctrlProp !== '$httpClient' &&
-        ctrlProp !== '$auth' &&
         ctrlProp !== '$debugOpts' &&
 
         // Model.js
@@ -65,6 +65,11 @@ class Navig {
         delete ctrl_prev[ctrlProp];
       }
     }
+
+    // purge standard sub-properties
+    ctrl_prev.$dd.elems = {};
+    ctrl_prev.$dd.listeners = [];
+    ctrl_prev.$model = {};
 
   }
 
