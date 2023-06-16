@@ -16,7 +16,7 @@ class Aux {
       const val = func();
       return val;
     } catch (err) {
-      console.error(`_getControllerValue (${prop})`, err);
+      console.warn(`_getControllerValue (${prop})`, err);
     }
 
   }
