@@ -376,56 +376,56 @@ class Aux {
 
 
   /**
-   * Find double dollar annotation in the text and replace it with the real value.
-   * @param {string} text - HTML text which contains double dollar
-   * @param {string} doubleDollarName - name of the $$, for example if doubleDollarName is 'val1' then it's $$val1 in the HTML text
-   * @param {any} doubleDollarValue - the value which will replace $$val1
-   * @returns {string}
+   * Solve template literals and its string interpolations.
+   * For example if the outerHtml is <b>${val.name}</b> it will be solved as <b>Marko</b>.
+   * @param {string} text - text with string interpolations ${...}
+   * @param {object} interpolations - values for string interpolations ${val} ${key} --> for example: {val: {name: 'Marko', age:21}, key: 1}
+   * @param {string} interpolationMark - marks to determine which interpolations should be solved. For example if interpolator is $1 it will solve only $1{...} in the text
    */
-  _solveDoubleDollar(text = '', doubleDollarName, doubleDollarValue) {
-    // find double dollar expressions in the text, for example: $$customer.name or $$company.employer.last_name  or  $$company.$$field
-    const reg1 = new RegExp(`\\$\\$${doubleDollarName}(\\.[a-zA-Z0-9\\_\\$]+)+`, 'g'); // $$company.$$field   (nested double dollar whose value is string)
-    const matches1 = text.match(reg1) || [];
+  _solveTemplateLiteral(text = '', interpolations = {}, interpolationMark = '') {
+    let func_body = '';
+    const args = [];
+    const vals = [];
+    for (const arr of Object.entries(interpolations)) {
+      const k = arr[0]; // 'val'  or  'key'
 
-    const reg2 = new RegExp(`\\$\\$${doubleDollarName}(\\[\\'[a-zA-Z0-9\\_\\.\\$]+\\'\\])+`, 'g'); // $$company['$$field']  or  $$company['$$field.prop']  (nested double dollar whose value is object)
-    const matches2 = text.match(reg2) || [];
+      let v = arr[1]; // {name: 'Marko', age:21}  or  1
 
-    const reg3 = new RegExp(`\\$\\$${doubleDollarName}`, 'g'); // $$company  or  $$customer  (no nested double dollar)
-    const matches3 = text.match(reg3) || [];
+      if (typeof v === 'string') {
+        func_body += `${k} = '${v}';\n`;
+      } else {
+        v = this._val2str(v);
+        func_body += `${k} = ${v};\n`;
+      }
 
-    // remove duplicates with Set()
-    const matches = new Set([...matches1, ...matches2, ...matches3,]); // ['$$val1', '$$val1.name', '$$val1.size', '$$val1.size'] --> $$val1.size found two time in the text
-
-    /*
-    console.log('----------------------------------------');
-    console.log('text-before', text);
-    console.log('doubleDollarName::', typeof doubleDollarName, doubleDollarName);
-    console.log('doubleDollarValue::', doubleDollarValue);
-    console.log('matches1::', matches1);
-    console.log('matches2::', matches2);
-    console.log('matches3::', matches3);
-    console.log('matches::', matches);
-    */
-
-    // solve doubledollar value and replace it in the text
-    for (const m of matches) {
-      const func = new Function(`$$${doubleDollarName}`, `return ${m};`); // function ($$val1) { return $$val1.name; }
-      let solvedValue = func(doubleDollarValue);
-      // console.log('\nmatch::', m, `-- doubleDollarName:: $$${doubleDollarName}`, '--> solvedValue::', solvedValue);
-      if (solvedValue === undefined) { continue; }
-
-      solvedValue = this._val2str(solvedValue); // convert any value to string
-
-      const m_fixed = m.replace(/\$/g, '\\$').replace(/\./g, '\\.'); // $$val1 -> \\$\\$val1 or $$val.name -> \\$\\$val\.name
-      const m_reg = new RegExp(`${m_fixed}(?!\\.)`, 'g'); // (?!\\.) is negative lookahead -> don't match string which has . at the end, for example $$val. --> /\$\$val(?!\.)/g  or  /\$\$val\.name(?!\.)/g
-      // console.log('found for replacement:', m_reg, ' --- ', text.match(m_reg));
-      text = text.replace(m_reg, solvedValue);
-      // console.log('text::', text);
+      args.push(k);
+      vals.push(v);
     }
 
-    // console.log('text-after', text);
+    // replace interpolator with pure dollar: $1 -> $
+    if (!!interpolationMark) {
+      interpolationMark = interpolationMark.replace(/\$/g, '\\$');
+      const interpolator_reg = new RegExp(interpolationMark, 'g');
+      text = text.replace(interpolator_reg, '$');
+    }
 
-    return text;
+
+    const textWithBackticks = '`' + text + '`';
+
+    func_body += `
+    const txt = ${textWithBackticks};
+    return txt;
+    `;
+
+    try {
+      let func = new Function(...args, func_body);
+      func = func.bind(this);
+      text = func(...vals);
+    } catch (err) {
+      console.error(`_solveTemplateLiteral: \n-------\n${func_body}\n-------\n`, err);
+    }
+
+    return text; // text with solved string interpolations ${}
   }
 
 
@@ -656,7 +656,7 @@ class Aux {
    */
   _val2str(val) {
     if (typeof val === 'string') { val = val; }
-    else if (typeof val === 'number') { val = +val; }
+    else if (typeof val === 'number') { val = val.toString(); }
     else if (typeof val === 'boolean') { val = val.toString(); }
     else if (typeof val === 'object') { val = JSON.stringify(val); }
     else { val = val; }

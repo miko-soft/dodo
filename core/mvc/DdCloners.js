@@ -54,19 +54,29 @@ class DdCloners extends DdListeners {
 
       // get forEach callback value and key name from opts, for example: --val,key --> ['val', 'key']
       if (!opts || (!!opts && !opts.length)) { this._printError(`dd-foreach="${attrVal}" -> The option --val,key is not written`); continue; }
-      const [valOpt, keyOpt] = opts[0].split(',').map(v => v.trim()); // ['val', 'key']
+      const [valName, keyName] = opts[0].split(',').map(v => v.trim()); // ['val', 'key']
 
-      val.forEach((arrElemVal, arrElemKey) => {
+      // interpolation mark, for example --$0 will solve only $0{...}
+      const interpolationMark = opts[1]; // $1
+
+
+      val.forEach((valValue, keyValue) => {
         // define cloned element
         const clonedElem = this._clone_define(elem, attrName);
 
+        // remove dd-foreach and other dd_cloner elements from cloned element (the case when dd-foreach elements are nested)
+        for (const cloner_directive of this.$dd.cloner_directives) {
+          const nestedDdForeachElem = clonedElem.querySelector(`[${cloner_directive}]`);
+          !!nestedDdForeachElem && nestedDdForeachElem.remove();
+        }
+
         if (this._hasAnyOfClonerDirectives(clonedElem)) { clonedElem.style.display = 'none'; }
 
-        // solve double dollars in the cloned element
+        // solve template literals in the cloned element
         let outerhtml = clonedElem.outerHTML.replace(/\n\s/g, '').trim();
         this._debug('ddForeach', `- ddForeach:: outerhtml - before:: ${outerhtml}`, 'navy');
-        if (valOpt !== undefined) { outerhtml = this._solveDoubleDollar(outerhtml, valOpt, arrElemVal); } // solve $$val
-        if (keyOpt !== undefined) { outerhtml = this._solveDoubleDollar(outerhtml, keyOpt, arrElemKey); } // solve $$key
+        const interpolations = !!keyName ? { [valName]: valValue, [keyName]: keyValue } : { [valName]: valValue }; // {val: {name: 'Marko', age:21}, key: 1}
+        outerhtml = this._solveTemplateLiteral(outerhtml, interpolations, interpolationMark);
         this._debug('ddForeach', `- ddForeach:: outerhtml - after:: ${outerhtml}\n`, 'navy');
 
         elem.insertAdjacentHTML('beforebegin', outerhtml); // insert new elements above elem
