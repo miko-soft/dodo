@@ -164,7 +164,7 @@ class View extends Dd {
       const url = elem.getAttribute('src');
       const isModule = elem.getAttribute('type') === 'module';
       const isDefer = elem.hasAttribute('defer');
-      const isLazy = elem.hasAttribute('dd-lazy');
+      const isLazy = elem.hasAttribute('dd-lazyjs');
       const opts = { isModule, isDefer, isLazy };
 
       this.unloadJS(url);

@@ -194,11 +194,11 @@ class DdCloners extends DdListeners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddText', `dd-text="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      // don't render elements with undefined controller's value
-      if (val === undefined || val === null) { elem.textContent = ''; continue; }
-
       // don't render elements with string interpolation in the base
       if (this._hasBlockString(base, '${')) { continue; }
+
+      // don't render elements with undefined controller's value
+      if (val === undefined || val === null) { elem.textContent = ''; continue; }
 
       // convert controller val to string
       let val_str = this._val2str(val);
@@ -249,6 +249,9 @@ class DdCloners extends DdListeners {
       const { base, opts } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddHtml', `dd-html="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+
+      // don't render elements with string interpolation in the base
+      if (this._hasBlockString(base, '${')) { continue; }
 
       // don't render elements with undefined controller's value
       if (val === undefined || val === null) { elem.textContent = ''; continue; }
@@ -308,6 +311,9 @@ class DdCloners extends DdListeners {
       const innerHTML = elem.innerHTML;
       const innerHTML_solved = this._solveMustache(innerHTML);
       this._debug('ddMustache', `ddMustache-innerHTML:: ${innerHTML} --> ${innerHTML_solved} `, 'navy');
+
+      // don't render elements with string interpolation in the base
+      if (this._hasBlockString(base, '${')) { continue; }
 
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName);
