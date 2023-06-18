@@ -64,11 +64,9 @@ class DdCloners extends DdListeners {
         // define cloned element
         const clonedElem = this._clone_define(elem, attrName);
 
-        // remove dd-foreach and other dd_cloner elements from cloned element (the case when dd-foreach elements are nested)
-        for (const cloner_directive of this.$dd.cloner_directives) {
-          const nestedDdForeachElem = clonedElem.querySelector(`[${cloner_directive}]`);
-          !!nestedDdForeachElem && nestedDdForeachElem.remove();
-        }
+        // remove dd-foreach element from cloned element (the case when dd-foreach elements are nested)
+        const nestedDdForeachElem = clonedElem.querySelector(`[dd-foreach]`);
+        !!nestedDdForeachElem && nestedDdForeachElem.remove();
 
         if (this._hasAnyOfClonerDirectives(clonedElem)) { clonedElem.style.display = 'none'; }
 
@@ -199,6 +197,9 @@ class DdCloners extends DdListeners {
       // don't render elements with undefined controller's value
       if (val === undefined || val === null) { elem.textContent = ''; continue; }
 
+      // don't render elements with string interpolation in the base
+      if (this._hasBlockString(base, '${')) { continue; }
+
       // convert controller val to string
       let val_str = this._val2str(val);
 
@@ -208,7 +209,6 @@ class DdCloners extends DdListeners {
 
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName);
-      if (this._hasBlockString(base)) { continue; }
       this._clone_insert(elem, clonedElem);
 
       // load content in the element

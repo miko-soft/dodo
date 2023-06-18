@@ -326,6 +326,35 @@ class Aux {
 
   /***** SOLVERS *****/
   /**
+   * Solve the JS expression. For example:
+   * @param {string} expr - the JS expression
+   * @returns {string}
+   */
+  _solveExpression(expr) {
+    if (/\$\{.+\}/.test(expr)) { return expr; } // cases with ${} in the expression, for example: {{${x} + 1}}
+
+    let func;
+    try {
+      func = new Function(`const exprResult = ${expr}; return exprResult;`);
+      func = func.bind(this);
+    } catch (err) {
+      console.error(`Error in expression definition "${expr}"`, err);
+    }
+
+    let exprResult;
+    try {
+      exprResult = func();
+    } catch (err) {
+      console.error(`Error in expression execution "${expr}"`, err);
+    }
+
+    exprResult = exprResult === undefined || exprResult === null || exprResult === NaN ? '' : exprResult;
+
+    return exprResult;
+  }
+
+
+  /**
    * Find {{...}} mustaches in the txt and replace it with the real value. The real value is solution of JS expression like: '2+4' or 'this.$model.n + 1'.
    * @param {string} txt - text with mustache, for example: '$model.company{{this.n + 1}}' or $model.company{{'something'.slice(0,1)}}
    * @returns {string}
@@ -345,33 +374,6 @@ class Aux {
     }
 
     return txt;
-  }
-
-
-  /**
-   * Solve the JS expression. For example:
-   * @param {string} expr - the JS expression
-   * @returns {string}
-   */
-  _solveExpression(expr) {
-    let func;
-    try {
-      func = new Function(`const exprResult = ${expr}; return exprResult;`);
-      func = func.bind(this);
-    } catch (err) {
-      console.error(`Error in expression definition "${expr}"`, err);
-    }
-
-    let exprResult;
-    try {
-      exprResult = func();
-    } catch (err) {
-      console.error(`Error in expression execution "${expr}"`, err);
-    }
-
-    exprResult = exprResult === undefined || exprResult === null || exprResult === NaN ? '' : exprResult;
-
-    return exprResult;
   }
 
 
@@ -595,13 +597,13 @@ class Aux {
   /***** MISC *****/
   /**
    * Check if the text has substring which will block rendering.
-   * The text can have HTML tags. In most cases the block string is doubledollar $$.
+   * The text can have HTML tags. In most cases the block string is string interpolation ${.
    * This method should block rendering of the $$ variables in the dd-foreach orig element. The $$ variables in cloned dd-foreach element will be solved by _solveDoubleDollar()
    * @param {string} text - the text which is under test
    * @param {string} blockString - the string which will block the rendering, usually '$$'
    * @returns {boolean}
    */
-  _hasBlockString(text, blockString = '$$') {
+  _hasBlockString(text, blockString = '${') {
     return text.includes(blockString);
   }
 

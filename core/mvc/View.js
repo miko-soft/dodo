@@ -332,7 +332,7 @@ class View extends Dd {
    */
   loadI18n(langCode) {
     const langObj = window[this.$appName].i18n[langCode];
-    if (!langObj) { throw new Error(`The language "${langCode}" is not defined. Please create languagge files in i18n/${langCode} folder.`); }
+    if (!langObj) { throw new Error(`The language "${langCode}" is not defined. Please create language files in i18n/${langCode} folder.`); }
     this.$model.$i18n = langObj;
   }
 
