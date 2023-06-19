@@ -135,6 +135,7 @@ class DdCloners extends DdListeners {
   /**
    * dd-if="controllerProperty" | dd-if="(expression)"
    *  Create a cloned element when the controllerProperty or expression has truthy value.
+   *  The term "if group" means a group of dd-fi, dd-elseif and dd-else elements. Usually a group should be wraped in HTML tag so it is separated from another group, but that's not obligatory.
    * Examples:
    * dd-if="myBool" ; dd-else
    * dd-if="(this.x > 5)" ; dd-elseif="(this.x <= 5)" ; dd-else
@@ -147,23 +148,27 @@ class DdCloners extends DdListeners {
     this._debug('ddIf', `found elements:: ${elems.length} `, 'navy');
 
     for (const elem of elems) {
-      const siblings = this._getSiblings(elem, ['dd-if', 'dd-elseif', 'dd-else']); // get siblings of dd-if (dd-if included)
+      const ifGroupElems = this._getSiblings(elem, ['dd-if', 'dd-elseif', 'dd-else']); // get siblings of dd-if, dd-elseif and dd-else
 
-      for (const sibling of siblings) {
-        const clonedElem = this._clone_define(sibling, attrName);
+      this._debug().ddIf && console.log('\n\n--if group--');
 
-        // clone orig element (if sibling is dd-else)
-        if (sibling.hasAttribute('dd-else')) { this._clone_insert(sibling, clonedElem); break; }
+      for (const ifGroupElem of ifGroupElems) {
+        const clonedElem = this._clone_define(ifGroupElem, attrName);
 
-        const attrVal = sibling.getAttribute('dd-if') || sibling.getAttribute('dd-elseif') || sibling.getAttribute('dd-else');
-        if (!attrVal) { console.error('No dd-if, dd-elseif nor dd-else attribute in the sibling:', sibling); break; }
+        const attrVal = ifGroupElem.getAttribute('dd-if') || ifGroupElem.getAttribute('dd-elseif') || ifGroupElem.getAttribute('dd-else');
         const { base } = this._decomposeAttribute(attrVal);
-        const { val, prop_solved } = this._solveBase(base);
-        this._debug('ddIf', `dd-if="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+        const { val } = this._solveBase(base);
 
-        // clone orig element (if val is truthy)
-        if (!!val) { this._clone_insert(sibling, clonedElem); break; }
+        this._debug().ddIf && console.log(ifGroupElem.outerHTML, val);
+
+        // clone orig element (when val is truthy or when dd-else is reached)
+        if (!!val || ifGroupElem.hasAttribute('dd-else')) {
+          this._clone_insert(ifGroupElems[ifGroupElems.length - 1], clonedElem); // clone at the end of if group
+          break;
+        }
       }
+
+      this._debug().ddIf && console.log('----------');
 
     }
 

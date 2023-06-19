@@ -94,7 +94,7 @@ class Aux {
 
   /**
    * List siblings of the elem with specific attributes (attrNames). The elem is included in the list;
-   * @param {HTMLElement} elem - element for which we are searching siblings
+   * @param {HTMLElement} elem - element for which we are searching siblings, usually dd-if element
    * @param {string[]} attrNames - attribute names: ['dd-if', 'dd-elseif', 'dd-else']
    * @returns
    */
@@ -102,17 +102,25 @@ class Aux {
     const siblings = [];
     if (!elem.parentNode) { return siblings; } // if no parent, return no sibling
     let sibling = elem.parentNode.firstChild; // first child of the parent node
+
+    let search = false;
     while (sibling) {
-      if (sibling.nodeType === 1) {
+      if (sibling === elem) { search = true; } // start to search when sibling is elem, i.e. dd-if element
+
+      if (search && sibling.nodeType === 1) {
         for (const attrName of attrNames) {
           if (sibling.hasAttribute(attrName)) {
             siblings.push(sibling);
           }
-        }
+        } // \for
 
+        if (search && sibling.hasAttribute(attrNames[attrNames.length - 1])) { search = false; break; } // stop search when last attrName is reached, i.e. when dd-else is reached
       }
+
       sibling = sibling.nextSibling;
-    }
+
+    } // \while
+
     return siblings;
   }
 
@@ -443,12 +451,12 @@ class Aux {
       // solve the expression (this.product_{{this.pid}}.name + ' -prod')
       prop_solved = this._solveMustache(base);
       const expr = prop_solved;
-      val = this._hasBlockString(expr) ? '' : this._solveExpression(expr);
+      val = !expr || this._hasBlockString(expr) ? '' : this._solveExpression(expr);
     } else {
       // solve the controller property name and get the controller property value
       prop_solved = base.replace(/^this\./, ''); // this.product_{{this.pid}} -> product_{{this.pid}}
       prop_solved = this._solveMustache(prop_solved); // product_{{this.pid}} -> product_2
-      val = this._hasBlockString(prop_solved) ? '' : this._getControllerValue(prop_solved);
+      val = !prop_solved || this._hasBlockString(prop_solved) ? '' : this._getControllerValue(prop_solved);
     }
     return { val, prop_solved };
   }
