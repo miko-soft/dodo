@@ -412,7 +412,7 @@ class Aux {
       vals.push(v);
     }
 
-    // replace interpolator with pure dollar: $1 -> $
+    // replace interpolation mark with pure dollar: $1 -> $
     if (!!interpolationMark) {
       interpolationMark = interpolationMark.replace(/\$/g, '\\$');
       const interpolator_reg = new RegExp(interpolationMark, 'g');
@@ -432,7 +432,9 @@ class Aux {
       func = func.bind(this);
       text = func(...vals);
     } catch (err) {
-      console.error(`_solveTemplateLiteral: \n-------\n${func_body}\n-------\n`, err);
+      // console.error(`_solveTemplateLiteral: \n-------\n${func_body}\n-------\n`, err);
+      const interpolations = text.match(/\$\{[^\}]+\}/g);
+      throw new Error(`_solveTemplateLiteral:: Probably error in one of the string interpolations: ${interpolations}`, err);
     }
 
     return text; // text with solved string interpolations ${}
