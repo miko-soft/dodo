@@ -105,7 +105,11 @@ class Aux {
 
     let search = false;
     while (sibling) {
-      if (sibling === elem) { search = true; } // start to search when sibling is elem, i.e. dd-if element
+      // start to search when sibling is elem, i.e. dd-if element
+      if (sibling === elem) { search = true; }
+
+      // stop on next first attrName, for example on next dd-if
+      if (search && sibling !== elem && sibling.nodeType === 1 && sibling.hasAttribute(attrNames[0])) { search = false; break; }
 
       if (search && sibling.nodeType === 1) {
         for (const attrName of attrNames) {
@@ -114,7 +118,11 @@ class Aux {
           }
         } // \for
 
-        if (search && sibling.hasAttribute(attrNames[attrNames.length - 1])) { search = false; break; } // stop search when last attrName is reached, i.e. when dd-else is reached
+        // stop search when last attrName is reached, i.e. when dd-else is reached
+        if (search && sibling.hasAttribute(attrNames[attrNames.length - 1])) {
+          search = false;
+          break;
+        }
       }
 
       sibling = sibling.nextSibling;
@@ -497,8 +505,8 @@ class Aux {
           arg = new RegExp(mat[1], mat[2]);
         }
         else if (/^\$model\./.test(arg)) { // model: func($model.cars)
-          const mprop = arg.replace(/^\$model\./, ''); // remove $model.
-          const val = this._getModelValue(mprop);
+          const prop = arg;
+          const val = this._getControllerValue(prop);
           arg = val;
         }
         else if (/^this\./.test(arg)) { // if contain this. i.e. controller property: func(this.pets)
