@@ -25,6 +25,15 @@ class DdCloners extends DdListeners {
 
 
   /**
+   * Remove all dd-aid attributes from the document.
+   */
+  ddUNAID() {
+    this._aidRemoveAll(document);
+  }
+
+
+
+  /**
    * dd-foreach="controllerProperty --val,key" | dd-foreach="(expression) [--val,key]"
    *  Multiply element based on controllerProperty (or expression) which is an array.
    * Examples:
@@ -46,41 +55,40 @@ class DdCloners extends DdListeners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
-      if (this.$debugOpts.ddForeach) { console.log(`ddForeach:: attrVal:: ${attrVal} , base:: ${base} , prop_solved:: ${prop_solved} -->`, val); }
+      this.$debugOpts.ddForeach && console.log(`ddForeach:: attrVal:: ${attrVal} , base:: ${base} , prop_solved:: ${prop_solved} -->`, val);
 
-      // check if the val is array or if the val is empty array
+      // set --blockrender option and block rendering of dd- elements which are inside dd-foreach because only dd- elements inside dd-foreach-clone should be rendered
+      this._setBlockrender(elem);
+
+      // prechecks
       if (!Array.isArray(val)) { this._printWarn(`dd-foreach="${attrVal}" -> The value is not array. Value is: ${JSON.stringify(val)}`); continue; }
       if (!val.length) { continue; }
-
-      // get forEach callback value and key name from opts, for example: --val,key --> ['val', 'key']
       if (!opts || (!!opts && !opts.length)) { this._printError(`dd-foreach="${attrVal}" -> The option --val,key is not written`); continue; }
+
+      // get forEach callback argument names from opts, for example: --val,key --> ['val', 'key']
       const [valName, keyName] = opts[0].split(',').map(v => v.trim()); // ['val', 'key']
 
       // interpolation mark, for example --$0 will solve only $0{...}
       const interpolationMark = opts[1]; // $1
 
+      // define cloned element
+      const clonedElem = this._clone_define(elem, attrName);
 
+      // hide cloned element if it has another cloner directive in same element, for example <p dd-foreach="numbers --num" dd-if="(${num} > 5)">
+      if (this._hasAnyOfClonerDirectives(clonedElem)) { clonedElem.style.display = 'none'; }
+
+      // solve template literals in the cloned element and insert cloned elements in the document
       val.forEach((valValue, keyValue) => {
-        // define cloned element
-        const clonedElem = this._clone_define(elem, attrName);
-
-        // remove dd-foreach element from cloned element (the case when dd-foreach elements are nested)
-        const nestedDdForeachElem = clonedElem.querySelector(`[dd-foreach]`);
-        !!nestedDdForeachElem && nestedDdForeachElem.remove();
-
-        if (this._hasAnyOfClonerDirectives(clonedElem)) { clonedElem.style.display = 'none'; }
-
-        // solve template literals in the cloned element
         let outerhtml = clonedElem.outerHTML.replace(/\n\s/g, '').trim();
         this._debug('ddForeach', `- ddForeach:: outerhtml - before:: ${outerhtml}`, 'navy');
         const interpolations = !!keyName ? { [valName]: valValue, [keyName]: keyValue } : { [valName]: valValue }; // {val: {name: 'Marko', age:21}, key: 1}
         outerhtml = this._solveTemplateLiteral(outerhtml, interpolations, interpolationMark);
         this._debug('ddForeach', `- ddForeach:: outerhtml - after:: ${outerhtml}\n`, 'navy');
-
         elem.insertAdjacentHTML('beforebegin', outerhtml); // insert new elements above elem
-
-        clonedElem.remove(); // remove cloned element
       });
+
+      // remove cloned element to free up memory
+      clonedElem.remove();
 
     }
 
@@ -317,8 +325,6 @@ class DdCloners extends DdListeners {
       const innerHTML_solved = this._solveMustache(innerHTML);
       this._debug('ddMustache', `ddMustache-innerHTML:: ${innerHTML} --> ${innerHTML_solved} `, 'navy');
 
-      // don't render elements with string interpolation in the base
-      if (this._hasBlockString(base, '${')) { continue; }
 
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName);

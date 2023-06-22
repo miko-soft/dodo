@@ -56,8 +56,6 @@ class Dd extends DdCloners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
 
-      if (this._hasBlockString(base, '${')) { continue; }
-
       // show element & remove style
       elem.style.display = '';
       if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
@@ -130,8 +128,6 @@ class Dd extends DdCloners {
       const isVisibility = !!opts && !!opts[0] && opts[0] === 'visibility';
       this._debug('ddShow', `dd-show="${attrVal}" :: ${base} --> ${prop_solved} = ${val} , isVisibility:${isVisibility}`, 'navy');
 
-      if (this._hasBlockString(base, '${')) { continue; }
-
       // hide original element
       if (isVisibility) {
         elem.style.display = '';
@@ -174,8 +170,6 @@ class Dd extends DdCloners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddValue', `dd-value="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      if (this._hasBlockString(base, '${')) { continue; }
-
       if (val === undefined || val === null) { continue; } // don't render elements with undefined controller's value
       this._setElementValue(elem, val); // set value attribute and DOM property
     }
@@ -207,8 +201,6 @@ class Dd extends DdCloners {
       const { base } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddDisabled', `dd-disabled="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
-
-      if (this._hasBlockString(base, '${')) { continue; }
 
       // hide orig element
       elem.disabled = !!val;
@@ -243,7 +235,6 @@ class Dd extends DdCloners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddChecked', `dd-checked="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      if (this._hasBlockString(base, '${')) { continue; }
       if (val === undefined) { continue; }
 
       if (elem.type === 'checkbox') { // CHECKBOX
@@ -296,7 +287,6 @@ class Dd extends DdCloners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddSelected', `dd-selected="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      if (this._hasBlockString(base, '${')) { continue; }
       if (val === undefined) { continue; }
 
       if (elem.type === 'select-multiple') { // SELECT-MULTIPLE
@@ -335,7 +325,6 @@ class Dd extends DdCloners {
       const act = opts && opts[0] ? opts[0] : '';
       this._debug('ddClass', `dd-class="${attrVal}" :: ${base} --> ${prop_solved} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
 
-      if (this._hasBlockString(base, '${')) { continue; }
       if (val === undefined) { continue; }
       if (!Array.isArray(val)) { this._printWarn(`dd-class="${attrVal}" -> The value is not array.`); continue; }
 
@@ -373,7 +362,6 @@ class Dd extends DdCloners {
       const act = opts[0] || '';
       this._debug('ddStyle', `dd-style="${attrVal}" :: ${base} --> ${prop_solved} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
 
-      if (this._hasBlockString(base, '${')) { continue; }
       if (val === undefined) { continue; }
       if (typeof val !== 'object' || (typeof val === 'object' && Array.isArray(val))) { this._printWarn(`dd-style="${attrVal}" -> The value is not object.`); continue; }
 
@@ -412,8 +400,6 @@ class Dd extends DdCloners {
       const defaultSrc = opts[0] || '';
       this._debug('ddSrc', `dd-src="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | defaultSrc:: ${defaultSrc}`, 'navy');
 
-      if (this._hasBlockString(base, '${')) { continue; }
-
       const src = val || defaultSrc;
       elem.src = src;
     }
@@ -444,7 +430,6 @@ class Dd extends DdCloners {
       const attributeName = opts[0] || '';
       this._debug('ddSrc', `dd-src="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | attributeName:: ${attributeName}`, 'navy');
 
-      if (this._hasBlockString(base, '${')) { continue; }
       if (val === undefined || val === null) { continue; }
       if (typeof val !== 'string') { this._printWarn(`dd-attr="${attrVal}" -> The value is not string.`); continue; }
       if (!attributeName) { this._printWarn(`dd-attr="${attrVal}" -> The attribute name is not defined in option.`); continue; }
