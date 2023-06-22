@@ -60,6 +60,9 @@ class DdCloners extends DdListeners {
       // set --blockrender option and block rendering of dd- elements which are inside dd-foreach because only dd- elements inside dd-foreach-clone should be rendered
       this._setBlockrender(elem);
 
+      // hide orig element
+      this._elemHide(elem);
+
       // prechecks
       if (!Array.isArray(val)) { this._printWarn(`dd-foreach="${attrVal}" -> The value is not array. Value is: ${JSON.stringify(val)}`); continue; }
       if (!val.length) { continue; }
@@ -80,9 +83,6 @@ class DdCloners extends DdListeners {
       // remove dd-foreach element from cloned element (the case when dd-foreach elements are nested)
       const nestedDdForeachElem = clonedElem.querySelector(`[dd-foreach]`);
       !!nestedDdForeachElem && nestedDdForeachElem.remove();
-
-      // hide cloned element if it has another cloner directive in same element, for example <p dd-foreach="numbers --num" dd-if="(${num} > 5)">
-      if (this._hasAnyOfClonerDirectives(clonedElem)) { clonedElem.style.display = 'none'; }
 
       // solve template literals in the cloned element and insert cloned elements in the document
       val.forEach((valValue, keyValue) => {
@@ -137,7 +137,6 @@ class DdCloners extends DdListeners {
       // clone orig element
       for (let i = 1; i <= val_num; i++) {
         const clonedElem = this._clone_define(elem, attrName);
-        if (this._hasAnyOfClonerDirectives(clonedElem)) { clonedElem.style.display = 'none'; }
         this._clone_insert(elem, clonedElem);
       }
     }
@@ -168,19 +167,29 @@ class DdCloners extends DdListeners {
       this._debug().ddIf && console.log('\n\n--if group--');
 
       for (const ifGroupElem of ifGroupElems) {
-        const clonedElem = this._clone_define(ifGroupElem, attrName);
-
         const attrVal = ifGroupElem.getAttribute('dd-if') || ifGroupElem.getAttribute('dd-elseif') || ifGroupElem.getAttribute('dd-else');
         const { base } = this._decomposeAttribute(attrVal);
         const { val } = this._solveBase(base);
+
+        // set --blockrender option and block rendering of dd- elements which are inside dd-if because only dd- elements inside dd-if-clone should be rendered
+        this._setBlockrender(ifGroupElem);
+
+        // hide orig element
+        this._elemHide(ifGroupElem);
 
         this._debug().ddIf && console.log(ifGroupElem.outerHTML, val);
 
         // clone orig element (when val is truthy or when dd-else is reached)
         if (!!val || ifGroupElem.hasAttribute('dd-else')) {
+          const clonedElem = this._clone_define(ifGroupElem, attrName);
+
+          // remove --blockrender from cloned element (and its childrens) because it needs to be rendered
+          this._delBlockrender(clonedElem);
+
           this._clone_insert(ifGroupElems[ifGroupElems.length - 1], clonedElem); // clone at the end of if group
           break;
         }
+
       }
 
       this._debug().ddIf && console.log('----------');
@@ -214,11 +223,8 @@ class DdCloners extends DdListeners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddText', `dd-text="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      // don't render elements with string interpolation in the base
-      if (this._hasBlockString(base, '${')) { continue; }
-
       // don't render elements with undefined controller's value
-      if (val === undefined || val === null) { elem.textContent = ''; continue; }
+      if (val === undefined || val === null) { continue; }
 
       // convert controller val to string
       let val_str = this._val2str(val);
@@ -227,8 +233,15 @@ class DdCloners extends DdListeners {
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
       if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
 
+      // set --blockrender option and block rendering of dd- elements which are inside dd-text because only dd- elements inside dd-text-clone should be rendered
+      this._setBlockrender(elem);
+
+      // hide orig element
+      this._elemHide(elem);
+
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName);
+      this._delBlockrender(clonedElem); // remove --blockrender from cloned element (and its childrens) because it needs to be rendered
       this._clone_insert(elem, clonedElem);
 
       // load content in the element
@@ -330,6 +343,9 @@ class DdCloners extends DdListeners {
 
       // set --blockrender option and block rendering of dd- elements which are inside dd-mustache because only dd- elements inside dd-mustache-clone should be rendered
       this._setBlockrender(elem);
+
+      // hide orig element
+      this._elemHide(elem);
 
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName);

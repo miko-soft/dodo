@@ -351,7 +351,7 @@ class View extends Dd {
 
     for (const cloner_directive of this.$dd.cloner_directives) {
       const dd_elems = wrapper.querySelectorAll(`[${cloner_directive}]`);
-      for (const dd_elem of dd_elems) { dd_elem.style.display = 'none'; }
+      for (const dd_elem of dd_elems) { this._elemHide(dd_elem); }
     }
 
     const htmlString2 = wrapper.innerHTML; // modified htmlString

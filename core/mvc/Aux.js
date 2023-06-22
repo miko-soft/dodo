@@ -103,10 +103,29 @@ class Aux {
 
 
   /**
+   * Show DOM element.
+   * @param {HTMLElement} elem
+   */
+  _elemShow(elem) {
+    elem.style.display = '';
+    if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+  }
+
+
+  /**
+   * Hide DOM element.
+   * @param {HTMLElement} elem
+   */
+  _elemHide(elem) {
+    elem.style.display = 'none';
+    if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+  }
+
+
+  /**
    * List siblings of the elem with specific attributes (attrNames). The elem is included in the list;
    * @param {HTMLElement} elem - element for which we are searching siblings, usually dd-if element
    * @param {string[]} attrNames - attribute names: ['dd-if', 'dd-elseif', 'dd-else']
-   * @returns
    */
   _getSiblings(elem, attrNames) {
     const siblings = [];
@@ -171,9 +190,8 @@ class Aux {
     clonedElem.removeAttribute(attrName);
     clonedElem.setAttribute(`${attrName}-clone`, '');
 
-    // redefine style attribute
-    clonedElem.style.display = '';
-    if (!clonedElem.getAttribute('style')) { clonedElem.removeAttribute('style'); }
+    // show cloned element
+    this._elemShow(clonedElem);
 
     return clonedElem;
   }

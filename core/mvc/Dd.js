@@ -57,8 +57,7 @@ class Dd extends DdCloners {
       const { base, opts } = this._decomposeAttribute(attrVal);
 
       // show element & remove style
-      elem.style.display = '';
-      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+      this._elemShow(elem);
 
       // solve the controller property name and get the controller property value
       let prop_solved = base.replace(/^this\./, '');
