@@ -329,10 +329,9 @@ class DdCloners extends DdListeners {
 
 
   /**
-   * dd-mustache | dd-mustache="--selfremove"
+   * dd-mustache
    *  Solve mustaches in the element's innerHTML and attributes.
    *  The mustache can contain standalone controller property {{this.$model.name}} or expression {{this.id + 1}}. The this. must be used.
-   *  The option --selfremove will remove original dd-mustache element. It's useful when dd-mustache is used inside dd-foreach because dd-foreach-clone shouldn't contain dd-mustache elements.
    */
   ddMustache() {
     this._debug('ddMustache', `--------- ddMustache(start)------`, 'navy', '#B6ECFF');
@@ -366,11 +365,14 @@ class DdCloners extends DdListeners {
 
       if (this._hasAnyOfClonerDirectives(clonedElem)) { continue; }
 
+      // insert cloned element in document
       clonedElem.innerHTML = innerHTML_solved;
       this._clone_insert(elem, clonedElem);
 
-
-      if (opts.includes('selfremove')) { elem.remove(); }
+      // remove element if it's created with dd-foreach, dd-repeat or other cloner directive
+      for (const cloner_directive of this.$dd.cloner_directives) {
+        if (elem.hasAttribute(`${cloner_directive}-clone`)) { elem.remove(); }
+      }
 
       this._debug('ddMustache', `ddMustache-outerHTML:: ${clonedElem.outerHTML}`, 'navy');
     }
