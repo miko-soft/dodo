@@ -315,9 +315,9 @@ class DdCloners extends DdListeners {
         siblingElem.setAttribute('dd-html-clone', '');
         clonedElem.parentNode.insertBefore(siblingElem, clonedElem.nextSibling);
       } else if (opts.includes('prepend')) {
-        clonedElem.innerHTML = val_str + ' ' + clonedElem.innerHTML; // take controller value and prepend it to element value
+        clonedElem.innerHTML = val_str + clonedElem.innerHTML; // take controller value and prepend it to element value
       } else if (opts.includes('append')) {
-        clonedElem.innerHTML = clonedElem.innerHTML + ' ' + val_str; // take controller value and append it to element value
+        clonedElem.innerHTML = clonedElem.innerHTML + val_str; // take controller value and append it to element value
       } else {
         clonedElem.innerHTML = val_str; // inner is default
       }
