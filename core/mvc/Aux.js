@@ -175,16 +175,6 @@ class Aux {
     clonedElem.style.display = '';
     if (!clonedElem.getAttribute('style')) { clonedElem.removeAttribute('style'); }
 
-    // remove --blockrender in dd-aid attribute (so it can be rendered)
-    this._aidDelOption(clonedElem, '--blockrender');
-
-    // remove clonedElem childrens with --blockrender because they will not be rendered and in dd-foreach cases contains ${...}
-    const clonedElem_kids = clonedElem.querySelectorAll('[dd-aid]');
-    for (const clonedElem_kid of clonedElem_kids) {
-      const attrVal = clonedElem_kid.getAttribute('dd-aid');
-      attrVal.includes('--blockrender') && clonedElem_kid.remove();
-    }
-
     return clonedElem;
   }
 
@@ -378,6 +368,23 @@ class Aux {
   }
 
 
+  /**
+   * Remove --blockrender option from element and it's all dd- childrens.
+   * @param {HTMLElement} elem
+   */
+  _delBlockrender(elem) {
+    this._aidDelOption(elem, '--blockrender');
+
+    const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
+    directives.forEach(directive => {
+      const ddElems = elem.querySelectorAll(`[${directive}]`);
+      ddElems.forEach(ddElem => {
+        this._aidDelOption(ddElem, '--blockrender');
+      });
+    });
+  }
+
+
 
 
 
@@ -423,7 +430,7 @@ class Aux {
 
     for (const mustacheExpression of mustacheExpressions) {
       const expr = mustacheExpression.replace(openingChar, '').replace(closingChar, '').trim();
-      let exprResult = this._solveExpression(expr);
+      let exprResult = this._hasBlockString(expr, '${') ? expr : this._solveExpression(expr);
       exprResult = exprResult.toString();
       txt = txt.replace(mustacheExpression, exprResult);
     }

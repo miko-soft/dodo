@@ -74,6 +74,13 @@ class DdCloners extends DdListeners {
       // define cloned element
       const clonedElem = this._clone_define(elem, attrName);
 
+      // remove --blockrender from cloned element (and its childrens) because it needs to be rendered
+      this._delBlockrender(clonedElem);
+
+      // remove dd-foreach element from cloned element (the case when dd-foreach elements are nested)
+      const nestedDdForeachElem = clonedElem.querySelector(`[dd-foreach]`);
+      !!nestedDdForeachElem && nestedDdForeachElem.remove();
+
       // hide cloned element if it has another cloner directive in same element, for example <p dd-foreach="numbers --num" dd-if="(${num} > 5)">
       if (this._hasAnyOfClonerDirectives(clonedElem)) { clonedElem.style.display = 'none'; }
 
@@ -321,21 +328,27 @@ class DdCloners extends DdListeners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
 
-      const innerHTML = elem.innerHTML;
-      const innerHTML_solved = this._solveMustache(innerHTML);
-      this._debug('ddMustache', `ddMustache-innerHTML:: ${innerHTML} --> ${innerHTML_solved} `, 'navy');
-
+      // set --blockrender option and block rendering of dd- elements which are inside dd-mustache because only dd- elements inside dd-mustache-clone should be rendered
+      this._setBlockrender(elem);
 
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName);
-      if (this._hasAnyOfClonerDirectives(clonedElem)) { continue; }
-      clonedElem.innerHTML = innerHTML_solved;
-      this._clone_insert(elem, clonedElem);
+
+      // solve mustache in inner html
+      const innerHTML = clonedElem.innerHTML;
+      const innerHTML_solved = this._solveMustache(innerHTML);
+      this._debug('ddMustache', `ddMustache-innerHTML:: ${innerHTML} --> ${innerHTML_solved} `, 'navy');
 
       // solve mustache in attributes
       for (const attribute of clonedElem.attributes) {
         attribute.value = this._solveMustache(attribute.value);
       }
+
+      if (this._hasAnyOfClonerDirectives(clonedElem)) { continue; }
+
+      clonedElem.innerHTML = innerHTML_solved;
+      this._clone_insert(elem, clonedElem);
+
 
       if (opts.includes('selfremove')) { elem.remove(); }
 
