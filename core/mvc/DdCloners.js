@@ -283,11 +283,8 @@ class DdCloners extends DdListeners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddHtml', `dd-html="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      // don't render elements with string interpolation in the base
-      if (this._hasBlockString(base, '${')) { continue; }
-
       // don't render elements with undefined controller's value
-      if (val === undefined || val === null) { elem.textContent = ''; continue; }
+      if (val === undefined || val === null) { continue; }
 
       // convert controller val to string
       let val_str = this._val2str(val);
@@ -296,8 +293,15 @@ class DdCloners extends DdListeners {
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
       if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
 
+      // set --blockrender option and block rendering of dd- elements which are inside dd-text because only dd- elements inside dd-text-clone should be rendered
+      this._setBlockrender(elem);
+
+      // hide orig element
+      this._elemHide(elem);
+
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName);
+      this._delBlockrender(clonedElem); // remove --blockrender from cloned element (and its childrens) because it needs to be rendered
       this._clone_insert(elem, clonedElem);
 
       // load content in the element
