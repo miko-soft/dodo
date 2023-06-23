@@ -99,9 +99,9 @@ class View extends Dd {
   /**
    * Create <script> tags at the end of body and execute it.
    * @param {string} url - JS script URL, https://code.jquery.com/jquery-3.7.0.min.js
-   * @param {object} opts - options {isModule:boolean, isDefer:boolean, isLazy:boolean}
+   * @param {object} attrOpts - attribute options {isModule:boolean, isDefer:boolean, isLazy:boolean}
    */
-  loadJS(url, opts = {}) {
+  loadJS(url, attrOpts = {}) {
     // remove the SCRIPT if already exists
     this.unloadJS(url);
 
@@ -110,9 +110,9 @@ class View extends Dd {
     script.type = 'text/javascript';
     script.src = url;
 
-    if (opts.isModule) { script.setAttribute('type', 'module'); }
-    if (opts.isDefer) { script.defer = true; }
-    if (opts.isLazy) { script.setAttribute('dd-lazyjs', ''); }
+    if (attrOpts.isModule) { script.setAttribute('type', 'module'); }
+    if (attrOpts.isDefer) { script.defer = true; }
+    if (attrOpts.isLazy) { script.setAttribute('dd-lazyjs', ''); }
 
     document.body.appendChild(script);
   }
@@ -132,13 +132,13 @@ class View extends Dd {
 
   /**
    * Remove all SCRIPT tags.
-   * @param {object} opts - options {isModule:boolean, isDefer:boolean, isLazy:boolean}
+   * @param {object} attrOpts - attribute options {isModule:boolean, isDefer:boolean, isLazy:boolean}
    */
-  unloadAllJS(opts = {}) {
+  unloadAllJS(attrOpts = {}) {
     let css_selector = 'script';
-    if (opts.isModule) { css_selector += '[type="module"]'; }
-    if (opts.isDefer) { css_selector += '[defer]'; }
-    if (opts.isLazy) { css_selector += '[dd-lazyjs]'; }
+    if (attrOpts.isModule) { css_selector += '[type="module"]'; }
+    if (attrOpts.isDefer) { css_selector += '[defer]'; }
+    if (attrOpts.isLazy) { css_selector += '[dd-lazyjs]'; }
 
     const elems = document.querySelectorAll(css_selector) || [];
 
@@ -148,29 +148,42 @@ class View extends Dd {
   }
 
 
-  /** EXPERIMENTAL
-   * <script src="..." dd-lazyjs>
-   * Parse the "dd-lazyjs" attribute.
+  /**
+   * Parse the "dd-lazyjs" attribute after __loader() or after __rend() controller hook.
    * Reload all SCRIPT elements with dd-lazyjs attribute. Remove all SCRIPT tags with the dd-lazyjs attributes and immediatelly reload them.
-   */
-  ddLazyjs() {
-    this._debug('ddLazyjs', '--------- ddLazyjs ------', 'navy', '#B6ECFF');
-
+   * Examples:
+   * <script src="..." dd-lazyjs>   -- default is --after_loader
+   * <script src="..." dd-lazyjs="">   -- default is --after_loader
+   * <script src="..." dd-lazyjs="--after__loader">
+   * <script src="..." dd-lazyjs="--after__rend">
+   *
+   * @param {string} afterOption - --after__loader , --after__rend
+  */
+  ddLazyjs(afterOption) {
     const attrName = 'dd-lazyjs';
     const elems = this._listElements(attrName);
-    this._debug('ddLazyjs', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { opts } = this._decomposeAttribute(attrVal);
+
+      let afterOption_fromAttribute = opts[0];
+      if (!afterOption_fromAttribute) { afterOption_fromAttribute = 'after__loader'; }
+
+      if (afterOption_fromAttribute !== afterOption) { return; }
+
+      this._debug('ddLazyjs', `--------- ddLazyjs (${afterOption}) ------`, 'navy', '#B6ECFF');
+
       const url = elem.getAttribute('src');
       const isModule = elem.getAttribute('type') === 'module';
       const isDefer = elem.hasAttribute('defer');
       const isLazy = elem.hasAttribute('dd-lazyjs');
-      const opts = { isModule, isDefer, isLazy };
+      const attrOpts = { isModule, isDefer, isLazy };
 
       this.unloadJS(url);
-      this.loadJS(url, opts);
+      this.loadJS(url, attrOpts);
 
-      this._debug('ddLazyjs', `src="${url}" | opts: ${JSON.stringify(opts)}`, 'navy');
+      this._debug('ddLazyjs', `src="${url}" | attrOpts: ${JSON.stringify(attrOpts)}`, 'navy');
     }
 
   }

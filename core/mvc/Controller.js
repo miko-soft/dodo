@@ -26,17 +26,18 @@ class Controller extends Model {
     this.proxifyModel(); // set $model as proxy object
     this.modeler(); // define this.$modeler methods
 
-    // controller processes
+    // controller hooks
     try { await this.__loader(trx); } catch (err) { console.error(err); }
     this.ddSetinitial(); // parse dd-setinitial
+    this.ddLazyjs('after__loader'); // parse dd-lazyjs
+
     try { await this.__init(trx); } catch (err) { console.error(err); }
     this.__initFinished = true;
-    try { await this.__rend(trx); } catch (err) { console.error(err); }
-    try { await this.__postrend(trx); } catch (err) { console.error(err); }
 
-    // final processes after some delay
-    await new Promise(r => setTimeout(r, 100));
-    this.ddLazyjs();
+    try { await this.__rend(trx); } catch (err) { console.error(err); }
+    this.ddLazyjs('after__rend');
+
+    try { await this.__postrend(trx); } catch (err) { console.error(err); }
   }
 
 

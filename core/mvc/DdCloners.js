@@ -87,10 +87,10 @@ class DdCloners extends DdListeners {
       // solve template literals in the cloned element and insert cloned elements in the document
       val.forEach((valValue, keyValue) => {
         let outerhtml = clonedElem.outerHTML.replace(/\n\s/g, '').trim();
-        this._debug('ddForeach', `- ddForeach:: outerhtml - before:: ${outerhtml}`, 'navy');
+        this._debug('ddForeach', `- ddForeach ${interpolationMark}:: outerhtml - before:: ${outerhtml}`, 'navy');
         const interpolations = !!keyName ? { [valName]: valValue, [keyName]: keyValue } : { [valName]: valValue }; // {val: {name: 'Marko', age:21}, key: 1}
         outerhtml = this._solveTemplateLiteral(outerhtml, interpolations, interpolationMark);
-        this._debug('ddForeach', `- ddForeach:: outerhtml - after:: ${outerhtml}\n`, 'navy');
+        this._debug('ddForeach', `- ddForeach ${interpolationMark}:: outerhtml - after:: ${outerhtml}\n`, 'navy');
         elem.insertAdjacentHTML('beforebegin', outerhtml); // insert new elements above elem
       });
 
