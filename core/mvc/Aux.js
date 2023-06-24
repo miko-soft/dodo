@@ -242,8 +242,10 @@ class Aux {
     if (typeof val === 'object') {
       if (elem.type === 'textarea') { val = JSON.stringify(val, null, 2); }
       else { val = JSON.stringify(val); }
+    } else {
+      val = this._val2str(val);
     }
-    elem.value = String(val);
+    elem.value = val;
     elem.setAttribute('value', val);
   }
 
@@ -254,8 +256,8 @@ class Aux {
    * @param {string[]} val - value to compare with element.value
    */
   _setElementChecked(elem, val = '') {
-    const tf = val.includes(elem.value);
-    if (tf) {
+    val = this._val2str(val);
+    if (val.includes(elem.value)) {
       elem.checked = true;
       elem.setAttribute('checked', '');
     } else {
@@ -271,9 +273,9 @@ class Aux {
    * @param {string} val - value to compare with element.value
    */
   _setElementSelected_one(elem, val = '') {
+    val = this._val2str(val);
     for (const option of elem.options) {
-      const tf = val === option.value;
-      if (tf) {
+      if (val === option.value) {
         option.selected = true;
         option.setAttribute('selected', '');
       } else {
