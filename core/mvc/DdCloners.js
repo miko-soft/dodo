@@ -345,43 +345,46 @@ class DdCloners extends DdListeners {
     this._debug('ddMustache', `found elements:: ${elems.length} `, 'navy');
 
     for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName);
-      const { base, opts } = this._decomposeAttribute(attrVal);
-
-      // set --blockrender option and block rendering of dd- elements which are inside dd-mustache because only dd- elements inside dd-mustache-clone should be rendered
-      this._setBlockrender(elem);
-
-      // hide orig element
-      this._elemHide(elem);
-
-      // clone orig element
-      const clonedElem = this._clone_define(elem, attrName);
+      const clonedElem = this._kloner(elem, attrName);
 
       // solve mustache in inner html
-      const innerHTML = clonedElem.innerHTML;
-      const innerHTML_solved = this._solveMustache(innerHTML);
-      this._debug('ddMustache', `ddMustache-innerHTML:: ${innerHTML} --> ${innerHTML_solved} `, 'navy');
+      clonedElem.innerHTML = this._solveMustache(clonedElem.innerHTML);
 
       // solve mustache in attributes
       for (const attribute of clonedElem.attributes) {
         attribute.value = this._solveMustache(attribute.value);
       }
 
-      if (this._hasAnyOfClonerDirectives(clonedElem)) { continue; }
-
-      // insert cloned element in document
-      clonedElem.innerHTML = innerHTML_solved;
-      this._clone_insert(elem, clonedElem);
-
-      // remove element if it's created with dd-foreach, dd-repeat or other cloner directive
-      for (const cloner_directive of this.$dd.cloner_directives) {
-        if (elem.hasAttribute(`${cloner_directive}-clone`)) { elem.remove(); }
-      }
-
       this._debug('ddMustache', `ddMustache-outerHTML:: ${clonedElem.outerHTML}`, 'navy');
     }
 
     this._debug('ddMustache', '--------- ddMustache (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+
+  /**** PRIVATES ****/
+  /**
+   * Set dd-aid="<uid> --blockrender" and hide original element.
+   * Clone original HTML element.
+   * @param {HTMLElement} elem - original element
+   * @param {string} attrName - attribute name: dd-text then it makes attribute dd-text-clone
+   * @returns {HTMLElement}
+   */
+  _kloner(elem, attrName) {
+    // set --blockrender option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-mustache but dd-mustache-clone
+    this._setBlockrender(elem);
+
+    // hide orig element
+    this._elemHide(elem);
+
+    // clone orig element
+    const clonedElem = this._clone_define(elem, attrName);
+    this._delBlockrender(clonedElem); // remove --blockrender from cloned element (and its childrens) because it needs to be rendered
+    this._clone_insert(elem, clonedElem);
+
+    return clonedElem;
   }
 
 
