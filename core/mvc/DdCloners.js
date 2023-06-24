@@ -178,8 +178,9 @@ class DdCloners extends DdListeners {
 
 
   /**
-   * dd-text="controllerProperty [--overwrite|remain|prepend|append]" | dd-text="expression [--overwrite|remain|prepend|append]"
+   * dd-text="controllerProperty [--overwrite|prepend|append]" | dd-text="expression [--overwrite|prepend|append]"
    *  Print pure text in the dd-text element.
+   *  NOTICE: No cloning when --overwrite option is used. The --overwrite is default option.
    * Examples:
    * dd-text="firstName"                  - firstName is the controller property, it can also be model $model.firstname
    * dd-text="this.firstName"             - this. will not cause the error
@@ -211,7 +212,7 @@ class DdCloners extends DdListeners {
 
       // load content in the element
       if (!opts.length || opts.includes('overwrite')) {
-        elem.textContent = val_str; // take controller value and replace element value
+        elem.textContent = val_str; // take controller value and replace element value - no cloning
         this._elemShow(elem);
       } else if (opts.includes('prepend')) {
         const clonedElem = this._kloner(elem, attrName, true);
@@ -230,6 +231,7 @@ class DdCloners extends DdListeners {
   /**
    * dd-html="controllerProperty [--inner|outer|sibling|prepend|append]" | dd-html="expression [--inner|outer|sibling|prepend|append]"
    *  Embed HTML node in the DOM at a place marked with dd-html attribute.
+   *  NOTICE: No cloning when --inner option is used. The --inner is default option.
    * Examples:
    * dd-html="product" or dd-html="product.name --inner"    - insert in the element (product is the controller property with HTML tags in the value)
    * dd-html="product.name --outer"                         - replace the element
@@ -257,24 +259,25 @@ class DdCloners extends DdListeners {
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
       if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
 
-      const clonedElem = this._kloner(elem, attrName, true);
-
       // load content in the element
-      if (opts.includes('inner')) {
-        clonedElem.innerHTML = val_str; // embed HTML in the clonedElem
+      if (!opts.length || opts.includes('inner')) {
+        elem.innerHTML = val_str; // take controller value and replace element value - no cloning
+        this._elemShow(elem);
       } else if (opts.includes('outer')) {
+        const clonedElem = this._kloner(elem, attrName, true);
         clonedElem.outerHTML = `<span dd-html-clone>${val_str}</span > `; // wrap in span
       } else if (opts.includes('sibling')) {
+        const clonedElem = this._kloner(elem, attrName, true);
         const docParsed = new DOMParser().parseFromString(val_str, 'text/html');
         const siblingElem = docParsed.body.childNodes[0];
         siblingElem.setAttribute('dd-html-clone', '');
         clonedElem.parentNode.insertBefore(siblingElem, clonedElem.nextSibling);
       } else if (opts.includes('prepend')) {
+        const clonedElem = this._kloner(elem, attrName, true);
         clonedElem.innerHTML = val_str + clonedElem.innerHTML; // take controller value and prepend it to element value
       } else if (opts.includes('append')) {
+        const clonedElem = this._kloner(elem, attrName, true);
         clonedElem.innerHTML = clonedElem.innerHTML + val_str; // take controller value and append it to element value
-      } else {
-        clonedElem.innerHTML = val_str; // inner is default
       }
     }
 
