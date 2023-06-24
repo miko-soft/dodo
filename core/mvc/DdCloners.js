@@ -209,19 +209,16 @@ class DdCloners extends DdListeners {
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
       if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
 
-      const clonedElem = this._kloner(elem, attrName, true);
-
       // load content in the element
-      if (opts.includes('overwrite')) {
-        clonedElem.textContent = val_str; // take controller value and replace element value
-      } else if (opts.includes('remain')) {
-        clonedElem.textContent = elem.textContent; // take element value i.e. leave it as is
+      if (!opts.length || opts.includes('overwrite')) {
+        elem.textContent = val_str; // take controller value and replace element value
+        this._elemShow(elem);
       } else if (opts.includes('prepend')) {
+        const clonedElem = this._kloner(elem, attrName, true);
         clonedElem.textContent = val_str + elem.textContent; // take controller value and prepend it to element value
       } else if (opts.includes('append')) {
+        const clonedElem = this._kloner(elem, attrName, true);
         clonedElem.textContent = elem.textContent + val_str; // take controller value and append it to element value
-      } else {
-        clonedElem.textContent = val_str; // overwrite is default
       }
     }
 
