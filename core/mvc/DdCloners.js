@@ -161,7 +161,10 @@ class DdCloners extends DdListeners {
     const elems = this._listElements(attrName);
     this._debug('ddIf', `found elements:: ${elems.length} `, 'navy');
 
-    for (const elem of elems) {
+    // reverse elems because we want to render nested dd-if first
+    const elems_reversed = [...elems].reverse();
+
+    for (const elem of elems_reversed) {
       const ifGroupElems = this._getSiblings(elem, ['dd-if', 'dd-elseif', 'dd-else']); // get siblings of dd-if, dd-elseif and dd-else
 
       this._debug().ddIf && console.log('\n\n--if group--');
@@ -182,6 +185,7 @@ class DdCloners extends DdListeners {
         // clone orig element (when val is truthy or when dd-else is reached)
         if (!!val || ifGroupElem.hasAttribute('dd-else')) {
           const clonedElem = this._clone_define(ifGroupElem, attrName);
+          this._debug().ddIf && console.log('clonedElem::', clonedElem);
 
           // remove --blockrender from cloned element (and its childrens) because it needs to be rendered
           this._delBlockrender(clonedElem);
