@@ -57,12 +57,6 @@ class DdCloners extends DdListeners {
       const { val, prop_solved } = this._solveBase(base);
       this.$debugOpts.ddForeach && console.log(`ddForeach:: attrVal:: ${attrVal} , base:: ${base} , prop_solved:: ${prop_solved} -->`, val);
 
-      // set --blockrender option and block rendering of dd- elements which are inside dd-foreach because only dd- elements inside dd-foreach-clone should be rendered
-      this._setBlockrender(elem);
-
-      // hide orig element
-      this._elemHide(elem);
-
       // prechecks
       if (!Array.isArray(val)) { this._printWarn(`dd-foreach="${attrVal}" -> The value is not array. Value is: ${JSON.stringify(val)}`); continue; }
       if (!val.length) { continue; }
@@ -74,11 +68,7 @@ class DdCloners extends DdListeners {
       // interpolation mark, for example --$0 will solve only $0{...}
       const interpolationMark = opts[1]; // $1
 
-      // define cloned element
-      const clonedElem = this._clone_define(elem, attrName);
-
-      // remove --blockrender from cloned element (and its childrens) because it needs to be rendered
-      this._delBlockrender(clonedElem);
+      const clonedElem = this._kloner(elem, attrName, false);
 
       // remove dd-foreach element from cloned element (the case when dd-foreach elements are nested)
       const nestedDdForeachElem = clonedElem.querySelector(`[dd-foreach]`);
@@ -87,15 +77,12 @@ class DdCloners extends DdListeners {
       // solve template literals in the cloned element and insert cloned elements in the document
       val.forEach((valValue, keyValue) => {
         let outerhtml = clonedElem.outerHTML.replace(/\n\s/g, '').trim();
-        this._debug('ddForeach', `- ddForeach ${interpolationMark}:: outerhtml - before:: ${outerhtml}`, 'navy');
+        this._debug('ddForeach', `- ddForeach ${interpolationMark || ''}:: outerhtml (before):: ${outerhtml}`, 'navy');
         const interpolations = !!keyName ? { [valName]: valValue, [keyName]: keyValue } : { [valName]: valValue }; // {val: {name: 'Marko', age:21}, key: 1}
         outerhtml = this._solveTemplateLiteral(outerhtml, interpolations, interpolationMark);
-        this._debug('ddForeach', `- ddForeach ${interpolationMark}:: outerhtml - after:: ${outerhtml}\n`, 'navy');
+        this._debug('ddForeach', `- ddForeach ${interpolationMark || ''}:: outerhtml (after):: ${outerhtml}\n`, 'navy');
         elem.insertAdjacentHTML('beforebegin', outerhtml); // insert new elements above elem
       });
-
-      // remove cloned element to free up memory
-      clonedElem.remove();
 
     }
 
@@ -345,7 +332,7 @@ class DdCloners extends DdListeners {
     this._debug('ddMustache', `found elements:: ${elems.length} `, 'navy');
 
     for (const elem of elems) {
-      const clonedElem = this._kloner(elem, attrName);
+      const clonedElem = this._kloner(elem, attrName, true);
 
       // solve mustache in inner html
       clonedElem.innerHTML = this._solveMustache(clonedElem.innerHTML);
@@ -370,9 +357,10 @@ class DdCloners extends DdListeners {
    * Clone original HTML element.
    * @param {HTMLElement} elem - original element
    * @param {string} attrName - attribute name: dd-text then it makes attribute dd-text-clone
+   * @param {boolean} toInsert - if true the cloned elem is inserted as sibling to orig elem
    * @returns {HTMLElement}
    */
-  _kloner(elem, attrName) {
+  _kloner(elem, attrName, toInsert = false) {
     // set --blockrender option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-mustache but dd-mustache-clone
     this._setBlockrender(elem);
 
@@ -382,7 +370,7 @@ class DdCloners extends DdListeners {
     // clone orig element
     const clonedElem = this._clone_define(elem, attrName);
     this._delBlockrender(clonedElem); // remove --blockrender from cloned element (and its childrens) because it needs to be rendered
-    this._clone_insert(elem, clonedElem);
+    toInsert && this._clone_insert(elem, clonedElem);
 
     return clonedElem;
   }
