@@ -26,7 +26,6 @@ class Form {
     this._debug('setControl', `--------- setControl(${key}=${val}) ------`, 'green', '#A1F8DC');
     const elems = document.querySelectorAll(`[dd-form="${this.formName}"] [name="${key}"]`);
     if (!elems.length) { console.log(`%c FormWarn:: Form "${this.formName}" doesn't have control with name="${key}" attribute.`, `color:Maroon; background:LightYellow`); return; }
-
     for (const elem of elems) {
       if (elem.type === 'text') { // INPUT[type="text"]
         if (typeof val === 'object') { val = JSON.stringify(val); }
@@ -41,18 +40,43 @@ class Form {
 
       } else if (elem.type === 'checkbox') { // CHECKBOX
         elem.checked = false;
-        if (typeof val !== 'boolean' && val.indexOf(elem.value) !== -1) { elem.checked = true; }
-        else if (typeof val === 'boolean') { elem.checked = val; }
+        elem.removeAttribute('checked');
+        if (typeof val !== 'boolean' && val && val.includes(elem.value)) {
+          elem.checked = true;
+          elem.setAttribute('checked', '');
+        } else if (typeof val === 'boolean') {
+          elem.checked = val;
+          val && elem.setAttribute('checked', '');
+        }
 
       } else if (elem.type === 'radio') { // RADIO
         elem.checked = false;
-        if (val === elem.value) { elem.checked = true; }
+        elem.removeAttribute('checked');
+        if (val === elem.value) {
+          elem.checked = true;
+          elem.setAttribute('checked', '');
+        }
 
-      } else if (elem.type === 'select-multiple') { // on SELECT with multiple, for example <select name="family" size="4" multiple>
-        const options = elem; // all options
+      } else if (elem.type === 'select-one') { // SELECT without "multiple" attribute
+        const options = elem.options;
         for (const option of options) {
           option.selected = false;
-          if (val.indexOf(option.value) !== -1) { option.selected = true; }  // val is array
+          option.removeAttribute('selected');
+          if (val === option.value) {
+            option.selected = true;
+            option.setAttribute('selected', '');
+          }
+        }
+
+      } else if (elem.type === 'select-multiple') { // on SELECT with "multiple", for example <select name="family" size="4" multiple>
+        const options = elem.options; // all options
+        for (const option of options) {
+          option.selected = false;
+          option.removeAttribute('selected');
+          if (val && val.includes(option.value)) {  // val is array
+            option.selected = true;
+            option.setAttribute('selected', '');
+          }
         }
 
       } else if (elem.type === 'textarea') { // TEXTAREA
@@ -198,18 +222,24 @@ class Form {
     if (!elems.length) { console.error(`Form "${this.formName}" doesn't have name^="${key}" control.`); }
 
     for (const elem of elems) {
-      if (elem.type === 'checkbox') {
+      if (elem.type === 'checkbox' || elem.type === 'radio') {
         elem.checked = false;
-      } else if (elem.type === 'select-multiple') {
+        elem.removeAttribute('checked');
+
+      } else if (elem.type === 'select-one' || elem.type === 'select-multiple') {
         const options = elem; // all options
         for (const option of options) {
           option.selected = false;
+          option.removeAttribute('selected');
         }
-      } else if (elem.type === 'radio') {
-        elem.checked = false;
+        elem.value = '';
+
       } else {
         elem.value = '';
+
       }
+
+
     }
 
   }
