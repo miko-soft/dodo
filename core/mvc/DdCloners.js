@@ -211,7 +211,7 @@ class DdCloners extends DdListeners {
       if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
 
       // load content in the element
-      if (!opts.length || opts.includes('overwrite')) {
+      if (opts.includes('overwrite')) {
         elem.textContent = val_str; // take controller value and replace element value - no cloning
         this._elemShow(elem);
       } else if (opts.includes('prepend')) {
@@ -220,6 +220,9 @@ class DdCloners extends DdListeners {
       } else if (opts.includes('append')) {
         const clonedElem = this._kloner(elem, attrName, true);
         clonedElem.textContent = elem.textContent + val_str; // take controller value and append it to element value
+      } else {
+        elem.textContent = val_str;
+        this._elemShow(elem);
       }
     }
 
@@ -260,7 +263,7 @@ class DdCloners extends DdListeners {
       if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
 
       // load content in the element
-      if (!opts.length || opts.includes('inner')) {
+      if (opts.includes('inner')) {
         elem.innerHTML = val_str; // take controller value and replace element value - no cloning
         this._elemShow(elem);
       } else if (opts.includes('outer')) {
@@ -278,6 +281,9 @@ class DdCloners extends DdListeners {
       } else if (opts.includes('append')) {
         const clonedElem = this._kloner(elem, attrName, true);
         clonedElem.innerHTML = clonedElem.innerHTML + val_str; // take controller value and append it to element value
+      } else {
+        elem.innerHTML = val_str;
+        this._elemShow(elem);
       }
     }
 
