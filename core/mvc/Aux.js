@@ -465,6 +465,7 @@ class Aux {
    * @param {string} text - text with string interpolations ${...}
    * @param {object} interpolations - values for string interpolations ${val} ${key} --> for example: {val: {name: 'Marko', age:21}, key: 1}
    * @param {string} interpolationMark - marks to determine which interpolations should be solved. For example if interpolator is $1 it will solve only $1{...} in the text
+   * @returns {string}
    */
   _solveTemplateLiteral(text = '', interpolations = {}, interpolationMark = '') {
     let func_body = '';
@@ -493,7 +494,6 @@ class Aux {
       text = text.replace(interpolator_reg, '$');
     }
 
-
     const textWithBackticks = '`' + text + '`';
 
     func_body += `
@@ -512,6 +512,23 @@ class Aux {
     }
 
     return text; // text with solved string interpolations ${}
+  }
+
+
+  /**
+   * Replace double dollar marks with controller variable name.
+   * For example in dd-foreach="$model.companies --company,key" the $$company will be replaced with $model.companies[key]
+   * @param {string} text - text with double dollars $$company
+   * @param {string} base - the base of dd- element attribute, for example $model.companies
+   * @param {string} valName - name of the val variable, for example in --company,key it is company
+   * @param {string} keyValue - the key value of the iteration: 0,1,2,3,...
+   * @returns {string}
+   */
+  _solveDoubledollar(text, base, valName, keyValue) {
+    const replacement = `${base}[${keyValue}]`;
+    const reg = new RegExp(`\\$\\$${valName}`, 'g');
+    text = text.replace(reg, replacement);
+    return text;
   }
 
 

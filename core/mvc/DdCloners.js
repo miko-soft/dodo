@@ -79,7 +79,8 @@ class DdCloners extends DdListeners {
         let outerhtml = clonedElem.outerHTML.replace(/\n\s/g, '').trim();
         this._debug('ddForeach', `- ddForeach ${interpolationMark || ''}:: outerhtml (before):: ${outerhtml}`, 'navy');
         const interpolations = !!keyName ? { [valName]: valValue, [keyName]: keyValue } : { [valName]: valValue }; // {val: {name: 'Marko', age:21}, key: 1}
-        outerhtml = this._solveTemplateLiteral(outerhtml, interpolations, interpolationMark);
+        outerhtml = this._solveTemplateLiteral(outerhtml, interpolations, interpolationMark); // solve ${...}
+        outerhtml = this._solveDoubledollar(outerhtml, base, valName, keyValue); // solve $$var
         this._debug('ddForeach', `- ddForeach ${interpolationMark || ''}:: outerhtml (after):: ${outerhtml}\n`, 'navy');
         elem.insertAdjacentHTML('beforebegin', outerhtml); // insert new elements above elem
       });
