@@ -51,7 +51,7 @@ class Controller extends Model {
    * @param {object} trx - DoDo router transitional variable
    * @returns {Promise<void>}
    */
-  async __loader(trx) { throw new Error('There is a blank screen because the controller method __loader() is not defined.'); }
+  async __loader(trx) { throw new Error('The controller method __loader() is not defined. You probably got a blank screen.'); }
 
   /**
    * LOAD DATA
