@@ -201,11 +201,11 @@ class DdCloners extends DdListeners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddText', `dd-text="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      // don't render elements with undefined controller's value
-      if (val === undefined || val === null) { continue; }
-
       // convert controller val to string
       let val_str = this._val2str(val);
+
+      // if val is undefined set it as empty string
+      if (val === undefined || val === null) { val_str = ''; }
 
       // apply pipe option, for example: --pipe:slice(0,10).trim() (val_str must be a string)
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
@@ -253,11 +253,11 @@ class DdCloners extends DdListeners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddHtml', `dd-html="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      // don't render elements with undefined controller's value
-      if (val === undefined || val === null) { continue; }
-
       // convert controller val to string
       let val_str = this._val2str(val);
+
+      // if val is undefined set it as empty string
+      if (val === undefined || val === null) { val_str = ''; }
 
       // apply pipe option, for example: --pipe:slice(0,10).trim() (val must be a string)
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
