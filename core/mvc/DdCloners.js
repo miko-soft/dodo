@@ -25,10 +25,13 @@ class DdCloners extends DdListeners {
 
 
   /**
-   * Remove all dd-aid attributes from the document.
+   * Remove all dd-rendered attributes from the document.
    */
-  ddUNAID() {
-    this._aidRemoveAll(document);
+  ddUNRENDERED() {
+    const renderedElems = document.querySelectorAll('[dd-rendered]');
+    for (const renderedElem of renderedElems) {
+      renderedElem.removeAttribute('dd-rendered');
+    }
   }
 
 
@@ -341,7 +344,7 @@ class DdCloners extends DdListeners {
 
   /**** PRIVATES ****/
   /**
-   * Set dd-aid="<uid> --blockrender" and hide original element.
+   * Set dd-rendered and hide original element.
    * Clone original HTML element.
    * @param {HTMLElement} elem - original element
    * @param {string} attrName - attribute name: dd-text then it makes attribute dd-text-clone
@@ -350,15 +353,15 @@ class DdCloners extends DdListeners {
    * @returns {HTMLElement}
    */
   _kloner(elem, attrName, attrValue, toInsert = false) {
-    // set --blockrender option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-mustache but dd-mustache-clone
-    this._setBlockrender(elem);
+    // set dd.rendered option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-mustache but dd-mustache-clone
+    this._setRendered(elem);
 
     // hide orig element
     this._elemHide(elem);
 
     // clone orig element
     const clonedElem = this._clone_define(elem, attrName, attrValue);
-    this._delBlockrender(clonedElem); // remove --blockrender from cloned element (and its childrens) because it needs to be rendered
+    this._delRendered(clonedElem); // remove dd.rendered from cloned element (and its childrens) because it needs to be rendered
     if (!this._hasAnyOfClonerDirectives(clonedElem)) {
       this._elemShow(clonedElem); // show cloned element
     }

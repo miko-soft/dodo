@@ -98,7 +98,7 @@ class Controller extends Model {
 
     // DdCloners.js
     this.ddUNCLONE();
-    this.ddUNAID();
+    this.ddUNRENDERED();
     this.ddForeach();
     this.ddRepeat();
     this.ddIf();

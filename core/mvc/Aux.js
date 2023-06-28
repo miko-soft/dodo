@@ -82,23 +82,13 @@ class Aux {
 
   /***** HTML DOM *****/
   /**
-   * List DOM elements which has "dd-..." attribute.
+   * List DOM elements which has "dd-..." attribute and doesn't have dd-rendered.
    * @param {string} attrName - attribute name -> 'dd-text', 'dd.html', ...
    * @returns {HTMLElement[]}
    */
   _listElements(attrName) {
-    const elems = document.querySelectorAll(`[${attrName}]`);
-
-    // filtering
-    const elemsFiltered = [];
-    for (const elem of elems) {
-      // take elements without dd-aid or elements without --blockrender option
-      const ddAid = elem.getAttribute('dd-aid');
-      if (ddAid === null) { elemsFiltered.push(elem); }
-      else if (!ddAid.includes('--blockrender')) { elemsFiltered.push(elem); }
-    }
-
-    return elemsFiltered;
+    const elems = document.querySelectorAll(`[${attrName}]:not([dd-rendered])`);
+    return elems;
   }
 
 
@@ -369,41 +359,44 @@ class Aux {
   }
 
 
+
+  /***** DD-RENDERED *****/
   /**
-   * Set dd-aid=" --blockrender" option to element and it's all dd- childrens.
+   * Set dd-rendered to element and it's all dd- childrens.
    * @param {HTMLElement} elem
    */
-  _setBlockrender(elem) {
-    const uid = this._aidCreate(elem);
-    this._aidAddOption(elem, '--blockrender');
+  _setRendered(elem) {
+    // set to element
+    elem.setAttribute('dd-rendered', '');
 
+    // set to its childrens
     const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
     directives.forEach(directive => {
       const ddElems = elem.querySelectorAll(`[${directive}]`);
       ddElems.forEach(ddElem => {
-        this._aidCreate(ddElem, uid);
-        this._aidAddOption(ddElem, '--blockrender');
+        ddElem.setAttribute('dd-rendered', '');
       });
     });
   }
 
 
   /**
-   * Remove --blockrender option from element and it's all dd- childrens.
+   * Remove dd-rendered from element and it's all dd- childrens.
    * @param {HTMLElement} elem
    */
-  _delBlockrender(elem) {
-    this._aidDelOption(elem, '--blockrender');
+  _delRendered(elem) {
+    // remove from element
+    elem.removeAttribute('dd-rendered', '');
 
+    // remove from its childrens
     const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
     directives.forEach(directive => {
       const ddElems = elem.querySelectorAll(`[${directive}]`);
       ddElems.forEach(ddElem => {
-        this._aidDelOption(ddElem, '--blockrender');
+        ddElem.removeAttribute('dd-rendered', '');
       });
     });
   }
-
 
 
 
@@ -695,62 +688,8 @@ class Aux {
 
 
 
-  /***** AID *****/
-  /**
-   * Add dd-aid attribute in the element.
-   * @param {HTMLElement} elem - the DOM element
-   * @param {string} uid - unique id of the dd-aid attribute
-   * @returns {string}
-   */
-  _aidCreate(elem, uid) {
-    uid = uid || this._uid();
-    elem.setAttribute('dd-aid', uid);
-    return uid;
-  }
 
-
-  /**
-   * Add an option in the dd-aid attribute.
-   * @param {HTMLElement} elem - the DOM element
-   * @param {string} option - new option: --blockrender, just blockrender or blockRender
-   */
-  _aidAddOption(elem, option) {
-    const attrVal = elem.getAttribute('dd-aid');
-    option = option.replace('--', '').toLowerCase();
-    let attrVal_new = attrVal + ` --${option}`;
-    attrVal_new = attrVal_new.replace(/  +/g, ' ').trim();
-    elem.setAttribute('dd-aid', attrVal_new);
-  }
-
-
-  /**
-   * Delete an option from the dd-aid attribute.
-   * @param {HTMLElement} elem - the DOM element
-   * @param {string} option - option to be removed: --blockrender, just blockrender or blockRender
-   */
-  _aidDelOption(elem, option) {
-    const attrVal = elem.getAttribute('dd-aid');
-    if (!attrVal) { return; }
-    option = option.replace('--', '').toLowerCase();
-    let attrVal_new = attrVal.replace(`--${option}`, '');
-    attrVal_new = attrVal_new.replace(/  +/g, ' ').trim();
-    elem.setAttribute('dd-aid', attrVal_new);
-  }
-
-
-  /**
-   * Remove all dd-aid attributes from the element or document with specific option.
-   * @param {HTMLElement|Document} elem - the DOM element or document
-   */
-  _aidRemoveAll(elem, option) {
-    const aidElems = elem.querySelectorAll('[dd-aid]');
-    if (aidElems === null) { return; }
-    for (const aidElem of aidElems) {
-      aidElem.removeAttribute('dd-aid');
-    }
-  }
-
-
+  /***** MISC *****/
   /**
    * Create unique element id.
    * @return {string}
@@ -764,9 +703,6 @@ class Aux {
   }
 
 
-
-
-  /***** MISC *****/
   /**
    * Check if the text has substring which will block rendering.
    * The text can have HTML tags. In most cases the block string is string interpolation ${.
