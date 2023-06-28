@@ -68,7 +68,7 @@ class DdCloners extends DdListeners {
       // interpolation mark, for example --$0 will solve only $0{...}
       const interpolationMark = opts[1]; // $1
 
-      const clonedElem = this._kloner(elem, attrName, false);
+      const clonedElem = this._kloner(elem, attrName, attrVal, false);
 
       // remove dd-foreach element from cloned element (the case when dd-foreach elements are nested)
       const nestedDdForeachElem = clonedElem.querySelector(`[dd-foreach]`);
@@ -124,7 +124,7 @@ class DdCloners extends DdListeners {
 
       // clone orig element
       for (let i = 1; i <= val_num; i++) {
-        this._kloner(elem, attrName, true);
+        this._kloner(elem, attrName, attrVal, true);
       }
     }
 
@@ -154,6 +154,12 @@ class DdCloners extends DdListeners {
     for (const elem of elems_reversed) {
       const ifGroupElems = this._getSiblings(elem, ['dd-if', 'dd-elseif', 'dd-else']); // get siblings of dd-if, dd-elseif and dd-else
 
+      // aggregated attribute values from alll elements in a group
+      let attrValue = '';
+      ifGroupElems.forEach(ifGroupElem => {
+        attrValue += ifGroupElem.getAttribute('dd-if') || ifGroupElem.getAttribute('dd-elseif') || ifGroupElem.getAttribute('dd-else');
+      });
+
       this._debug().ddIf && console.log('\n\n--if group--');
 
       for (const ifGroupElem of ifGroupElems) {
@@ -164,7 +170,7 @@ class DdCloners extends DdListeners {
 
         // clone orig element (when val is truthy or when dd-else is reached)
         if (!!val || ifGroupElem.hasAttribute('dd-else')) {
-          this._kloner(ifGroupElem, attrName, true);
+          this._kloner(ifGroupElem, attrName, attrValue, true);
           break;
         }
       }
@@ -211,19 +217,21 @@ class DdCloners extends DdListeners {
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
       if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
 
+      if (!this._hasAnyOfClonerDirectives(elem, ['dd-foreach', 'dd-repeat', 'dd-if'])) {
+        this._elemShow(elem);
+      }
+
       // load content in the element
       if (opts.includes('overwrite')) {
         elem.textContent = val_str; // take controller value and replace element value - no cloning
-        this._elemShow(elem);
       } else if (opts.includes('prepend')) {
-        const clonedElem = this._kloner(elem, attrName, true);
+        const clonedElem = this._kloner(elem, attrName, attrVal, true);
         clonedElem.textContent = val_str + elem.textContent; // take controller value and prepend it to element value
       } else if (opts.includes('append')) {
-        const clonedElem = this._kloner(elem, attrName, true);
+        const clonedElem = this._kloner(elem, attrName, attrVal, true);
         clonedElem.textContent = elem.textContent + val_str; // take controller value and append it to element value
       } else {
         elem.textContent = val_str;
-        this._elemShow(elem);
       }
     }
 
@@ -253,38 +261,40 @@ class DdCloners extends DdListeners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddHtml', `dd-html="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
+      // if val is undefined do not render
+      if (val === undefined || val === null) { continue; }
+
       // convert controller val to string
       let val_str = this._val2str(val);
-
-      // if val is undefined set it as empty string
-      if (val === undefined || val === null) { val_str = ''; }
 
       // apply pipe option, for example: --pipe:slice(0,10).trim() (val must be a string)
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
       if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
 
+      if (!this._hasAnyOfClonerDirectives(elem, ['dd-foreach', 'dd-repeat', 'dd-if'])) {
+        this._elemShow(elem);
+      }
+
       // load content in the element
       if (opts.includes('inner')) {
         elem.innerHTML = val_str; // take controller value and replace element value - no cloning
-        this._elemShow(elem);
       } else if (opts.includes('outer')) {
-        const clonedElem = this._kloner(elem, attrName, true);
+        const clonedElem = this._kloner(elem, attrName, attrVal, true);
         clonedElem.outerHTML = `<span dd-html-clone>${val_str}</span > `; // wrap in span
       } else if (opts.includes('sibling')) {
-        const clonedElem = this._kloner(elem, attrName, true);
+        const clonedElem = this._kloner(elem, attrName, attrVal, true);
         const docParsed = new DOMParser().parseFromString(val_str, 'text/html');
         const siblingElem = docParsed.body.childNodes[0];
         siblingElem.setAttribute('dd-html-clone', '');
         clonedElem.parentNode.insertBefore(siblingElem, clonedElem.nextSibling);
       } else if (opts.includes('prepend')) {
-        const clonedElem = this._kloner(elem, attrName, true);
+        const clonedElem = this._kloner(elem, attrName, attrVal, true);
         clonedElem.innerHTML = val_str + clonedElem.innerHTML; // take controller value and prepend it to element value
       } else if (opts.includes('append')) {
-        const clonedElem = this._kloner(elem, attrName, true);
+        const clonedElem = this._kloner(elem, attrName, attrVal, true);
         clonedElem.innerHTML = clonedElem.innerHTML + val_str; // take controller value and append it to element value
       } else {
         elem.innerHTML = val_str;
-        this._elemShow(elem);
       }
     }
 
@@ -306,7 +316,7 @@ class DdCloners extends DdListeners {
     this._debug('ddMustache', `found elements:: ${elems.length} `, 'navy');
 
     for (const elem of elems) {
-      const clonedElem = this._kloner(elem, attrName, true);
+      const clonedElem = this._kloner(elem, attrName, '', true);
 
       // solve mustache in inner html
       clonedElem.innerHTML = this._solveMustache(clonedElem.innerHTML);
@@ -314,6 +324,10 @@ class DdCloners extends DdListeners {
       // solve mustache in attributes
       for (const attribute of clonedElem.attributes) {
         attribute.value = this._solveMustache(attribute.value);
+      }
+
+      if (this._hasAnyOfClonerDirectives(elem, ['dd-foreach-clone', 'dd-repeat-clone', 'dd-if-clone'])) {
+        elem.remove();
       }
 
       this._debug('ddMustache', `ddMustache-outerHTML:: ${clonedElem.outerHTML}`, 'navy');
@@ -331,10 +345,11 @@ class DdCloners extends DdListeners {
    * Clone original HTML element.
    * @param {HTMLElement} elem - original element
    * @param {string} attrName - attribute name: dd-text then it makes attribute dd-text-clone
+   * @param {string} attrValue - attribute value: '$model.companies --company,key'
    * @param {boolean} toInsert - if true the cloned elem is inserted as sibling to orig elem
    * @returns {HTMLElement}
    */
-  _kloner(elem, attrName, toInsert = false) {
+  _kloner(elem, attrName, attrValue, toInsert = false) {
     // set --blockrender option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-mustache but dd-mustache-clone
     this._setBlockrender(elem);
 
@@ -342,8 +357,13 @@ class DdCloners extends DdListeners {
     this._elemHide(elem);
 
     // clone orig element
-    const clonedElem = this._clone_define(elem, attrName);
+    const clonedElem = this._clone_define(elem, attrName, attrValue);
     this._delBlockrender(clonedElem); // remove --blockrender from cloned element (and its childrens) because it needs to be rendered
+    if (!this._hasAnyOfClonerDirectives(clonedElem)) {
+      this._elemShow(clonedElem); // show cloned element
+    }
+
+    // insert cloned elem in the HTML document
     toInsert && this._clone_insert(elem, clonedElem);
 
     return clonedElem;

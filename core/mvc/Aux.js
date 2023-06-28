@@ -180,18 +180,18 @@ class Aux {
    * Define cloned element. The cloned element must get dd-xyz-clone attribute.
    * @param {Element} elem - original element
    * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
+   * @param {string} attrValue - attribute value: '$model.companies --company,key'
    * @returns {HTMLElement}
    */
-  _clone_define(elem, attrName) {
+  _clone_define(elem, attrName, attrValue) {
     // clone the dd-xyz element
     const clonedElem = elem.cloneNode(true);
 
     // remove cloned attributes and add new attributes
     clonedElem.removeAttribute(attrName);
-    clonedElem.setAttribute(`${attrName}-clone`, '');
-
-    // show cloned element
-    this._elemShow(clonedElem);
+    clonedElem.removeAttribute('dd-else');
+    clonedElem.removeAttribute('dd-elseif');
+    clonedElem.setAttribute(`${attrName}-clone`, attrValue);
 
     return clonedElem;
   }
@@ -206,7 +206,7 @@ class Aux {
    * @returns {void}
    */
   _clone_insert(elem, clonedElem) {
-    elem.parentNode.insertBefore(clonedElem, elem.nextSibling);
+    elem.parentNode.insertBefore(clonedElem, elem);
   }
 
   /**
@@ -783,16 +783,20 @@ class Aux {
   /**
    * Check if the HTMl element has any of dd-... directives i.e. attributes
    * @param {HTMLElement} elem - element where is the dd-... attribute
+   * @param {string[]} cloner_directives - ['dd-foreach', 'dd-if']
    * @returns {boolean}
    */
-  _hasAnyOfClonerDirectives(elem) {
+  _hasAnyOfClonerDirectives(elem, cloner_directives) {
+    cloner_directives = cloner_directives || this.$dd.cloner_directives;
+
     let tf = false;
-    for (const cloner_directive of this.$dd.cloner_directives) {
+    for (const cloner_directive of cloner_directives) {
       if (elem.hasAttribute(cloner_directive)) {
         tf = true;
         break;
       }
     }
+
     return tf;
   }
 
