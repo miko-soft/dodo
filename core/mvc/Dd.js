@@ -14,7 +14,16 @@ class Dd extends DdCloners {
       elems: {},  // set by ddElem()
       listeners: [], // collector of the dd- listeners  [{attrName, elem, handler, eventName}]
       noncloner_directives: [
+        'dd-setinitial',
+        'dd-elem',
         'dd-show',
+        // innerHTML managers
+        'dd-inner',
+        'dd-text',
+        'dd-html',
+        'dd-mustache',
+        // HTML tag attribute managers
+        'dd-value',
         'dd-disabled',
         'dd-checked',
         'dd-selected',
@@ -22,12 +31,8 @@ class Dd extends DdCloners {
         'dd-style',
         'dd-src',
         'dd-attr',
-        'dd-value',
       ],
       cloner_directives: [
-        'dd-text',
-        'dd-html',
-        'dd-mustache',
         'dd-if', 'dd-elseif', 'dd-else',
         'dd-foreach',
         'dd-repeat'
@@ -145,8 +150,145 @@ class Dd extends DdCloners {
 
 
 
+  /********************************* INNERS **********************************/
+  /**
+   * dd-text="controllerProperty [--overwrite|prepend|append]" | dd-text="expression [--overwrite|prepend|append]"
+   *  Print pure text in the dd-text element.
+   * Examples:
+   * dd-text="firstName"                  - firstName is the controller property, it can also be model $model.firstname
+   * dd-text="this.firstName"             - this. will not cause the error
+   * dd-text="$model.firstName --append"  - append the text to the existing text
+   * dd-text="$model.product___{{id}}"    - dynamic controller property name
+   */
+  ddText() {
+    this._debug('ddText', `--------- ddText (start)------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-text';
+    const elems = this._listElements(attrName);
+    this._debug('ddText', `found elements:: ${elems.length} `, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const { val, prop_solved } = this._solveBase(base);
+      this._debug('ddText', `dd-text="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+
+      // convert controller val to string
+      let val_str = this._val2str(val);
+
+      // if val is undefined set it as empty string
+      if (val === undefined || val === null) { val_str = ''; }
+
+      // apply pipe option, for example: --pipe:slice(0,10).trim() (val_str must be a string)
+      const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
+      if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
+
+      // load content in the element
+      if (opts.includes('overwrite')) {
+        elem.textContent = val_str; // take controller value and replace element value - no cloning
+      } else if (opts.includes('prepend')) {
+        const innerHTML = this._inner(elem);
+        elem.textContent = val_str + innerHTML; // take controller value and prepend it to element value
+      } else if (opts.includes('append')) {
+        const innerHTML = this._inner(elem);
+        elem.textContent = innerHTML + val_str; // take controller value and append it to element value
+      } else {
+        elem.textContent = val_str;
+      }
+
+      this._elemShow(elem);
+
+    }
+
+    this._debug('ddText', '--------- ddText (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-html="controllerProperty [--overwrite|prepend|append]" | dd-html="expression [--overwrite|prepend|append]"
+   *  Embed HTML node in the DOM at a place marked with dd-html attribute.
+   * Examples:
+   * dd-html="firstName"                  - firstName is the controller property, it can also be model $model.firstname
+   * dd-html="this.firstName"             - this. will not cause the error
+   * dd-html="$model.firstName --append"  - append the HTML to the existing HTML
+   * dd-html="$model.product___{{id}}"    - dynamic controller property name
+   */
+  ddHtml() {
+    this._debug('ddHtml', `--------- ddHtml (start)------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-html';
+    const elems = this._listElements(attrName);
+    this._debug('ddHtml', `found elements:: ${elems.length} `, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const { val, prop_solved } = this._solveBase(base);
+      this._debug('ddHtml', `dd-html="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+
+      // convert controller val to string
+      let val_str = this._val2str(val);
+
+      // if val is undefined set it as empty string
+      if (val === undefined || val === null) { val_str = ''; }
+
+      // apply pipe option, for example: --pipe:slice(0,10).trim() (val_str must be a string)
+      const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
+      if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
+
+      // load content in the element
+      if (opts.includes('overwrite')) {
+        elem.innerHTML = val_str; // take controller value and replace element value - no cloning
+      } else if (opts.includes('prepend')) {
+        const innerHTML = this._inner(elem);
+        elem.innerHTML = val_str + innerHTML; // take controller value and prepend it to element value
+      } else if (opts.includes('append')) {
+        const innerHTML = this._inner(elem);
+        elem.innerHTML = innerHTML + val_str; // take controller value and append it to element value
+      } else {
+        elem.innerHTML = val_str;
+      }
+
+      this._elemShow(elem);
+
+    }
+
+    this._debug('ddHtml', '--------- ddHtml (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-mustache
+   *  Solve mustaches in the element's innerHTML.
+   *  The mustache can contain standalone controller property {{this.$model.name}} or expression {{this.id + 1}}. The this. must be used.
+   */
+  ddMustache() {
+    this._debug('ddMustache', `--------- ddMustache (start)------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-mustache';
+    const elems = this._listElements(attrName);
+    this._debug('ddMustache', `found elements:: ${elems.length} `, 'navy');
+
+    for (const elem of elems) {
+      // get innerHTML & set the dd-inner
+      const innerHTML = this._inner(elem);
+
+      // solve mustache in inner html
+      elem.innerHTML = this._solveMustache(innerHTML);
+
+      this._elemShow(elem);
+
+      this._debug('ddMustache', `ddMustache-innerHTML:: ${elem.innerHTML}`, 'navy');
+    }
+
+    this._debug('ddMustache', '--------- ddMustache (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
   /********************************* ATTRIBUTE MANAGERS **********************************/
-  /***************************************************************************************/
   /**
    * dd-value="controllerProperty" | dd-value="(expression)"
    *  Take controller property and set the element attribute and DOM property value.
@@ -440,6 +582,22 @@ class Dd extends DdCloners {
   }
 
 
+
+
+  /**** PRIVATES ****/
+  /**
+   * Get innerHTML. Set the dd-inner.
+   * @param {HTMLElement} elem - HTML element
+   */
+  _inner(elem) {
+    let innerHTML_encoded = elem.getAttribute('dd-inner') || '';
+    if (!innerHTML_encoded) {
+      innerHTML_encoded = encodeURI(elem.innerHTML.replace(/\n/g, ''));
+      elem.setAttribute('dd-inner', innerHTML_encoded);
+    }
+    const innerHTML = decodeURI(innerHTML_encoded);
+    return innerHTML;
+  }
 
 
 

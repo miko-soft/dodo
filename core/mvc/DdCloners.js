@@ -14,10 +14,23 @@ class DdCloners extends DdListeners {
 
   /**
    * Remove all dd-xyz-clone elements
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddUNCLONE() {
+  ddUNCLONE(modelName) {
     for (const cloner_directive of this.$dd.cloner_directives) {
-      const dd_elems = document.querySelectorAll(`[${cloner_directive}-clone]`);
+      const attrName = `[${cloner_directive}-clone]`; // dd-foreach-clone
+      let dd_elems = document.querySelectorAll(attrName);
+
+      dd_elems = Array.from(dd_elems); // convert DOM node list to JS array
+
+      // take only elements with model name in the dd-...-clone attribute
+      if (!!modelName) {
+        dd_elems = dd_elems.filter(dd_elem => {
+          const attrValue = dd_elem.getAttribute(attrName); // $model.users --user,key
+          return attrValue && attrValue.includes('$model.' + modelName);
+        });
+      }
+
       for (const dd_elem of dd_elems) { dd_elem.remove(); }
     }
   }
@@ -27,10 +40,31 @@ class DdCloners extends DdListeners {
   /**
    * Remove all dd-rendered attributes from the document.
    */
-  ddUNRENDERED() {
-    const renderedElems = document.querySelectorAll('[dd-rendered]');
-    for (const renderedElem of renderedElems) {
-      renderedElem.removeAttribute('dd-rendered');
+  ddUNRENDERED(modelName) {
+    let dd_rendered_elems = document.querySelectorAll('[dd-rendered]');
+
+    dd_rendered_elems = Array.from(dd_rendered_elems); // convert DOM node list to JS array
+
+    // take only elements with model name in the dd-... attribute
+    if (!!modelName) {
+      const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
+
+      dd_rendered_elems = dd_rendered_elems.filter(dd_rendered_elem => {
+        let tf = false;
+        for (const directive of directives) {
+          const attrValue = dd_rendered_elem.getAttribute(directive); // $model.users --user,key
+          if (attrValue && attrValue.includes('$model.' + modelName)) {
+            tf = true;
+            break;
+          }
+        }
+        return tf;
+      });
+
+    }
+
+    for (const dd_rendered_elem of dd_rendered_elems) {
+      dd_rendered_elem.removeAttribute('dd-rendered');
     }
   }
 
@@ -184,161 +218,6 @@ class DdCloners extends DdListeners {
 
     this._debug('ddIf', '--------- ddIf (end) ------', 'navy', '#B6ECFF');
   }
-
-
-
-  /**
-   * dd-text="controllerProperty [--overwrite|prepend|append]" | dd-text="expression [--overwrite|prepend|append]"
-   *  Print pure text in the dd-text element.
-   *  NOTICE: No cloning when --overwrite option is used. The --overwrite is default option.
-   * Examples:
-   * dd-text="firstName"                  - firstName is the controller property, it can also be model $model.firstname
-   * dd-text="this.firstName"             - this. will not cause the error
-   * dd-text="firstName --append"         - append the text to the existing text
-   * dd-text="$model.product___{{id}}"    - dynamic controller property name
-   */
-  ddText() {
-    this._debug('ddText', `--------- ddText(start)------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-text';
-    const elems = this._listElements(attrName);
-    this._debug('ddText', `found elements:: ${elems.length} `, 'navy');
-
-    for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName);
-      const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddText', `dd-text="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
-
-      // convert controller val to string
-      let val_str = this._val2str(val);
-
-      // if val is undefined set it as empty string
-      if (val === undefined || val === null) { val_str = ''; }
-
-      // apply pipe option, for example: --pipe:slice(0,10).trim() (val_str must be a string)
-      const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
-      if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
-
-      if (!this._hasAnyOfClonerDirectives(elem, ['dd-foreach', 'dd-repeat', 'dd-if'])) {
-        this._elemShow(elem);
-      }
-
-      // load content in the element
-      if (opts.includes('overwrite')) {
-        elem.textContent = val_str; // take controller value and replace element value - no cloning
-      } else if (opts.includes('prepend')) {
-        const clonedElem = this._kloner(elem, attrName, attrVal, true);
-        clonedElem.textContent = val_str + elem.textContent; // take controller value and prepend it to element value
-      } else if (opts.includes('append')) {
-        const clonedElem = this._kloner(elem, attrName, attrVal, true);
-        clonedElem.textContent = elem.textContent + val_str; // take controller value and append it to element value
-      } else {
-        elem.textContent = val_str;
-      }
-    }
-
-    this._debug('ddText', '--------- ddText (end) ------', 'navy', '#B6ECFF');
-  }
-
-
-
-  /**
-   * dd-html="controllerProperty [--inner|outer|sibling|prepend|append]" | dd-html="expression [--inner|outer|sibling|prepend|append]"
-   *  Embed HTML node in the DOM at a place marked with dd-html attribute.
-   *  NOTICE: No cloning when --inner option is used. The --inner is default option.
-   * Examples:
-   * dd-html="product" or dd-html="product.name --inner"    - insert in the element (product is the controller property with HTML tags in the value)
-   * dd-html="product.name --outer"                         - replace the element
-   */
-  ddHtml() {
-    this._debug('ddHtml', `--------- ddHtml(start)------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-html';
-    const elems = this._listElements(attrName);
-    this._debug('ddHtml', `found elements:: ${elems.length} `, 'navy');
-
-    for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName);
-      const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddHtml', `dd-html="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
-
-      // if val is undefined do not render
-      if (val === undefined || val === null) { continue; }
-
-      // convert controller val to string
-      let val_str = this._val2str(val);
-
-      // apply pipe option, for example: --pipe:slice(0,10).trim() (val must be a string)
-      const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
-      if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
-
-      if (!this._hasAnyOfClonerDirectives(elem, ['dd-foreach', 'dd-repeat', 'dd-if'])) {
-        this._elemShow(elem);
-      }
-
-      // load content in the element
-      if (opts.includes('inner')) {
-        elem.innerHTML = val_str; // take controller value and replace element value - no cloning
-      } else if (opts.includes('outer')) {
-        const clonedElem = this._kloner(elem, attrName, attrVal, true);
-        clonedElem.outerHTML = `<span dd-html-clone>${val_str}</span > `; // wrap in span
-      } else if (opts.includes('sibling')) {
-        const clonedElem = this._kloner(elem, attrName, attrVal, true);
-        const docParsed = new DOMParser().parseFromString(val_str, 'text/html');
-        const siblingElem = docParsed.body.childNodes[0];
-        siblingElem.setAttribute('dd-html-clone', '');
-        clonedElem.parentNode.insertBefore(siblingElem, clonedElem.nextSibling);
-      } else if (opts.includes('prepend')) {
-        const clonedElem = this._kloner(elem, attrName, attrVal, true);
-        clonedElem.innerHTML = val_str + clonedElem.innerHTML; // take controller value and prepend it to element value
-      } else if (opts.includes('append')) {
-        const clonedElem = this._kloner(elem, attrName, attrVal, true);
-        clonedElem.innerHTML = clonedElem.innerHTML + val_str; // take controller value and append it to element value
-      } else {
-        elem.innerHTML = val_str;
-      }
-    }
-
-    this._debug('ddHtml', '--------- ddHtml (end) ------', 'navy', '#B6ECFF');
-  }
-
-
-
-  /**
-   * dd-mustache
-   *  Solve mustaches in the element's innerHTML and attributes.
-   *  The mustache can contain standalone controller property {{this.$model.name}} or expression {{this.id + 1}}. The this. must be used.
-   */
-  ddMustache() {
-    this._debug('ddMustache', `--------- ddMustache(start)------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-mustache';
-    const elems = this._listElements(attrName);
-    this._debug('ddMustache', `found elements:: ${elems.length} `, 'navy');
-
-    for (const elem of elems) {
-      const clonedElem = this._kloner(elem, attrName, '', true);
-
-      // solve mustache in inner html
-      clonedElem.innerHTML = this._solveMustache(clonedElem.innerHTML);
-
-      // solve mustache in attributes
-      for (const attribute of clonedElem.attributes) {
-        attribute.value = this._solveMustache(attribute.value);
-      }
-
-      if (this._hasAnyOfClonerDirectives(elem, ['dd-foreach-clone', 'dd-repeat-clone', 'dd-if-clone'])) {
-        elem.remove();
-      }
-
-      this._debug('ddMustache', `ddMustache-outerHTML:: ${clonedElem.outerHTML}`, 'navy');
-    }
-
-    this._debug('ddMustache', '--------- ddMustache (end) ------', 'navy', '#B6ECFF');
-  }
-
 
 
 
