@@ -39,6 +39,8 @@ class Dd extends DdCloners {
       ]
     };
 
+
+    this.$elem = {};
   }
 
 
@@ -83,16 +85,16 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-elem="<ddElemsProp>"     --> ddElemsProp is the property of the this.$dd.elems, for example dd-elem="myElement" => this.$dd.elems.myElement
-   *  Transfer the DOM element to the controller property "this.$dd.elems".
+   * dd-elem="<ddElemsProp>"     --> ddElemsProp is the property of the this.$elem, for example dd-elem="myElement" => this.$elem.myElement
+   *  Transfer the DOM element to the controller property "this.$elem".
    * Examples:
-   * dd-elem="paragraf" -> fetch it with this.$dd.elems.paragraf
+   * dd-elem="paragraf" -> fetch it with this.$elem.paragraf
    */
-  ddElem() {
+  ddElem(modelName) {
     this._debug('ddElem', '--------- ddElem ------', 'navy', '#B6ECFF');
 
     const attrName = 'dd-elem';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddElem', `found elements:: ${elems.length}`, 'navy');
 
     // associate values to $dd
@@ -100,7 +102,7 @@ class Dd extends DdCloners {
       const attrVal = elem.getAttribute(attrName) || ''; // 'paragraf'
       const { base } = this._decomposeAttribute(attrVal);
       this._elemShow(elem);
-      this.$dd.elems[base] = elem; // this.$dd.elems.paragraf
+      this.$elem[base] = elem; // this.$elem.paragraf
     }
   }
 
