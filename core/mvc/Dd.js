@@ -120,12 +120,13 @@ class Dd extends DdCloners {
    * dd-show="(this.a < 5 && this.a >= 8)"      - expression
    * dd-show="(this.$model.name === 'John')"    - expression with model
    * dd-show="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddShow() {
+  ddShow(modelName) {
     this._debug('ddShow', `--------- ddShow (start) ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-show';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddShow', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -162,12 +163,13 @@ class Dd extends DdCloners {
    * dd-text="this.firstName"             - this. will not cause the error
    * dd-text="$model.firstName --append"  - append the text to the existing text
    * dd-text="$model.product___{{id}}"    - dynamic controller property name
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddText() {
+  ddText(modelName) {
     this._debug('ddText', `--------- ddText (start)------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-text';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddText', `found elements:: ${elems.length} `, 'navy');
 
     for (const elem of elems) {
@@ -216,12 +218,13 @@ class Dd extends DdCloners {
    * dd-html="this.firstName"             - this. will not cause the error
    * dd-html="$model.firstName --append"  - append the HTML to the existing HTML
    * dd-html="$model.product___{{id}}"    - dynamic controller property name
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddHtml() {
+  ddHtml(modelName) {
     this._debug('ddHtml', `--------- ddHtml (start)------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-html';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddHtml', `found elements:: ${elems.length} `, 'navy');
 
     for (const elem of elems) {
@@ -266,12 +269,13 @@ class Dd extends DdCloners {
    * dd-mustache
    *  Solve mustaches in the element's innerHTML.
    *  The mustache can contain standalone controller property {{this.$model.name}} or expression {{this.id + 1}}. The this. must be used.
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddMustache() {
+  ddMustache(modelName) {
     this._debug('ddMustache', `--------- ddMustache (start)------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-mustache';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddMustache', `found elements:: ${elems.length} `, 'navy');
 
     for (const elem of elems) {
@@ -300,12 +304,13 @@ class Dd extends DdCloners {
    * dd-value="product"
    * dd-value="$model.product"
    * dd-value="(this.product)"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddValue() {
+  ddValue(modelName) {
     this._debug('ddValue', '--------- ddValue ------', 'navy', '#B6ECFF');
 
     const attrName = 'dd-value';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddValue', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -335,12 +340,13 @@ class Dd extends DdCloners {
    * dd-disabled="(this.a < 5 && this.a >= 8)"      - expression
    * dd-disabled="(this.$model.name === 'John')"    - expression with model
    * dd-disabled="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddDisabled() {
+  ddDisabled(modelName) {
     this._debug('ddDisabled', `--------- ddDisabled (start) ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-disabled';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddDisabled', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -366,12 +372,13 @@ class Dd extends DdCloners {
    *  Use it for checkbox or radio input elements only.
    *   CHECKBOX --> The controller value should be array of strings
    *   RADIO --> The controller value should be a string
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddChecked() {
+  ddChecked(modelName) {
     this._debug('ddChecked', '--------- ddChecked ------', 'navy', '#B6ECFF');
 
     const attrName = 'dd-checked';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddChecked', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -404,7 +411,7 @@ class Dd extends DdCloners {
         }
       }
 
-      this._debug('ddChecked', `dd-checked="${attrVal}" :: ${base} --> ${prop_solved} = ${val} ; elem.value: ${elem.value} ; elem.checked: ${elem.checked}`, 'navy');
+      this._debug('ddChecked', `   elem.value: ${elem.value} ; elem.checked: ${elem.checked}`, 'navy');
     }
 
     this._debug('ddChecked', '--------- ddChecked (end) ------', 'navy', '#B6ECFF');
@@ -420,12 +427,13 @@ class Dd extends DdCloners {
    *   SELECT-ONE --> The controller value should be a string.
    * Example:
    * dd-selected="selectedProducts --multiple"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddSelected() {
+  ddSelected(modelName) {
     this._debug('ddSelected', '--------- ddSelected ------', 'navy', '#B6ECFF');
 
     const attrName = 'dd-selected';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddSelected', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -459,12 +467,13 @@ class Dd extends DdCloners {
    * Examples:
    * dd-class="myKlass"             - add new classes to existing classes
    * dd-class="myKlass --replace"   - replace existing classes with new classes
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddClass() {
+  ddClass(modelName) {
     this._debug('ddClass', '--------- ddClass ------', 'navy', '#B6ECFF');
 
     const attrName = 'dd-class';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddClass', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -497,12 +506,13 @@ class Dd extends DdCloners {
    * Examples:
    * dd-style="myStyle"             - add new styles to existing styles
    * dd-style="myStyle --replace"   - replace existing styles with new styles
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddStyle() {
+  ddStyle(modelName) {
     this._debug('ddStyle', '--------- ddStyle ------', 'navy', '#B6ECFF');
 
     const attrName = 'dd-style';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddStyle', `found elements:: ${elems.length}`, 'navy');
 
 
@@ -538,12 +548,13 @@ class Dd extends DdCloners {
    * Examples:
    * dd-src="imageURL"
    * dd-src="imageURL --https://via.placeholder.com/130"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddSrc() {
+  ddSrc(modelName) {
     this._debug('ddSrc', '--------- ddSrc ------', 'navy', '#B6ECFF');
 
     const attrName = 'dd-src';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddSrc', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -570,12 +581,13 @@ class Dd extends DdCloners {
    *  The controller property value should a string.
    * Examples:
    * dd-attr="$model.myURL --href"     - sets href in the A tag
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddAttr() {
+  ddAttr(modelName) {
     this._debug('ddAttr', '--------- ddAttr ------', 'navy', '#B6ECFF');
 
     const attrName = 'dd-attr';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddAttr', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -583,7 +595,7 @@ class Dd extends DdCloners {
       const { base, opts } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
       const attributeName = opts[0] || '';
-      this._debug('ddSrc', `dd-src="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | attributeName:: ${attributeName}`, 'navy');
+      this._debug('ddAttr', `dd-attr="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | attributeName:: ${attributeName}`, 'navy');
 
       this._elemShow(elem);
 

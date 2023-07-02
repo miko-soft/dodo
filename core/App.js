@@ -15,7 +15,7 @@ class App extends Router {
     this.$postflight = []; // array of postflight functions, will be executed on every route ater the controller's __postrend()
 
     this.ctrls = {}; // { HomeCtrl: {}, Page1Ctrl: {}, ...}
-    this.ctrlConstants = { $appName: this.$appName, $fridge: {} }; // {$appName, $fridge, $httpClient, $auth, $debugOpts,   $model, $modeler,   $dd}
+    this.ctrlConstants = { $appName: this.$appName, $fridge: {} }; // {$appName, $fridge, $httpClient, $auth, $debugOpts,   $model, $modeler,   $dd, $elem}
   }
 
 

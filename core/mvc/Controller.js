@@ -6,7 +6,7 @@ import Model from './Model.js';
  * Controller constants:
  * App.js -> $fridge, $httpClient, $auth, $debugOpts
  * Model.js -> $model, $modeler
- * Dd.js -> $dd
+ * Dd.js -> $dd, $elem
  */
 class Controller extends Model {
 
@@ -91,33 +91,35 @@ class Controller extends Model {
   /************ RENDER METHODS ***********/
   /**
    * Render the view i.e. the dd- elements.
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    * @param {number} renderDelay - delay in miliseconds
    */
-  async render(renderDelay = 5) {
+  async render(modelName, renderDelay = 5) {
     this._debug('render', `--------- render (start) -- ctrl: ${this.constructor.name} -- renderDelay: ${renderDelay}  ------`, 'green', '#D9FC9B');
 
     // DdCloners.js
-    this.ddUNCLONE();
-    this.ddUNRENDERED();
+    this.ddUNCLONE(modelName);
+    this.ddUNRENDERED(modelName);
     this.ddForeach();
     this.ddRepeat();
     this.ddIf();
-    this.ddText();
-    this.ddHtml();
-    this.ddMustache();
 
     // Dd.js
-    this.ddElem();
-    this.ddShow();
+    this.ddElem(modelName);
+    this.ddShow(modelName);
+    // innerHTML managers
+    this.ddText(modelName);
+    this.ddHtml(modelName);
+    this.ddMustache(modelName);
     // attribute managers
-    this.ddValue();
-    this.ddDisabled();
-    this.ddChecked();
-    this.ddSelected();
-    this.ddClass();
-    this.ddStyle();
-    this.ddSrc();
-    this.ddAttr();
+    this.ddValue(modelName);
+    this.ddDisabled(modelName);
+    this.ddChecked(modelName);
+    this.ddSelected(modelName);
+    this.ddClass(modelName);
+    this.ddStyle(modelName);
+    this.ddSrc(modelName);
+    this.ddAttr(modelName);
 
     await new Promise(r => setTimeout(r, renderDelay));
 

@@ -84,10 +84,26 @@ class Aux {
   /**
    * List DOM elements which has "dd-..." attribute and doesn't have dd-rendered.
    * @param {string} attrName - attribute name -> 'dd-text', 'dd.html', ...
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    * @returns {HTMLElement[]}
    */
-  _listElements(attrName) {
-    const elems = document.querySelectorAll(`[${attrName}]:not([dd-rendered])`);
+  _listElements(attrName, modelName) {
+    let elems = document.querySelectorAll(`[${attrName}]:not([dd-rendered])`);
+    elems = Array.from(elems); // convert DOM node list to JS array
+
+    // take only elements with model name
+    if (!!modelName) {
+      elems = elems.filter(elem => {
+        if (attrName === 'dd-mustache') {
+          const ddInner = elem.getAttribute('dd-inner'); // %3Cb%20style=%22color:Green%22%3E%7B%7Bthis.$model.num%20+%20Math.pow(this.$model.num,%202)%7D%7D%3C/b%3E
+          return ddInner && ddInner.includes('$model.' + modelName);
+        } else {
+          const attrValue = elem.getAttribute(attrName); // $model.users --user,key or $model.age < 28
+          return attrValue && attrValue.includes('$model.' + modelName);
+        }
+      });
+    }
+
     return elems;
   }
 
