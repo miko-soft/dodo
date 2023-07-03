@@ -91,7 +91,7 @@ class Dd extends DdCloners {
    * dd-elem="paragraf" -> fetch it with this.$elem.paragraf
    */
   ddElem(modelName) {
-    this._debug('ddElem', '--------- ddElem ------', 'navy', '#B6ECFF');
+    this._debug('ddElem', `--------- ddElem -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-elem';
     const elems = this._listElements(attrName, modelName);
@@ -108,52 +108,6 @@ class Dd extends DdCloners {
 
 
 
-  /**
-   * dd-show="controllerProperty [--visibility]" | dd-show="(expression) [--visibility]"
-   *  Show or hide the HTML element.
-   * Option:
-   * dd-show="ctrlProp" → Show/hide elements by setting up display:none inline CSS style.
-   * dd-show="ctrlProp --visibility" → Show/hide elements by setting up visibility:visible|hidden inline CSS style.
-   * Examples:
-   * dd-show="isActive"                         - isActive is the controller property, it can also be model $model.isActive
-   * dd-show="this.isActive"                    - this. will not cause the error
-   * dd-show="(this.a < 5 && this.a >= 8)"      - expression
-   * dd-show="(this.$model.name === 'John')"    - expression with model
-   * dd-show="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
-   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
-   */
-  ddShow(modelName) {
-    this._debug('ddShow', `--------- ddShow (start) ------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-show';
-    const elems = this._listElements(attrName, modelName);
-    this._debug('ddShow', `found elements:: ${elems.length}`, 'navy');
-
-    for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName);
-      const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      const isVisibility = !!opts && !!opts[0] && opts[0] === 'visibility';
-      this._debug('ddShow', `dd-show="${attrVal}" :: ${base} --> ${prop_solved} = ${val} , isVisibility:${isVisibility}`, 'navy');
-
-      // hide original element
-      if (isVisibility) {
-        elem.style.display = '';
-        val ? elem.style.visibility = 'visible' : elem.style.visibility = 'hidden';
-      } else {
-        val ? elem.style.display = '' : elem.style.display = 'none';
-      }
-
-      // remove style if it's empty
-      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
-    }
-
-    this._debug('ddShow', '--------- ddShow (end) ------', 'navy', '#B6ECFF');
-  }
-
-
-
-
   /********************************* INNERS **********************************/
   /**
    * dd-text="controllerProperty [--overwrite|prepend|append]" | dd-text="expression [--overwrite|prepend|append]"
@@ -166,7 +120,7 @@ class Dd extends DdCloners {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddText(modelName) {
-    this._debug('ddText', `--------- ddText (start)------`, 'navy', '#B6ECFF');
+    this._debug('ddText', `--------- ddText (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-text';
     const elems = this._listElements(attrName, modelName);
@@ -221,7 +175,7 @@ class Dd extends DdCloners {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddHtml(modelName) {
-    this._debug('ddHtml', `--------- ddHtml (start)------`, 'navy', '#B6ECFF');
+    this._debug('ddHtml', `--------- ddHtml (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-html';
     const elems = this._listElements(attrName, modelName);
@@ -272,7 +226,7 @@ class Dd extends DdCloners {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddMustache(modelName) {
-    this._debug('ddMustache', `--------- ddMustache (start)------`, 'navy', '#B6ECFF');
+    this._debug('ddMustache', `--------- ddMustache (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-mustache';
     const elems = this._listElements(attrName, modelName);
@@ -297,6 +251,97 @@ class Dd extends DdCloners {
 
   /********************************* ATTRIBUTE MANAGERS **********************************/
   /**
+   * dd-if="controllerProperty" | dd-if="(expression)"
+   *  Display element from if group when the controllerProperty or expression has truthy value.
+   *  The term "if group" means a group of sibling dd-if, dd-elseif and dd-else elements. Usually a group should be wraped in HTML tag so it is separated from another group, but that's not obligatory.
+   * Examples:
+   * dd-if="myBool" ; dd-else
+   * dd-if="(this.x > 5)" ; dd-elseif="(this.x <= 5)" ; dd-else
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddIf(modelName) {
+    this._debug('ddIf', `--------- ddIf(start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-if';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddIf', `found elements:: ${elems.length} `, 'navy');
+
+    for (const elem of elems) {
+      const ifGroupElems = this._getSiblings(elem, ['dd-if', 'dd-elseif', 'dd-else']); // get siblings of dd-if, dd-elseif and dd-else
+
+      this._debug().ddIf && console.log('\n--if group--');
+
+      // hide all if group elements
+      for (const ifGroupElem of ifGroupElems) {
+        this._elemHide(ifGroupElem);
+      }
+
+      // show truthy if group element
+      for (const ifGroupElem of ifGroupElems) {
+        const attrVal = ifGroupElem.getAttribute('dd-if') || ifGroupElem.getAttribute('dd-elseif') || ifGroupElem.getAttribute('dd-else');
+        const { base } = this._decomposeAttribute(attrVal);
+        const { val } = this._solveBase(base);
+        this._debug().ddIf && console.log(ifGroupElem.outerHTML, val);
+        if (!!val || ifGroupElem.hasAttribute('dd-else')) {
+          this._elemShow(ifGroupElem);
+          break;
+        }
+      }
+
+      this._debug().ddIf && console.log('----------');
+    }
+
+    this._debug('ddIf', '--------- ddIf (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-show="controllerProperty [--visibility]" | dd-show="(expression) [--visibility]"
+   *  Show or hide the HTML element.
+   * Option:
+   * dd-show="ctrlProp" → Show/hide elements by setting up display:none inline CSS style.
+   * dd-show="ctrlProp --visibility" → Show/hide elements by setting up visibility:visible|hidden inline CSS style.
+   * Examples:
+   * dd-show="isActive"                         - isActive is the controller property, it can also be model $model.isActive
+   * dd-show="this.isActive"                    - this. will not cause the error
+   * dd-show="(this.a < 5 && this.a >= 8)"      - expression
+   * dd-show="(this.$model.name === 'John')"    - expression with model
+   * dd-show="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddShow(modelName) {
+    this._debug('ddShow', `--------- ddShow (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-show';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddShow', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const { val, prop_solved } = this._solveBase(base);
+      const isVisibility = !!opts && !!opts[0] && opts[0] === 'visibility';
+      this._debug('ddShow', `dd-show="${attrVal}" :: ${base} --> ${prop_solved} = ${val} , isVisibility:${isVisibility}`, 'navy');
+
+      // hide original element
+      if (isVisibility) {
+        elem.style.display = '';
+        val ? elem.style.visibility = 'visible' : elem.style.visibility = 'hidden';
+      } else {
+        val ? elem.style.display = '' : elem.style.display = 'none';
+      }
+
+      // remove style if it's empty
+      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+    }
+
+    this._debug('ddShow', '--------- ddShow (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
    * dd-value="controllerProperty" | dd-value="(expression)"
    *  Take controller property and set the element attribute and DOM property value.
    *  The controller property value is automatically converted to string.
@@ -307,7 +352,7 @@ class Dd extends DdCloners {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddValue(modelName) {
-    this._debug('ddValue', '--------- ddValue ------', 'navy', '#B6ECFF');
+    this._debug('ddValue', `--------- ddValue (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-value';
     const elems = this._listElements(attrName, modelName);
@@ -343,7 +388,7 @@ class Dd extends DdCloners {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddDisabled(modelName) {
-    this._debug('ddDisabled', `--------- ddDisabled (start) ------`, 'navy', '#B6ECFF');
+    this._debug('ddDisabled', `--------- ddDisabled (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-disabled';
     const elems = this._listElements(attrName, modelName);
@@ -375,7 +420,7 @@ class Dd extends DdCloners {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddChecked(modelName) {
-    this._debug('ddChecked', '--------- ddChecked ------', 'navy', '#B6ECFF');
+    this._debug('ddChecked', `--------- ddChecked (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-checked';
     const elems = this._listElements(attrName, modelName);
@@ -430,7 +475,7 @@ class Dd extends DdCloners {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddSelected(modelName) {
-    this._debug('ddSelected', '--------- ddSelected ------', 'navy', '#B6ECFF');
+    this._debug('ddSelected', `--------- ddSelected (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-selected';
     const elems = this._listElements(attrName, modelName);
@@ -470,7 +515,7 @@ class Dd extends DdCloners {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddClass(modelName) {
-    this._debug('ddClass', '--------- ddClass ------', 'navy', '#B6ECFF');
+    this._debug('ddClass', `--------- ddClass (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-class';
     const elems = this._listElements(attrName, modelName);
@@ -509,7 +554,7 @@ class Dd extends DdCloners {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddStyle(modelName) {
-    this._debug('ddStyle', '--------- ddStyle ------', 'navy', '#B6ECFF');
+    this._debug('ddStyle', `--------- ddStyle (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-style';
     const elems = this._listElements(attrName, modelName);
@@ -551,7 +596,7 @@ class Dd extends DdCloners {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddSrc(modelName) {
-    this._debug('ddSrc', '--------- ddSrc ------', 'navy', '#B6ECFF');
+    this._debug('ddSrc', `--------- ddSrc (start)  -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-src';
     const elems = this._listElements(attrName, modelName);
@@ -584,7 +629,7 @@ class Dd extends DdCloners {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddAttr(modelName) {
-    this._debug('ddAttr', '--------- ddAttr ------', 'navy', '#B6ECFF');
+    this._debug('ddAttr', `--------- ddAttr (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-attr';
     const elems = this._listElements(attrName, modelName);
@@ -622,6 +667,7 @@ class Dd extends DdCloners {
     if (!innerHTML_encoded) {
       innerHTML_encoded = encodeURI(elem.innerHTML.replace(/\n/g, ''));
       elem.setAttribute('dd-inner', innerHTML_encoded);
+      elem.innerHTML = '';
     }
     const innerHTML = decodeURI(innerHTML_encoded);
     return innerHTML;
