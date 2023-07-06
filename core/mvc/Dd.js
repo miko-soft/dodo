@@ -16,12 +16,12 @@ class Dd extends DdCloners {
       noncloner_directives: [
         'dd-setinitial',
         'dd-elem',
-        'dd-show',
-        // innerHTML managers
-        'dd-inner',
+        // switchers
+        'dd-if', 'dd-elseif', 'dd-else',
+        'dd-visible',
+        // writers
         'dd-text',
         'dd-html',
-        'dd-mustache',
         // HTML tag attribute managers
         'dd-value',
         'dd-disabled',
@@ -33,9 +33,9 @@ class Dd extends DdCloners {
         'dd-attr',
       ],
       cloner_directives: [
-        'dd-if', 'dd-elseif', 'dd-else',
         'dd-foreach',
-        'dd-repeat'
+        'dd-repeat',
+        'dd-mustache'
       ]
     };
 
@@ -97,159 +97,17 @@ class Dd extends DdCloners {
     const elems = this._listElements(attrName, modelName);
     this._debug('ddElem', `found elements:: ${elems.length}`, 'navy');
 
-    // associate values to $dd
+    // associate values to $elem
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName) || ''; // 'paragraf'
       const { base } = this._decomposeAttribute(attrVal);
-      this._elemShow(elem);
       this.$elem[base] = elem; // this.$elem.paragraf
     }
   }
 
 
 
-  /********************************* INNERS **********************************/
-  /**
-   * dd-text="controllerProperty [--overwrite|prepend|append]" | dd-text="expression [--overwrite|prepend|append]"
-   *  Print pure text in the dd-text element.
-   * Examples:
-   * dd-text="firstName"                  - firstName is the controller property, it can also be model $model.firstname
-   * dd-text="this.firstName"             - this. will not cause the error
-   * dd-text="$model.firstName --append"  - append the text to the existing text
-   * dd-text="$model.product___{{id}}"    - dynamic controller property name
-   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
-   */
-  ddText(modelName) {
-    this._debug('ddText', `--------- ddText (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-text';
-    const elems = this._listElements(attrName, modelName);
-    this._debug('ddText', `found elements:: ${elems.length} `, 'navy');
-
-    for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName);
-      const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddText', `dd-text="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
-
-      // convert controller val to string
-      let val_str = this._val2str(val);
-
-      // if val is undefined set it as empty string
-      if (val === undefined || val === null) { val_str = ''; }
-
-      // apply pipe option, for example: --pipe:slice(0,10).trim() (val_str must be a string)
-      const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
-      if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
-
-      // load content in the element
-      if (opts.includes('overwrite')) {
-        elem.textContent = val_str; // take controller value and replace element value - no cloning
-      } else if (opts.includes('prepend')) {
-        const innerHTML = this._inner(elem);
-        elem.textContent = val_str + innerHTML; // take controller value and prepend it to element value
-      } else if (opts.includes('append')) {
-        const innerHTML = this._inner(elem);
-        elem.textContent = innerHTML + val_str; // take controller value and append it to element value
-      } else {
-        elem.textContent = val_str;
-      }
-
-      this._elemShow(elem);
-
-    }
-
-    this._debug('ddText', '--------- ddText (end) ------', 'navy', '#B6ECFF');
-  }
-
-
-
-  /**
-   * dd-html="controllerProperty [--overwrite|prepend|append]" | dd-html="expression [--overwrite|prepend|append]"
-   *  Embed HTML node in the DOM at a place marked with dd-html attribute.
-   * Examples:
-   * dd-html="firstName"                  - firstName is the controller property, it can also be model $model.firstname
-   * dd-html="this.firstName"             - this. will not cause the error
-   * dd-html="$model.firstName --append"  - append the HTML to the existing HTML
-   * dd-html="$model.product___{{id}}"    - dynamic controller property name
-   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
-   */
-  ddHtml(modelName) {
-    this._debug('ddHtml', `--------- ddHtml (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-html';
-    const elems = this._listElements(attrName, modelName);
-    this._debug('ddHtml', `found elements:: ${elems.length} `, 'navy');
-
-    for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName);
-      const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddHtml', `dd-html="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
-
-      // convert controller val to string
-      let val_str = this._val2str(val);
-
-      // if val is undefined set it as empty string
-      if (val === undefined || val === null) { val_str = ''; }
-
-      // apply pipe option, for example: --pipe:slice(0,10).trim() (val_str must be a string)
-      const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
-      if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
-
-      // load content in the element
-      if (opts.includes('overwrite')) {
-        elem.innerHTML = val_str; // take controller value and replace element value - no cloning
-      } else if (opts.includes('prepend')) {
-        const innerHTML = this._inner(elem);
-        elem.innerHTML = val_str + innerHTML; // take controller value and prepend it to element value
-      } else if (opts.includes('append')) {
-        const innerHTML = this._inner(elem);
-        elem.innerHTML = innerHTML + val_str; // take controller value and append it to element value
-      } else {
-        elem.innerHTML = val_str;
-      }
-
-      this._elemShow(elem);
-
-    }
-
-    this._debug('ddHtml', '--------- ddHtml (end) ------', 'navy', '#B6ECFF');
-  }
-
-
-
-  /**
-   * dd-mustache
-   *  Solve mustaches in the element's innerHTML.
-   *  The mustache can contain standalone controller property {{this.$model.name}} or expression {{this.id + 1}}. The this. must be used.
-   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
-   */
-  ddMustache(modelName) {
-    this._debug('ddMustache', `--------- ddMustache (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-mustache';
-    const elems = this._listElements(attrName, modelName);
-    this._debug('ddMustache', `found elements:: ${elems.length} `, 'navy');
-
-    for (const elem of elems) {
-      // get innerHTML & set the dd-inner
-      const innerHTML = this._inner(elem);
-
-      // solve mustache in inner html
-      elem.innerHTML = this._solveMustache(innerHTML);
-
-      this._elemShow(elem);
-
-      this._debug('ddMustache', `ddMustache-innerHTML:: ${elem.innerHTML}`, 'navy');
-    }
-
-    this._debug('ddMustache', '--------- ddMustache (end) ------', 'navy', '#B6ECFF');
-  }
-
-
-
-  /********************************* ATTRIBUTE MANAGERS **********************************/
+  /********************************* SWITCHERS **********************************/
   /**
    * dd-if="controllerProperty" | dd-if="(expression)"
    *  Display element from if group when the controllerProperty or expression has truthy value.
@@ -297,50 +155,133 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-show="controllerProperty [--visibility]" | dd-show="(expression) [--visibility]"
-   *  Show or hide the HTML element.
+   * dd-visible="controllerProperty" | dd-visible="(expression)"
+   *  Show or hide the HTML element by setting CSS property visibility:visible|hidden.
    * Option:
-   * dd-show="ctrlProp" → Show/hide elements by setting up display:none inline CSS style.
-   * dd-show="ctrlProp --visibility" → Show/hide elements by setting up visibility:visible|hidden inline CSS style.
+   * dd-visible="ctrlProp" → Show/hide elements by setting up visibility:none inline CSS style.
    * Examples:
-   * dd-show="isActive"                         - isActive is the controller property, it can also be model $model.isActive
-   * dd-show="this.isActive"                    - this. will not cause the error
-   * dd-show="(this.a < 5 && this.a >= 8)"      - expression
-   * dd-show="(this.$model.name === 'John')"    - expression with model
-   * dd-show="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   * dd-visible="isActive"                         - isActive is the controller property, it can also be model $model.isActive
+   * dd-visible="this.isActive"                    - this. will not cause the error
+   * dd-visible="(this.a < 5 && this.a >= 8)"      - expression
+   * dd-visible="(this.$model.name === 'John')"    - expression with model
+   * dd-visible="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddShow(modelName) {
-    this._debug('ddShow', `--------- ddShow (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+  ddVisible(modelName) {
+    this._debug('ddVisible', `--------- ddVisible (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
-    const attrName = 'dd-show';
+    const attrName = 'dd-visible';
     const elems = this._listElements(attrName, modelName);
-    this._debug('ddShow', `found elements:: ${elems.length}`, 'navy');
+    this._debug('ddVisible', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
-      const { base, opts } = this._decomposeAttribute(attrVal);
+      const { base } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
-      const isVisibility = !!opts && !!opts[0] && opts[0] === 'visibility';
-      this._debug('ddShow', `dd-show="${attrVal}" :: ${base} --> ${prop_solved} = ${val} , isVisibility:${isVisibility}`, 'navy');
+      this._debug('ddVisible', `dd-visible="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
       // hide original element
-      if (isVisibility) {
-        elem.style.display = '';
-        val ? elem.style.visibility = 'visible' : elem.style.visibility = 'hidden';
-      } else {
-        val ? elem.style.display = '' : elem.style.display = 'none';
-      }
+      elem.style.display = '';
+      val ? elem.style.visibility = 'visible' : elem.style.visibility = 'hidden';
 
       // remove style if it's empty
       if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
     }
 
-    this._debug('ddShow', '--------- ddShow (end) ------', 'navy', '#B6ECFF');
+    this._debug('ddVisible', '--------- ddVisible (end) ------', 'navy', '#B6ECFF');
+  }
+
+  /********************************* WRITERS **********************************/
+  /**
+   * dd-text="controllerProperty" | dd-text="(expression)"
+   *  Print pure text in the dd-text element.
+   * Examples:
+   * dd-text="firstName"                  - firstName is the controller property, it can also be model $model.firstname
+   * dd-text="this.firstName"             - this. will not cause the error
+   * dd-text="$model.product___{{id}}"    - dynamic controller property name
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddText(modelName) {
+    this._debug('ddText', `--------- ddText (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-text';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddText', `found elements:: ${elems.length} `, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const { val, prop_solved } = this._solveBase(base);
+      this._debug('ddText', `dd-text="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+
+      // convert controller val to string
+      let val_str = this._val2str(val);
+
+      // if val is undefined set it as empty string
+      if (val === undefined || val === null) { val_str = ''; }
+
+      // apply pipe option, for example: --pipe:slice(0,10).trim() (val_str must be a string)
+      const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
+      if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
+
+      // load content in the element
+      elem.textContent = val_str;
+
+      // show element when render is finished
+      this._elemShow(elem);
+    }
+
+    this._debug('ddText', '--------- ddText (end) ------', 'navy', '#B6ECFF');
   }
 
 
 
+  /**
+   * dd-html="controllerProperty" | dd-html="(expression)"
+   *  Embed HTML node in the DOM at a place marked with dd-html attribute.
+   * Examples:
+   * dd-html="firstName"                  - firstName is the controller property, it can also be model $model.firstname
+   * dd-html="this.firstName"             - this. will not cause the error
+   * dd-html="$model.product___{{id}}"    - dynamic controller property name
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddHtml(modelName) {
+    this._debug('ddHtml', `--------- ddHtml (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-html';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddHtml', `found elements:: ${elems.length} `, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const { val, prop_solved } = this._solveBase(base);
+      this._debug('ddHtml', `dd-html="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+
+      // convert controller val to string
+      let val_str = this._val2str(val);
+
+      // if val is undefined set it as empty string
+      if (val === undefined || val === null) { val_str = ''; }
+
+      // apply pipe option, for example: --pipe:slice(0,10).trim() (val_str must be a string)
+      const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
+      if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
+
+      // load content in the element
+      elem.innerHTML = val_str; // take controller value and replace element value - no cloning
+
+      // show element when render is finished
+      this._elemShow(elem);
+    }
+
+    this._debug('ddHtml', '--------- ddHtml (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+
+  /********************************* ATTRIBUTE MANAGERS **********************************/
   /**
    * dd-value="controllerProperty" | dd-value="(expression)"
    *  Take controller property and set the element attribute and DOM property value.
@@ -654,24 +595,6 @@ class Dd extends DdCloners {
     this._debug('ddAttr', '--------- ddAttr (end) ------', 'navy', '#B6ECFF');
   }
 
-
-
-
-  /**** PRIVATES ****/
-  /**
-   * Get innerHTML from dd-inner attribute. Set the dd-inner if it's not defined.
-   * @param {HTMLElement} elem - HTML element
-   */
-  _inner(elem) {
-    let innerHTML_encoded = elem.getAttribute('dd-inner') || '';
-    if (!innerHTML_encoded) {
-      innerHTML_encoded = encodeURI(elem.innerHTML.replace(/\n/g, ''));
-      elem.setAttribute('dd-inner', innerHTML_encoded);
-      elem.innerHTML = '';
-    }
-    const innerHTML = decodeURI(innerHTML_encoded);
-    return innerHTML;
-  }
 
 
 

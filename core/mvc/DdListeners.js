@@ -121,7 +121,6 @@ class DdListeners extends Aux {
    * Examples:
    *  dd-model="$model.product.name"
    *  dd-model="$model.product.price -- convertType" -> will convert price to number
-   * @returns {void}
    */
   ddModel() {
     this._debug('ddModel', '--------- ddModel ------', 'orange', '#F4EA9E');

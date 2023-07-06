@@ -94,23 +94,24 @@ class Controller extends Model {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    * @param {number} renderDelay - delay in miliseconds
    */
-  async render(modelName, renderDelay = 5) {
+  async render(modelName, renderDelay = 20) {
     this._debug('render', `--------- render (start) -- ctrl: ${this.constructor.name} -- renderDelay: ${renderDelay}  ------`, 'green', '#D9FC9B');
 
-    // DdCloners.js
-    this.ddUNCLONE(modelName);
-    this.ddUNRENDERED(modelName);
+    /* DdCloners.js */
+    this.ddCloneREMOVE();
+    this.ddRenderBlockREMOVE();
     this.ddForeach();
     this.ddRepeat();
-    this.ddIf();
+    this.ddMustache();
 
-    // Dd.js
+    /* Dd.js */
     this.ddElem(modelName);
-    this.ddShow(modelName);
-    // innerHTML managers
+    // switchers
+    this.ddIf(modelName);
+    this.ddVisible(modelName);
+    // writers
     this.ddText(modelName);
     this.ddHtml(modelName);
-    this.ddMustache(modelName);
     // attribute managers
     this.ddValue(modelName);
     this.ddDisabled(modelName);
@@ -123,7 +124,7 @@ class Controller extends Model {
 
     await new Promise(r => setTimeout(r, renderDelay));
 
-    // DdListeners.js
+    /* DdListeners.js */
     this.ddUNLISTEN();
     this.ddHref();
     this.ddSet();
