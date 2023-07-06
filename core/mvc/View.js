@@ -362,8 +362,9 @@ class View extends Dd {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = htmlString;
 
-    for (const cloner_directive of this.$dd.cloner_directives) {
-      const dd_elems = wrapper.querySelectorAll(`[${cloner_directive}]`);
+    const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
+    for (const directive of directives) {
+      const dd_elems = wrapper.querySelectorAll(`[${directive}]`);
       for (const dd_elem of dd_elems) { this._elemHide(dd_elem); }
     }
 

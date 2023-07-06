@@ -84,10 +84,44 @@ class Aux {
   /**
    * List DOM elements which has "dd-..." attribute and doesn't have dd-rendered.
    * @param {string} attrName - attribute name -> 'dd-text', 'dd.html', ...
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    * @returns {HTMLElement[]}
    */
-  _listElements(attrName) {
-    const elems = document.querySelectorAll(`[${attrName}]:not([dd-rendered])`);
+  _listElements(attrName, modelName) {
+    let elems = document.querySelectorAll(`[${attrName}]:not([dd-render-block])`);
+    elems = Array.from(elems); // convert DOM node list to JS array
+
+    if (!modelName) { return elems; }
+
+    // filter elements
+    elems = elems.filter(elem => {
+      // always render elements with dd-render-always i.e. which are cloned
+      if (elem.hasAttribute('dd-render-always')) { return true; }
+
+      // render elements with specific modelName
+      let attrValue = elem.getAttribute(attrName) || ''; // $model.users --user,key or $model.age < 28 or (5 > 2)
+      attrValue = attrValue.trim();
+      return attrValue.includes('$model.' + modelName);
+    });
+
+
+    return elems;
+  }
+
+
+  /**
+   * Sort elements by priority , dd-priority="<number>".
+   * The highest priority will be listed first.
+   * @param {HTMLElement[]} elems - elements
+   */
+  _sortElements(elems) {
+    elems = Array.from(elems); // convert NodeList to JS array
+    elems = elems.sort((elemA, elemB) => {
+      const priorityA = +elemA.getAttribute('dd-priority') || 0;
+      const priorityB = +elemB.getAttribute('dd-priority') || 0;
+      const dif = priorityB - priorityA;
+      return dif;
+    });
     return elems;
   }
 
@@ -360,42 +394,73 @@ class Aux {
 
 
 
-  /***** DD-RENDERED *****/
+  /***** DD-RENDER *****/
   /**
-   * Set dd-rendered to element and it's all dd- childrens.
+   * Set dd-render-... in element and it's all dd- childrens.
    * @param {HTMLElement} elem
+   * @param {string} renderType - 'block' or 'always' (see _listElements())
    */
-  _setRendered(elem) {
+  _setDdRender(elem, renderType = 'block') {
+    const attrName = `dd-render-${renderType}`;
+
     // set to element
-    elem.setAttribute('dd-rendered', '');
+    elem.setAttribute(attrName, '');
 
     // set to its childrens
     const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
     directives.forEach(directive => {
       const ddElems = elem.querySelectorAll(`[${directive}]`);
       ddElems.forEach(ddElem => {
-        ddElem.setAttribute('dd-rendered', '');
+        ddElem.setAttribute(attrName, '');
       });
     });
   }
 
 
   /**
-   * Remove dd-rendered from element and it's all dd- childrens.
+   * Remove dd-render-... attribute from element and it's all dd- childrens.
    * @param {HTMLElement} elem
+   * @param {string} renderType - 'block' or 'always' (see _listElements())
    */
-  _delRendered(elem) {
+  _delDdRender(elem, renderType = 'block') {
+    const attrName = `dd-render-${renderType}`;
+
     // remove from element
-    elem.removeAttribute('dd-rendered', '');
+    elem.removeAttribute(attrName);
 
     // remove from its childrens
     const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
     directives.forEach(directive => {
       const ddElems = elem.querySelectorAll(`[${directive}]`);
       ddElems.forEach(ddElem => {
-        ddElem.removeAttribute('dd-rendered', '');
+        ddElem.removeAttribute(attrName);
       });
     });
+  }
+
+
+  /**
+   * Remove all dd-render attributes from the document with certain renderType.
+   * @param {string} renderType - 'block' or 'always' (see _listElements())
+   */
+  _purgeDdRender(renderType = 'block') {
+    const attrName = `dd-render-${renderType}`;
+    const dd_rendered_elems = document.querySelectorAll(`[${attrName}]`);
+    for (const dd_rendered_elem of dd_rendered_elems) {
+      dd_rendered_elem.removeAttribute(attrName);
+    }
+  }
+
+
+  /**
+   * Test if the element has certain dd-render-... attribute.
+   * @param {HTMLElement} elem
+   * @param {string} renderType - 'block' or 'always' (see _listElements())
+   * @returns {boolean}
+   */
+  _hasDdRender(elem, renderType = 'block') {
+    const attrName = `dd-render-${renderType}`;
+    return elem.hasAttribute(attrName);
   }
 
 
@@ -527,7 +592,7 @@ class Aux {
 
   /**
    * Solve value from directive base.
-   * @param {string} base - the directive base, for example dd-show="$model.myProducts --visibility" => base is '$model.myProducts'
+   * @param {string} base - the directive base, for example dd-selected="$model.myProducts --multiple" => base is '$model.myProducts'
    * @returns {{val:any, prop_solved:string}}
    */
   _solveBase(base) {

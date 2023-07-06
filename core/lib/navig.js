@@ -67,7 +67,7 @@ class Navig {
     }
 
     // purge standard sub-properties
-    ctrl_prev.$dd.elems = {};
+    ctrl_prev.$elem = {};
     ctrl_prev.$dd.listeners = [];
     ctrl_prev.$model = {};
 

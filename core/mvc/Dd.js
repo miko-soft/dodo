@@ -14,7 +14,16 @@ class Dd extends DdCloners {
       elems: {},  // set by ddElem()
       listeners: [], // collector of the dd- listeners  [{attrName, elem, handler, eventName}]
       noncloner_directives: [
-        'dd-show',
+        'dd-setinitial',
+        'dd-elem',
+        // switchers
+        'dd-if', 'dd-elseif', 'dd-else',
+        'dd-visible',
+        // writers
+        'dd-text',
+        'dd-html',
+        // HTML tag attribute managers
+        'dd-value',
         'dd-disabled',
         'dd-checked',
         'dd-selected',
@@ -22,18 +31,16 @@ class Dd extends DdCloners {
         'dd-style',
         'dd-src',
         'dd-attr',
-        'dd-value',
       ],
       cloner_directives: [
-        'dd-text',
-        'dd-html',
-        'dd-mustache',
-        'dd-if', 'dd-elseif', 'dd-else',
         'dd-foreach',
-        'dd-repeat'
+        'dd-repeat',
+        'dd-mustache'
       ]
     };
 
+
+    this.$elem = {};
   }
 
 
@@ -78,75 +85,203 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-elem="<ddElemsProp>"     --> ddElemsProp is the property of the this.$dd.elems, for example dd-elem="myElement" => this.$dd.elems.myElement
-   *  Transfer the DOM element to the controller property "this.$dd.elems".
+   * dd-elem="<ddElemsProp>"     --> ddElemsProp is the property of the this.$elem, for example dd-elem="myElement" => this.$elem.myElement
+   *  Transfer the DOM element to the controller property "this.$elem".
    * Examples:
-   * dd-elem="paragraf" -> fetch it with this.$dd.elems.paragraf
+   * dd-elem="paragraf" -> fetch it with this.$elem.paragraf
    */
-  ddElem() {
-    this._debug('ddElem', '--------- ddElem ------', 'navy', '#B6ECFF');
+  ddElem(modelName) {
+    this._debug('ddElem', `--------- ddElem -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-elem';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddElem', `found elements:: ${elems.length}`, 'navy');
 
-    // associate values to $dd
+    // associate values to $elem
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName) || ''; // 'paragraf'
       const { base } = this._decomposeAttribute(attrVal);
-      this.$dd.elems[base] = elem; // this.$dd.elems.paragraf
+      this.$elem[base] = elem; // this.$elem.paragraf
     }
   }
 
 
 
+  /********************************* SWITCHERS **********************************/
   /**
-   * dd-show="controllerProperty [--visibility]" | dd-show="(expression) [--visibility]"
-   *  Show or hide the HTML element.
-   * Option:
-   * dd-show="ctrlProp" → Show/hide elements by setting up display:none inline CSS style.
-   * dd-show="ctrlProp --visibility" → Show/hide elements by setting up visibility:visible|hidden inline CSS style.
+   * dd-if="controllerProperty" | dd-if="(expression)"
+   *  Display element from if group when the controllerProperty or expression has truthy value.
+   *  The term "if group" means a group of sibling dd-if, dd-elseif and dd-else elements. Usually a group should be wraped in HTML tag so it is separated from another group, but that's not obligatory.
    * Examples:
-   * dd-show="isActive"                         - isActive is the controller property, it can also be model $model.isActive
-   * dd-show="this.isActive"                    - this. will not cause the error
-   * dd-show="(this.a < 5 && this.a >= 8)"      - expression
-   * dd-show="(this.$model.name === 'John')"    - expression with model
-   * dd-show="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   * dd-if="myBool" ; dd-else
+   * dd-if="(this.x > 5)" ; dd-elseif="(this.x <= 5)" ; dd-else
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddShow() {
-    this._debug('ddShow', `--------- ddShow (start) ------`, 'navy', '#B6ECFF');
+  ddIf(modelName) {
+    this._debug('ddIf', `--------- ddIf(start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
-    const attrName = 'dd-show';
-    const elems = this._listElements(attrName);
-    this._debug('ddShow', `found elements:: ${elems.length}`, 'navy');
+    const attrName = 'dd-if';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddIf', `found elements:: ${elems.length} `, 'navy');
+
+    for (const elem of elems) {
+      const ifGroupElems = this._getSiblings(elem, ['dd-if', 'dd-elseif', 'dd-else']); // get siblings of dd-if, dd-elseif and dd-else
+
+      this._debug().ddIf && console.log('\n--if group--');
+
+      // hide all if group elements
+      for (const ifGroupElem of ifGroupElems) {
+        this._elemHide(ifGroupElem);
+      }
+
+      // show truthy if group element
+      for (const ifGroupElem of ifGroupElems) {
+        const attrVal = ifGroupElem.getAttribute('dd-if') || ifGroupElem.getAttribute('dd-elseif') || ifGroupElem.getAttribute('dd-else');
+        const { base } = this._decomposeAttribute(attrVal);
+        const { val } = this._solveBase(base);
+        this._debug().ddIf && console.log(ifGroupElem.outerHTML, val);
+        if (!!val || ifGroupElem.hasAttribute('dd-else')) {
+          this._elemShow(ifGroupElem);
+          break;
+        }
+      }
+
+      this._debug().ddIf && console.log('----------');
+    }
+
+    this._debug('ddIf', '--------- ddIf (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-visible="controllerProperty" | dd-visible="(expression)"
+   *  Show or hide the HTML element by setting CSS property visibility:visible|hidden.
+   * Option:
+   * dd-visible="ctrlProp" → Show/hide elements by setting up visibility:none inline CSS style.
+   * Examples:
+   * dd-visible="isActive"                         - isActive is the controller property, it can also be model $model.isActive
+   * dd-visible="this.isActive"                    - this. will not cause the error
+   * dd-visible="(this.a < 5 && this.a >= 8)"      - expression
+   * dd-visible="(this.$model.name === 'John')"    - expression with model
+   * dd-visible="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddVisible(modelName) {
+    this._debug('ddVisible', `--------- ddVisible (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-visible';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddVisible', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
-      const { base, opts } = this._decomposeAttribute(attrVal);
+      const { base } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
-      const isVisibility = !!opts && !!opts[0] && opts[0] === 'visibility';
-      this._debug('ddShow', `dd-show="${attrVal}" :: ${base} --> ${prop_solved} = ${val} , isVisibility:${isVisibility}`, 'navy');
+      this._debug('ddVisible', `dd-visible="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
       // hide original element
-      if (isVisibility) {
-        elem.style.display = '';
-        val ? elem.style.visibility = 'visible' : elem.style.visibility = 'hidden';
-      } else {
-        val ? elem.style.display = '' : elem.style.display = 'none';
-      }
+      elem.style.display = '';
+      val ? elem.style.visibility = 'visible' : elem.style.visibility = 'hidden';
 
       // remove style if it's empty
       if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
     }
 
-    this._debug('ddShow', '--------- ddShow (end) ------', 'navy', '#B6ECFF');
+    this._debug('ddVisible', '--------- ddVisible (end) ------', 'navy', '#B6ECFF');
+  }
+
+  /********************************* WRITERS **********************************/
+  /**
+   * dd-text="controllerProperty" | dd-text="(expression)"
+   *  Print pure text in the dd-text element.
+   * Examples:
+   * dd-text="firstName"                  - firstName is the controller property, it can also be model $model.firstname
+   * dd-text="this.firstName"             - this. will not cause the error
+   * dd-text="$model.product___{{id}}"    - dynamic controller property name
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddText(modelName) {
+    this._debug('ddText', `--------- ddText (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-text';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddText', `found elements:: ${elems.length} `, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const { val, prop_solved } = this._solveBase(base);
+      this._debug('ddText', `dd-text="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+
+      // convert controller val to string
+      let val_str = this._val2str(val);
+
+      // if val is undefined set it as empty string
+      if (val === undefined || val === null) { val_str = ''; }
+
+      // apply pipe option, for example: --pipe:slice(0,10).trim() (val_str must be a string)
+      const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
+      if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
+
+      // load content in the element
+      elem.textContent = val_str;
+
+      // show element when render is finished
+      this._elemShow(elem);
+    }
+
+    this._debug('ddText', '--------- ddText (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-html="controllerProperty" | dd-html="(expression)"
+   *  Embed HTML node in the DOM at a place marked with dd-html attribute.
+   * Examples:
+   * dd-html="firstName"                  - firstName is the controller property, it can also be model $model.firstname
+   * dd-html="this.firstName"             - this. will not cause the error
+   * dd-html="$model.product___{{id}}"    - dynamic controller property name
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddHtml(modelName) {
+    this._debug('ddHtml', `--------- ddHtml (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-html';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddHtml', `found elements:: ${elems.length} `, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const { val, prop_solved } = this._solveBase(base);
+      this._debug('ddHtml', `dd-html="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+
+      // convert controller val to string
+      let val_str = this._val2str(val);
+
+      // if val is undefined set it as empty string
+      if (val === undefined || val === null) { val_str = ''; }
+
+      // apply pipe option, for example: --pipe:slice(0,10).trim() (val_str must be a string)
+      const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
+      if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
+
+      // load content in the element
+      elem.innerHTML = val_str; // take controller value and replace element value - no cloning
+
+      // show element when render is finished
+      this._elemShow(elem);
+    }
+
+    this._debug('ddHtml', '--------- ddHtml (end) ------', 'navy', '#B6ECFF');
   }
 
 
 
 
   /********************************* ATTRIBUTE MANAGERS **********************************/
-  /***************************************************************************************/
   /**
    * dd-value="controllerProperty" | dd-value="(expression)"
    *  Take controller property and set the element attribute and DOM property value.
@@ -155,12 +290,13 @@ class Dd extends DdCloners {
    * dd-value="product"
    * dd-value="$model.product"
    * dd-value="(this.product)"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddValue() {
-    this._debug('ddValue', '--------- ddValue ------', 'navy', '#B6ECFF');
+  ddValue(modelName) {
+    this._debug('ddValue', `--------- ddValue (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-value';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddValue', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -169,8 +305,11 @@ class Dd extends DdCloners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddValue', `dd-value="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
+      this._elemShow(elem);
+
       if (val === undefined || val === null) { continue; } // don't render elements with undefined controller's value
       this._setElementValue(elem, val); // set value attribute and DOM property
+
     }
 
     this._debug('ddValue', '--------- ddValue (end) ------', 'navy', '#B6ECFF');
@@ -187,12 +326,13 @@ class Dd extends DdCloners {
    * dd-disabled="(this.a < 5 && this.a >= 8)"      - expression
    * dd-disabled="(this.$model.name === 'John')"    - expression with model
    * dd-disabled="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddDisabled() {
-    this._debug('ddDisabled', `--------- ddDisabled (start) ------`, 'navy', '#B6ECFF');
+  ddDisabled(modelName) {
+    this._debug('ddDisabled', `--------- ddDisabled (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-disabled';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddDisabled', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -204,9 +344,7 @@ class Dd extends DdCloners {
       // hide orig element
       elem.disabled = !!val;
 
-      // show element & remove style
-      elem.style.display = '';
-      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+      this._elemShow(elem);
     }
 
     this._debug('ddDisabled', '--------- ddDisabled (end) ------', 'navy', '#B6ECFF');
@@ -220,12 +358,13 @@ class Dd extends DdCloners {
    *  Use it for checkbox or radio input elements only.
    *   CHECKBOX --> The controller value should be array of strings
    *   RADIO --> The controller value should be a string
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddChecked() {
-    this._debug('ddChecked', '--------- ddChecked ------', 'navy', '#B6ECFF');
+  ddChecked(modelName) {
+    this._debug('ddChecked', `--------- ddChecked (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-checked';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddChecked', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -233,6 +372,8 @@ class Dd extends DdCloners {
       const { base } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddChecked', `dd-checked="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+
+      this._elemShow(elem);
 
       if (val === undefined) { continue; }
 
@@ -256,7 +397,7 @@ class Dd extends DdCloners {
         }
       }
 
-      this._debug('ddChecked', `dd-checked="${attrVal}" :: ${base} --> ${prop_solved} = ${val} ; elem.value: ${elem.value} ; elem.checked: ${elem.checked}`, 'navy');
+      this._debug('ddChecked', `   elem.value: ${elem.value} ; elem.checked: ${elem.checked}`, 'navy');
     }
 
     this._debug('ddChecked', '--------- ddChecked (end) ------', 'navy', '#B6ECFF');
@@ -272,12 +413,13 @@ class Dd extends DdCloners {
    *   SELECT-ONE --> The controller value should be a string.
    * Example:
    * dd-selected="selectedProducts --multiple"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddSelected() {
-    this._debug('ddSelected', '--------- ddSelected ------', 'navy', '#B6ECFF');
+  ddSelected(modelName) {
+    this._debug('ddSelected', `--------- ddSelected (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-selected';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddSelected', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -285,6 +427,8 @@ class Dd extends DdCloners {
       const { base } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddSelected', `dd-selected="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+
+      this._elemShow(elem);
 
       if (val === undefined) { continue; }
 
@@ -309,12 +453,13 @@ class Dd extends DdCloners {
    * Examples:
    * dd-class="myKlass"             - add new classes to existing classes
    * dd-class="myKlass --replace"   - replace existing classes with new classes
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddClass() {
-    this._debug('ddClass', '--------- ddClass ------', 'navy', '#B6ECFF');
+  ddClass(modelName) {
+    this._debug('ddClass', `--------- ddClass (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-class';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddClass', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -323,6 +468,8 @@ class Dd extends DdCloners {
       const { val, prop_solved } = this._solveBase(base);
       const act = opts && opts[0] ? opts[0] : '';
       this._debug('ddClass', `dd-class="${attrVal}" :: ${base} --> ${prop_solved} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
+
+      this._elemShow(elem);
 
       if (val === undefined) { continue; }
       if (!Array.isArray(val)) { this._printWarn(`dd-class="${attrVal}" -> The value is not array.`); continue; }
@@ -345,12 +492,13 @@ class Dd extends DdCloners {
    * Examples:
    * dd-style="myStyle"             - add new styles to existing styles
    * dd-style="myStyle --replace"   - replace existing styles with new styles
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddStyle() {
-    this._debug('ddStyle', '--------- ddStyle ------', 'navy', '#B6ECFF');
+  ddStyle(modelName) {
+    this._debug('ddStyle', `--------- ddStyle (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-style';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddStyle', `found elements:: ${elems.length}`, 'navy');
 
 
@@ -360,6 +508,8 @@ class Dd extends DdCloners {
       const { val, prop_solved } = this._solveBase(base);
       const act = opts[0] || '';
       this._debug('ddStyle', `dd-style="${attrVal}" :: ${base} --> ${prop_solved} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
+
+      this._elemShow(elem);
 
       if (val === undefined) { continue; }
       if (typeof val !== 'object' || (typeof val === 'object' && Array.isArray(val))) { this._printWarn(`dd-style="${attrVal}" -> The value is not object.`); continue; }
@@ -384,12 +534,13 @@ class Dd extends DdCloners {
    * Examples:
    * dd-src="imageURL"
    * dd-src="imageURL --https://via.placeholder.com/130"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddSrc() {
-    this._debug('ddSrc', '--------- ddSrc ------', 'navy', '#B6ECFF');
+  ddSrc(modelName) {
+    this._debug('ddSrc', `--------- ddSrc (start)  -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-src';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddSrc', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -398,6 +549,8 @@ class Dd extends DdCloners {
       const { val, prop_solved } = this._solveBase(base);
       const defaultSrc = opts[0] || '';
       this._debug('ddSrc', `dd-src="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | defaultSrc:: ${defaultSrc}`, 'navy');
+
+      this._elemShow(elem);
 
       const src = val || defaultSrc;
       elem.src = src;
@@ -414,12 +567,13 @@ class Dd extends DdCloners {
    *  The controller property value should a string.
    * Examples:
    * dd-attr="$model.myURL --href"     - sets href in the A tag
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddAttr() {
-    this._debug('ddAttr', '--------- ddAttr ------', 'navy', '#B6ECFF');
+  ddAttr(modelName) {
+    this._debug('ddAttr', `--------- ddAttr (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-attr';
-    const elems = this._listElements(attrName);
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddAttr', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
@@ -427,7 +581,9 @@ class Dd extends DdCloners {
       const { base, opts } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
       const attributeName = opts[0] || '';
-      this._debug('ddSrc', `dd-src="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | attributeName:: ${attributeName}`, 'navy');
+      this._debug('ddAttr', `dd-attr="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | attributeName:: ${attributeName}`, 'navy');
+
+      this._elemShow(elem);
 
       if (val === undefined || val === null) { continue; }
       if (typeof val !== 'string') { this._printWarn(`dd-attr="${attrVal}" -> The value is not string.`); continue; }
@@ -438,7 +594,6 @@ class Dd extends DdCloners {
 
     this._debug('ddAttr', '--------- ddAttr (end) ------', 'navy', '#B6ECFF');
   }
-
 
 
 
