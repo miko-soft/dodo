@@ -16,7 +16,7 @@ class Aux {
       const val = func();
       return val;
     } catch (err) {
-      console.warn(`_getControllerValue (${prop})`, err);
+      console.warn(`_getControllerValue (Bad controller property: this.${prop})`, err);
     }
 
   }
@@ -478,14 +478,14 @@ class Aux {
       func = new Function(`const exprResult = ${expr}; return exprResult;`);
       func = func.bind(this);
     } catch (err) {
-      console.error(`Error in expression definition "${expr}"`, err);
+      console.error(`_solveExpression:: Error in expression definition "${expr}"`, err);
     }
 
     let exprResult;
     try {
       exprResult = func();
     } catch (err) {
-      console.error(`Error in expression execution "${expr}"`, err);
+      console.error(`_solveExpression:: Error in expression execution "${expr}"`, err);
     }
 
     exprResult = exprResult === undefined || exprResult === null || exprResult === NaN ? '' : exprResult;
@@ -564,9 +564,8 @@ class Aux {
       func = func.bind(this);
       text = func(...vals);
     } catch (err) {
-      // console.error(`_solveTemplateLiteral: \n-------\n${func_body}\n-------\n`, err);
       const interpolations = text.match(/\$\{[^\}]+\}/g);
-      throw new Error(`_solveTemplateLiteral:: Probably error in one of the string interpolations: ${interpolations}`, err);
+      throw new Error(`_solveTemplateLiteral:: Probably error in one of the string interpolations: ${interpolations} \n` + err.message);
     }
 
     return text; // text with solved string interpolations ${}
@@ -583,7 +582,7 @@ class Aux {
    * @returns {string}
    */
   _solveDoubledollar(text, base, valName, keyValue) {
-    const replacement = `${base}[${keyValue}]`;
+    const replacement = `this.${base}[${keyValue}]`;
     const reg = new RegExp(`\\$\\$${valName}`, 'g');
     text = text.replace(reg, replacement);
     return text;
@@ -724,10 +723,17 @@ class Aux {
    */
   _pipeExe(str, pipeOpt) {
     if (str === undefined || str === null || (!!str && typeof str !== 'string')) { return ''; }
+    str = str.replace(/\n/g, ' ').replace(/\s+/g, ' ').replace(/\'|\`/g, '').trim();
     const pipeFuncs = pipeOpt.replace('pipe:', '').trim();
-    const func = new Function(`const str = '${str}'.${pipeFuncs}; return str;`);
-    str = func();
-    return str;
+    const func_body = `const str = '${str}'.${pipeFuncs}; return str;`;
+    try {
+      const func = new Function(func_body);
+      str = func();
+      return str;
+    } catch (err) {
+      this._printError('_pipeExe:: ' + func_body);
+    }
+
   }
 
 

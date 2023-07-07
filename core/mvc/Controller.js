@@ -106,9 +106,6 @@ class Controller extends Model {
 
     /* Dd.js */
     this.ddElem(modelName);
-    // switchers
-    this.ddIf(modelName);
-    this.ddVisible(modelName);
     // writers
     this.ddText(modelName);
     this.ddHtml(modelName);
@@ -121,6 +118,9 @@ class Controller extends Model {
     this.ddStyle(modelName);
     this.ddSrc(modelName);
     this.ddAttr(modelName);
+    // switchers
+    this.ddIf(modelName);
+    this.ddVisible(modelName);
 
     await new Promise(r => setTimeout(r, renderDelay));
 

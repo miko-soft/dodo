@@ -106,91 +106,6 @@ class Dd extends DdCloners {
   }
 
 
-
-  /********************************* SWITCHERS **********************************/
-  /**
-   * dd-if="controllerProperty" | dd-if="(expression)"
-   *  Display element from if group when the controllerProperty or expression has truthy value.
-   *  The term "if group" means a group of sibling dd-if, dd-elseif and dd-else elements. Usually a group should be wraped in HTML tag so it is separated from another group, but that's not obligatory.
-   * Examples:
-   * dd-if="myBool" ; dd-else
-   * dd-if="(this.x > 5)" ; dd-elseif="(this.x <= 5)" ; dd-else
-   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
-   */
-  ddIf(modelName) {
-    this._debug('ddIf', `--------- ddIf(start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-if';
-    const elems = this._listElements(attrName, modelName);
-    this._debug('ddIf', `found elements:: ${elems.length} `, 'navy');
-
-    for (const elem of elems) {
-      const ifGroupElems = this._getSiblings(elem, ['dd-if', 'dd-elseif', 'dd-else']); // get siblings of dd-if, dd-elseif and dd-else
-
-      this._debug().ddIf && console.log('\n--if group--');
-
-      // hide all if group elements
-      for (const ifGroupElem of ifGroupElems) {
-        this._elemHide(ifGroupElem);
-      }
-
-      // show truthy if group element
-      for (const ifGroupElem of ifGroupElems) {
-        const attrVal = ifGroupElem.getAttribute('dd-if') || ifGroupElem.getAttribute('dd-elseif') || ifGroupElem.getAttribute('dd-else');
-        const { base } = this._decomposeAttribute(attrVal);
-        const { val } = this._solveBase(base);
-        this._debug().ddIf && console.log(ifGroupElem.outerHTML, val);
-        if (!!val || ifGroupElem.hasAttribute('dd-else')) {
-          this._elemShow(ifGroupElem);
-          break;
-        }
-      }
-
-      this._debug().ddIf && console.log('----------');
-    }
-
-    this._debug('ddIf', '--------- ddIf (end) ------', 'navy', '#B6ECFF');
-  }
-
-
-
-  /**
-   * dd-visible="controllerProperty" | dd-visible="(expression)"
-   *  Show or hide the HTML element by setting CSS property visibility:visible|hidden.
-   * Option:
-   * dd-visible="ctrlProp" → Show/hide elements by setting up visibility:none inline CSS style.
-   * Examples:
-   * dd-visible="isActive"                         - isActive is the controller property, it can also be model $model.isActive
-   * dd-visible="this.isActive"                    - this. will not cause the error
-   * dd-visible="(this.a < 5 && this.a >= 8)"      - expression
-   * dd-visible="(this.$model.name === 'John')"    - expression with model
-   * dd-visible="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
-   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
-   */
-  ddVisible(modelName) {
-    this._debug('ddVisible', `--------- ddVisible (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-visible';
-    const elems = this._listElements(attrName, modelName);
-    this._debug('ddVisible', `found elements:: ${elems.length}`, 'navy');
-
-    for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName);
-      const { base } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddVisible', `dd-visible="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
-
-      // hide original element
-      elem.style.display = '';
-      val ? elem.style.visibility = 'visible' : elem.style.visibility = 'hidden';
-
-      // remove style if it's empty
-      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
-    }
-
-    this._debug('ddVisible', '--------- ddVisible (end) ------', 'navy', '#B6ECFF');
-  }
-
   /********************************* WRITERS **********************************/
   /**
    * dd-text="controllerProperty" | dd-text="(expression)"
@@ -593,6 +508,93 @@ class Dd extends DdCloners {
     }
 
     this._debug('ddAttr', '--------- ddAttr (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+
+  /********************************* SWITCHERS **********************************/
+  /**
+   * dd-if="controllerProperty" | dd-if="(expression)"
+   *  Display element from if group when the controllerProperty or expression has truthy value.
+   *  The term "if group" means a group of sibling dd-if, dd-elseif and dd-else elements. Usually a group should be wraped in HTML tag so it is separated from another group, but that's not obligatory.
+   * Examples:
+   * dd-if="myBool" ; dd-else
+   * dd-if="(this.x > 5)" ; dd-elseif="(this.x <= 5)" ; dd-else
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddIf(modelName) {
+    this._debug('ddIf', `--------- ddIf(start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-if';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddIf', `found elements:: ${elems.length} `, 'navy');
+
+    for (const elem of elems) {
+      const ifGroupElems = this._getSiblings(elem, ['dd-if', 'dd-elseif', 'dd-else']); // get siblings of dd-if, dd-elseif and dd-else
+
+      this._debug().ddIf && console.log('\n--if group--');
+
+      // hide all if group elements
+      for (const ifGroupElem of ifGroupElems) {
+        this._elemHide(ifGroupElem);
+      }
+
+      // show truthy if group element
+      for (const ifGroupElem of ifGroupElems) {
+        const attrVal = ifGroupElem.getAttribute('dd-if') || ifGroupElem.getAttribute('dd-elseif') || ifGroupElem.getAttribute('dd-else');
+        const { base } = this._decomposeAttribute(attrVal);
+        const { val } = this._solveBase(base);
+        this._debug().ddIf && console.log(ifGroupElem.outerHTML, val);
+        if (!!val || ifGroupElem.hasAttribute('dd-else')) {
+          this._elemShow(ifGroupElem);
+          break;
+        }
+      }
+
+      this._debug().ddIf && console.log('----------');
+    }
+
+    this._debug('ddIf', '--------- ddIf (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+  /**
+   * dd-visible="controllerProperty" | dd-visible="(expression)"
+   *  Show or hide the HTML element by setting CSS property visibility:visible|hidden.
+   * Option:
+   * dd-visible="ctrlProp" → Show/hide elements by setting up visibility:none inline CSS style.
+   * Examples:
+   * dd-visible="isActive"                         - isActive is the controller property, it can also be model $model.isActive
+   * dd-visible="this.isActive"                    - this. will not cause the error
+   * dd-visible="(this.a < 5 && this.a >= 8)"      - expression
+   * dd-visible="(this.$model.name === 'John')"    - expression with model
+   * dd-visible="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddVisible(modelName) {
+    this._debug('ddVisible', `--------- ddVisible (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-visible';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddVisible', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base } = this._decomposeAttribute(attrVal);
+      const { val, prop_solved } = this._solveBase(base);
+      this._debug('ddVisible', `dd-visible="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+
+      // hide original element
+      elem.style.display = '';
+      val ? elem.style.visibility = 'visible' : elem.style.visibility = 'hidden';
+
+      // remove style if it's empty
+      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+    }
+
+    this._debug('ddVisible', '--------- ddVisible (end) ------', 'navy', '#B6ECFF');
   }
 
 
