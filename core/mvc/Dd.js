@@ -63,20 +63,15 @@ class Dd extends DdCloners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
 
-      // show element & remove style
-      this._elemShow(elem);
-
       // solve the controller property name and get the controller property value
       let prop_solved = base.replace(/^this\./, '');
       prop_solved = this._solveMustache(prop_solved);
-
       const convertType = opts[0] === 'convertType';
-
       const val = this._getElementValue(elem, convertType); // element value, for example <input value="55">
-
+      this._setControllerValue(prop_solved, val);
       this._debug('ddSetinitial', `dd-setinitial="${attrVal}" :: ${base} --> ${prop_solved} = ${val} , convertType: ${convertType}`, 'navy');
 
-      this._setControllerValue(prop_solved, val);
+      this._elemShow(elem, attrName);
     }
 
     this._debug('ddSetinitial', '--------- ddSetinitial (end) ------', 'navy', '#B6ECFF');
@@ -90,11 +85,11 @@ class Dd extends DdCloners {
    * Examples:
    * dd-elem="paragraf" -> fetch it with this.$elem.paragraf
    */
-  ddElem(modelName) {
-    this._debug('ddElem', `--------- ddElem -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+  ddElem() {
+    this._debug('ddElem', `--------- ddElem ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-elem';
-    const elems = this._listElements(attrName, modelName);
+    const elems = this._listElements(attrName, '');
     this._debug('ddElem', `found elements:: ${elems.length}`, 'navy');
 
     // associate values to $elem
@@ -102,6 +97,8 @@ class Dd extends DdCloners {
       const attrVal = elem.getAttribute(attrName) || ''; // 'paragraf'
       const { base } = this._decomposeAttribute(attrVal);
       this.$elem[base] = elem; // this.$elem.paragraf
+
+      this._elemShow(elem, attrName);
     }
   }
 
@@ -142,8 +139,7 @@ class Dd extends DdCloners {
       // load content in the element
       elem.textContent = val_str;
 
-      // show element when render is finished
-      this._elemShow(elem);
+      this._elemShow(elem, attrName);
     }
 
     this._debug('ddText', '--------- ddText (end) ------', 'navy', '#B6ECFF');
@@ -186,8 +182,7 @@ class Dd extends DdCloners {
       // load content in the element
       elem.innerHTML = val_str; // take controller value and replace element value - no cloning
 
-      // show element when render is finished
-      this._elemShow(elem);
+      this._elemShow(elem, attrName);
     }
 
     this._debug('ddHtml', '--------- ddHtml (end) ------', 'navy', '#B6ECFF');
@@ -220,11 +215,10 @@ class Dd extends DdCloners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddValue', `dd-value="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      this._elemShow(elem);
+      this._elemShow(elem, attrName);
 
       if (val === undefined || val === null) { continue; } // don't render elements with undefined controller's value
       this._setElementValue(elem, val); // set value attribute and DOM property
-
     }
 
     this._debug('ddValue', '--------- ddValue (end) ------', 'navy', '#B6ECFF');
@@ -259,7 +253,7 @@ class Dd extends DdCloners {
       // hide orig element
       elem.disabled = !!val;
 
-      this._elemShow(elem);
+      this._elemShow(elem, attrName);
     }
 
     this._debug('ddDisabled', '--------- ddDisabled (end) ------', 'navy', '#B6ECFF');
@@ -288,7 +282,7 @@ class Dd extends DdCloners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddChecked', `dd-checked="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      this._elemShow(elem);
+      this._elemShow(elem, attrName);
 
       if (val === undefined) { continue; }
 
@@ -343,7 +337,7 @@ class Dd extends DdCloners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddSelected', `dd-selected="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      this._elemShow(elem);
+      this._elemShow(elem, attrName);
 
       if (val === undefined) { continue; }
 
@@ -384,7 +378,7 @@ class Dd extends DdCloners {
       const act = opts && opts[0] ? opts[0] : '';
       this._debug('ddClass', `dd-class="${attrVal}" :: ${base} --> ${prop_solved} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
 
-      this._elemShow(elem);
+      this._elemShow(elem, attrName);
 
       if (val === undefined) { continue; }
       if (!Array.isArray(val)) { this._printWarn(`dd-class="${attrVal}" -> The value is not array.`); continue; }
@@ -424,7 +418,7 @@ class Dd extends DdCloners {
       const act = opts[0] || '';
       this._debug('ddStyle', `dd-style="${attrVal}" :: ${base} --> ${prop_solved} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
 
-      this._elemShow(elem);
+      this._elemShow(elem, attrName);
 
       if (val === undefined) { continue; }
       if (typeof val !== 'object' || (typeof val === 'object' && Array.isArray(val))) { this._printWarn(`dd-style="${attrVal}" -> The value is not object.`); continue; }
@@ -465,10 +459,10 @@ class Dd extends DdCloners {
       const defaultSrc = opts[0] || '';
       this._debug('ddSrc', `dd-src="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | defaultSrc:: ${defaultSrc}`, 'navy');
 
-      this._elemShow(elem);
-
       const src = val || defaultSrc;
       elem.src = src;
+
+      this._elemShow(elem, attrName);
     }
 
     this._debug('ddSrc', '--------- ddSrc (end) ------', 'navy', '#B6ECFF');
@@ -498,7 +492,7 @@ class Dd extends DdCloners {
       const attributeName = opts[0] || '';
       this._debug('ddAttr', `dd-attr="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | attributeName:: ${attributeName}`, 'navy');
 
-      this._elemShow(elem);
+      this._elemShow(elem, attrName);
 
       if (val === undefined || val === null) { continue; }
       if (typeof val !== 'string') { this._printWarn(`dd-attr="${attrVal}" -> The value is not string.`); continue; }
@@ -537,7 +531,7 @@ class Dd extends DdCloners {
 
       // hide all if group elements
       for (const ifGroupElem of ifGroupElems) {
-        this._elemHide(ifGroupElem);
+        ifGroupElem.style.display = 'none';
       }
 
       // show truthy if group element
@@ -546,10 +540,20 @@ class Dd extends DdCloners {
         const { base } = this._decomposeAttribute(attrVal);
         const { val } = this._solveBase(base);
         this._debug().ddIf && console.log(ifGroupElem.outerHTML, val);
+
+        // show or hide element from the if group
         if (!!val || ifGroupElem.hasAttribute('dd-else')) {
-          this._elemShow(ifGroupElem);
+          ifGroupElem.style.display = '';
+          if (!elem.getAttribute('style')) { elem.removeAttribute('style'); } // remove style if it's empty
           break;
         }
+      }
+
+      // remove dd-if-hide, dd-else-hide or dd-else-hide attribute from all if group elemeents
+      for (const ifGroupElem of ifGroupElems) {
+        this._elemShow(ifGroupElem, 'dd-if');
+        this._elemShow(ifGroupElem, 'dd-elseif');
+        this._elemShow(ifGroupElem, 'dd-else');
       }
 
       this._debug().ddIf && console.log('----------');
@@ -586,12 +590,10 @@ class Dd extends DdCloners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddVisible', `dd-visible="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      // hide original element
-      elem.style.display = '';
+      // show or hide original element
       val ? elem.style.visibility = 'visible' : elem.style.visibility = 'hidden';
 
-      // remove style if it's empty
-      if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+      this._elemShow(elem, attrName);
     }
 
     this._debug('ddVisible', '--------- ddVisible (end) ------', 'navy', '#B6ECFF');

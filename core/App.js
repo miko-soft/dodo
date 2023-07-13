@@ -16,6 +16,8 @@ class App extends Router {
 
     this.ctrls = {}; // { HomeCtrl: {}, Page1Ctrl: {}, ...}
     this.ctrlConstants = { $appName: this.$appName, $fridge: {} }; // {$appName, $fridge, $httpClient, $auth, $debugOpts,   $model, $modeler,   $dd, $elem}
+
+    this._setAppStyle(); // set <style> tag
   }
 
 
@@ -256,6 +258,42 @@ class App extends Router {
     for (const [key, val] of Object.entries(this.ctrlConstants)) { ctrl[key] = val; }
     this.ctrls[CtrlName] = ctrl;
     return ctrl;
+  }
+
+
+  _setAppStyle() {
+    const directives = [
+      /* non-cloner directives */
+      'dd-setinitial',
+      'dd-elem',
+      // switchers
+      'dd-if', 'dd-elseif', 'dd-else',
+      'dd-visible',
+      // writers
+      'dd-text',
+      'dd-html',
+      // HTML tag attribute managers
+      'dd-value',
+      'dd-disabled',
+      'dd-checked',
+      'dd-selected',
+      'dd-class',
+      'dd-style',
+      'dd-src',
+      'dd-attr',
+
+      /* cloner directives */
+      'dd-foreach',
+      'dd-repeat',
+      'dd-mustache'
+    ];
+    const directives_hide = directives.map(directive => `[${directive}-hide]`);
+    const cssSelectors = directives_hide.join(',');
+
+    const style = document.createElement('style');
+    style.textContent = `${cssSelectors} { display: none; }`;
+    style.setAttribute('type', 'text/css');
+    document.head.appendChild(style);
   }
 
 

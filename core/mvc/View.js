@@ -49,7 +49,7 @@ class View extends Dd {
     }
 
     // make dd elements invisible by setting display:none
-    htmlstr = this._makeInvisible_ddElements(htmlstr);
+    htmlstr = this._hide_ddElements(htmlstr);
 
     // load content in the element
     if (dest === 'inner') {
@@ -354,24 +354,27 @@ class View extends Dd {
 
   /***** PRIVATES *****/
   /**
-   * Make dd elements invisible by setting display:none CSS style. After render() this element will be cloned and become visible.
+   * A) Make dd elements invisible by setting display:none CSS style. After render() this element will be cloned and become visible.
+   * b) Set unique ID in dd-id attribute.
    * @param {string} htmlString - string with html tags
    * @returns {string} - modified HTML string
    */
-  _makeInvisible_ddElements(htmlString) {
+  _hide_ddElements(htmlString) {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = htmlString;
 
     const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
     for (const directive of directives) {
       const dd_elems = wrapper.querySelectorAll(`[${directive}]`);
-      for (const dd_elem of dd_elems) { this._elemHide(dd_elem); }
+      for (const dd_elem of dd_elems) {
+        this._elemHide(dd_elem, directive);
+        this._uid(dd_elem);
+      }
     }
 
     const htmlString2 = wrapper.innerHTML; // modified htmlString
     return htmlString2;
   }
-
 
 
 }

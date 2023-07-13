@@ -43,7 +43,6 @@ class Aux {
    * For example controller's property is this.product.name
    * @param {string} prop - controller property name, for example: $model.product.name
    * @param {any} val - controller property value
-   * @returns {void}
    */
   _setControllerValue(prop, val) {
     try {
@@ -60,7 +59,6 @@ class Aux {
    * For example controller's property is this.product.name
    * @param {string} prop - controller property name, for example: $model.product.name
    * @param {any} val - controller property value
-   * @returns {void}
    */
   _setControllerValue_alt(prop, val) {
     const propSplitted = prop.split('.'); // ['$model', 'product', 'name']
@@ -88,20 +86,29 @@ class Aux {
    * @returns {HTMLElement[]}
    */
   _listElements(attrName, modelName) {
-    let elems = document.querySelectorAll(`[${attrName}]:not([dd-render-block])`);
-    elems = Array.from(elems); // convert DOM node list to JS array
+    let elems = document.querySelectorAll(`[${attrName}]:not([dd-render-disabled])`);
+    // let elems = document.querySelectorAll(`[${attrName}]:not([dd-render-disabled]) , [dd-render-enabled]`);
+    elems = Array.from(elems); // convert DOM node list to JS array so filter(), sort() can be used
 
+    // render when controller is opened
     if (!modelName) { return elems; }
 
-    // filter elements
+    // render when $model value is changed
     elems = elems.filter(elem => {
-      // always render elements with dd-render-always i.e. which are cloned
-      if (elem.hasAttribute('dd-render-always')) { return true; }
+      // always render elements with dd-render-enabled i.e. which are cloned
+      if (elem.hasAttribute('dd-render-enabled')) { return true; }
 
-      // render elements with specific modelName
+      // get attribute value
       let attrValue = elem.getAttribute(attrName) || ''; // $model.users --user,key or $model.age < 28 or (5 > 2)
       attrValue = attrValue.trim();
-      return attrValue.includes('$model.' + modelName);
+
+      // render elements with specific modelName
+      if (attrValue.includes('$model')) {
+        return attrValue.includes('$model.' + modelName);
+      } else {
+        return true;
+      }
+
     });
 
 
@@ -130,19 +137,18 @@ class Aux {
    * Show DOM element.
    * @param {HTMLElement} elem
    */
-  _elemShow(elem) {
-    elem.style.display = '';
-    if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+  _elemShow(elem, directive) {
+    elem.removeAttribute(`${directive}-hide`);
   }
 
 
   /**
    * Hide DOM element.
    * @param {HTMLElement} elem
+   * @param {directive} directive - dd-text, dd-foreach, ...
    */
-  _elemHide(elem) {
-    elem.style.display = 'none';
-    if (!elem.getAttribute('style')) { elem.removeAttribute('style'); }
+  _elemHide(elem, directive) {
+    elem.setAttribute(`${directive}-hide`, '');
   }
 
 
@@ -197,63 +203,6 @@ class Aux {
     opts = opts.map(opt => opt.trim());
     const base = opts.shift();
     return { base, opts };
-  }
-
-
-  /**
-   * Define cloned element. The cloned element must get dd-xyz-clone attribute.
-   * @param {Element} elem - original element
-   * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
-   * @param {string} attrValue - attribute value: '$model.companies --company,key'
-   * @returns {HTMLElement}
-   */
-  _clone_define(elem, attrName, attrValue) {
-    // clone the dd-xyz element
-    const clonedElem = elem.cloneNode(true);
-
-    // remove cloned attributes and add new attributes
-    clonedElem.removeAttribute(attrName);
-    clonedElem.removeAttribute('dd-else');
-    clonedElem.removeAttribute('dd-elseif');
-    clonedElem.setAttribute(`${attrName}-clone`, attrValue);
-
-    return clonedElem;
-  }
-
-
-  /**
-   * Insert cloned element in the DOM.
-   * The cloned elem is inserted as sibling to orig elem.
-   * The cloned element have dd-xyz-clone attribute.
-   * @param {Element} elem - original element
-   * @param {Element} clonedElem - element which will be cloned and placed in the elem sibling position
-   * @returns {void}
-   */
-  _clone_insert(elem, clonedElem) {
-    elem.parentNode.insertBefore(clonedElem, elem);
-  }
-
-  /**
-   * Insert cloned element in the DOM. Every new element will be appended to last added element.
-   * The cloned elem is inserted as sibling to orig elem.
-   * The cloned element have dd-xyz-clone attribute.
-   * @param {Element} elem - original element
-   * @param {Element} clonedElem - element which will be cloned and placed in the elem sibling position
-   * @returns {void}
-   */
-  _clone_insert_append(elem, clonedElem) {
-    elem.parentElement.appendChild(clonedElem);
-  }
-
-
-  /**
-   * Remove cloned element from DOM. The cloned element have dd-xyz-clone attribute.
-   * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
-   * @returns {void}
-   */
-  _clone_remove(attrName) {
-    const clonedElems = document.querySelectorAll(`[${attrName}-clone]`);
-    for (const clonedElem of clonedElems) { clonedElem.remove(); }
   }
 
 
@@ -394,20 +343,98 @@ class Aux {
 
 
 
+  /***** CLONERS *****/
+  /**
+   * Define cloned element. The cloned element must get dd-xyz-clone attribute.
+   * @param {Element} elem - original element
+   * @param {string} attrName - attribute name: dd-for, dd-repeat, dd-text
+   * @param {string} attrValue - attribute value: '$model.companies --company,key'
+   * @returns {HTMLElement}
+   */
+  _clone_define(elem, attrName, attrValue) {
+    // clone the dd-xyz element
+    const clonedElem = elem.cloneNode(true);
+
+    // remove origial attributes
+    clonedElem.removeAttribute(attrName);
+    if (attrName === 'dd-if') {
+      clonedElem.removeAttribute('dd-else');
+      clonedElem.removeAttribute('dd-elseif');
+    }
+
+    // add ...-clone attribute
+    clonedElem.setAttribute(`${attrName}-clone`, attrValue);
+
+    return clonedElem;
+  }
+
+
+  /**
+   * Insert cloned element in the DOM.
+   * The cloned elem is inserted as sibling to orig elem.
+   * The cloned element have dd-xyz-clone attribute.
+   * @param {Element} elem - original element
+   * @param {Element} clonedElem - element which will be cloned and placed in the elem sibling position
+   */
+  _clone_insert(elem, clonedElem) {
+    elem.parentNode.insertBefore(clonedElem, elem);
+  }
+
+  /**
+   * Insert cloned element in the DOM. Every new element will be appended to last added element.
+   * The cloned elem is inserted as sibling to orig elem.
+   * The cloned element have dd-xyz-clone attribute.
+   * @param {Element} elem - original element
+   * @param {Element} clonedElem - element which will be cloned and placed in the elem sibling position
+   */
+  _clone_insert_append(elem, clonedElem) {
+    elem.parentElement.appendChild(clonedElem);
+  }
+
+
+  /**
+   * Remove cloned elements from DOM.
+   * The cloned element have dd-xyz-clone attribute and dd-id of orig element,
+   * for example dd-foreach-clone="$model.companie --company,key"  dd-id="704-978"
+   * @param {Element} elem - original element
+   * @param {string} attrName - attribute name: dd-foreach, dd-repeat
+   */
+  _clone_remove(elem, attrName) {
+    const uid = elem.getAttribute('dd-id');
+    if (!uid) { return; }
+
+    const clonedElems = document.querySelectorAll(`[${attrName}-clone][dd-id="${uid}"]`);
+    for (const clonedElem of clonedElems) {
+      clonedElem.remove();
+    }
+  }
+
+
+  /**
+   * Remove dd-mustcahe-clone.
+   * @param {Element} elem - original element
+   */
+  _clone_remove_ddMustache(elem) {
+    const prevSibling = elem.previousElementSibling;
+    prevSibling && prevSibling.hasAttribute('dd-mustache-clone') && prevSibling.remove();
+  }
+
+
+
   /***** DD-RENDER *****/
   /**
    * Set dd-render-... in element and it's all dd- childrens.
    * @param {HTMLElement} elem
-   * @param {string} renderType - 'block' or 'always' (see _listElements())
+   * @param {string} renderType - 'disabled' or 'enabled' (see _listElements())
    */
-  _setDdRender(elem, renderType = 'block') {
+  _setDdRender(elem, renderType = 'disabled') {
     const attrName = `dd-render-${renderType}`;
 
     // set to element
     elem.setAttribute(attrName, '');
 
     // set to its childrens
-    const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
+    const directives = [...this.$dd.noncloner_directives, 'dd-mustache'];
     directives.forEach(directive => {
       const ddElems = elem.querySelectorAll(`[${directive}]`);
       ddElems.forEach(ddElem => {
@@ -420,16 +447,16 @@ class Aux {
   /**
    * Remove dd-render-... attribute from element and it's all dd- childrens.
    * @param {HTMLElement} elem
-   * @param {string} renderType - 'block' or 'always' (see _listElements())
+   * @param {string} renderType - 'disabled' or 'enabled' (see _listElements())
    */
-  _delDdRender(elem, renderType = 'block') {
+  _delDdRender(elem, renderType = 'disabled') {
     const attrName = `dd-render-${renderType}`;
 
     // remove from element
     elem.removeAttribute(attrName);
 
     // remove from its childrens
-    const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
+    const directives = [...this.$dd.noncloner_directives, 'dd-mustache'];
     directives.forEach(directive => {
       const ddElems = elem.querySelectorAll(`[${directive}]`);
       ddElems.forEach(ddElem => {
@@ -441,9 +468,9 @@ class Aux {
 
   /**
    * Remove all dd-render attributes from the document with certain renderType.
-   * @param {string} renderType - 'block' or 'always' (see _listElements())
+   * @param {string} renderType - 'disabled' or 'enabled' (see _listElements())
    */
-  _purgeDdRender(renderType = 'block') {
+  _purgeDdRender(renderType = 'disabled') {
     const attrName = `dd-render-${renderType}`;
     const dd_rendered_elems = document.querySelectorAll(`[${attrName}]`);
     for (const dd_rendered_elem of dd_rendered_elems) {
@@ -455,10 +482,10 @@ class Aux {
   /**
    * Test if the element has certain dd-render-... attribute.
    * @param {HTMLElement} elem
-   * @param {string} renderType - 'block' or 'always' (see _listElements())
+   * @param {string} renderType - 'disabled' or 'enabled' (see _listElements())
    * @returns {boolean}
    */
-  _hasDdRender(elem, renderType = 'block') {
+  _hasDdRender(elem, renderType = 'disabled') {
     const attrName = `dd-render-${renderType}`;
     return elem.hasAttribute(attrName);
   }
@@ -522,7 +549,7 @@ class Aux {
    * For example if the outerHtml is <b>${val.name}</b> it will be solved as <b>Marko</b>.
    * @param {string} text - text with string interpolations ${...}
    * @param {object} interpolations - values for string interpolations ${val} ${key} --> for example: {val: {name: 'Marko', age:21}, key: 1}
-   * @param {string} interpolationMark - marks to determine which interpolations should be solved. For example if interpolator is $1 it will solve only $1{...} in the text
+   * @param {string} interpolationMark - marks to determine which interpolations should be solved. For example if interpolation mark is $1 it will solve only $1{...} in the text
    * @returns {string}
    */
   _solveTemplateLiteral(text = '', interpolations = {}, interpolationMark = '') {
@@ -547,16 +574,15 @@ class Aux {
 
     // replace interpolation mark with pure dollar: $1 -> $
     if (!!interpolationMark) {
-      interpolationMark = interpolationMark.replace(/\$/g, '\\$');
-      const interpolator_reg = new RegExp(interpolationMark, 'g');
-      text = text.replace(interpolator_reg, '$');
+      const interpolationMark_reg = new RegExp(`\\${interpolationMark}\{`, 'g');
+      text = text.replace(interpolationMark_reg, '${'); // $1{ replaces with ${
     }
 
     const textWithBackticks = '`' + text + '`';
 
     func_body += `
-    const txt = ${textWithBackticks};
-    return txt;
+      const txt = ${textWithBackticks};
+      return txt;
     `;
 
     try {
@@ -583,8 +609,8 @@ class Aux {
    */
   _solveDoubledollar(text, base, valName, keyValue) {
     const replacement = `this.${base}[${keyValue}]`;
-    const reg = new RegExp(`\\$\\$${valName}`, 'g');
-    text = text.replace(reg, replacement);
+    const reg = new RegExp(`\\$\\$${valName}|this\\.\\$\\$${valName}`, 'g');
+    text = text.replace(reg, replacement); // replace $$company or this.$$company with this.companies[0]
     return text;
   }
 
@@ -762,15 +788,24 @@ class Aux {
 
   /***** MISC *****/
   /**
-   * Create unique element id.
-   * @return {string}
+   * Generate unique ID.
+   * @returns {string} - 796-199
    */
-  _uid() {
+  _uid_generate() {
     const date = Date.now() / 1000;
     const ms = (date + '').split('.')[1];
     const rnd = Math.round(Math.random() * 1000);
     const uid = ms + '-' + rnd;
     return uid;
+  }
+
+  /**
+   * Create unique element id.
+   * @param {HTMLElement} elem - the dd- element
+   */
+  _uid(elem) {
+    const uid = this._uid_generate();
+    elem.setAttribute('dd-id', uid);
   }
 
 
@@ -788,23 +823,30 @@ class Aux {
 
 
   /**
-   * Check if the HTMl element has any of dd-... directives i.e. attributes
-   * @param {HTMLElement} elem - element where is the dd-... attribute
-   * @param {string[]} cloner_directives - ['dd-foreach', 'dd-if']
-   * @returns {boolean}
+   * Check if the HTMl element and it's childrens has directives.
+   * @param {HTMLElement} elem - element with the dd-... attribute
+   * @param {string[]} directives - array of directives: ['dd-mustache', 'dd-repeat']
+   * @returns {string}
    */
-  _hasAnyOfClonerDirectives(elem, cloner_directives) {
-    cloner_directives = cloner_directives || this.$dd.cloner_directives;
+  _hasDirectives(elem, directives) {
+    let directive_found = '';
 
-    let tf = false;
-    for (const cloner_directive of cloner_directives) {
-      if (elem.hasAttribute(cloner_directive)) {
-        tf = true;
+    for (const directive of directives) {
+      if (elem.hasAttribute(directive)) {
+        directive_found = directive;
         break;
+      }
+
+      const dd_elems = elem.querySelectorAll(`[${directive}]`);
+      for (const dd_elem of dd_elems) {
+        if (dd_elem.hasAttribute(directive)) {
+          directive_found = directive;
+          break;
+        }
       }
     }
 
-    return tf;
+    return directive_found;
   }
 
 

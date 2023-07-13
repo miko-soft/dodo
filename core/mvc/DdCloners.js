@@ -13,39 +13,19 @@ class DdCloners extends DdListeners {
 
 
   /**
-   * Remove all dd-xyz-clone elements
-   */
-  ddCloneREMOVE() {
-    for (const cloner_directive of this.$dd.cloner_directives) {
-      const attrName = `${cloner_directive}-clone`; // dd-foreach-clone
-      const dd_elems = document.querySelectorAll(`[${attrName}]`);
-      for (const dd_elem of dd_elems) { dd_elem.remove(); }
-    }
-  }
-
-
-  /**
-   * Remove all dd-render-block elements from document.
-   */
-  ddRenderBlockREMOVE() {
-    this._purgeDdRender('block');
-  }
-
-
-
-  /**
    * dd-foreach="controllerProperty --val,key" | dd-foreach="(expression) [--val,key]"
    *  Multiply element based on controllerProperty (or expression) which is an array.
    * Examples:
    * dd-foreach="myArr --val,key" or dd-foreach="this.myArr --val,key"
    * dd-foreach="$model.myArr --val,key" or dd-foreach="this.$model.myArr --val,key"
    * dd-foraech="(['a','b','c']) --val,key"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddForeach() {
-    this._debug('ddForeach', `--------- ddForeach (start) ------`, 'navy', '#B6ECFF');
+  ddForeach(modelName) {
+    this._debug('ddForeach', `--------- ddForeach (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-foreach';
-    const elems = this._listElements(attrName, '');
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddForeach', `found elements:: ${elems.length}`, 'navy');
 
     // sort listed elements
@@ -56,26 +36,27 @@ class DdCloners extends DdListeners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
-      this.$debugOpts.ddForeach && console.log(`ddForeach:: attrVal:: ${attrVal} , base:: ${base} , prop_solved:: ${prop_solved} -->`, val);
+      this.$debugOpts.ddForeach && console.log(`\nddForeach:: attrVal:: ${attrVal} , base:: ${base} , prop_solved:: ${prop_solved} -->`, val);
 
-      this._elemHide(elem); // hide orig element
-      this._setDdRender(elem, 'block'); // set dd-render-block option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-foreach but dd-foreach-clone
+      this._clone_remove(elem, attrName); // remove cloned elements
+      this._setDdRender(elem, 'disabled'); // set dd-render-disabled option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-foreach but dd-foreach-clone
 
-      // prechecks
-      if (!Array.isArray(val)) { this._printWarn(`dd-foreach="${attrVal}" -> The value is not array. Value is: ${JSON.stringify(val)}`); continue; }
+      // checks
+      const uid = elem.getAttribute('dd-id');
+      const directive_found = this._hasDirectives(elem, ['dd-repeat', 'dd-mustache']);
+      if (!!directive_found) { this._printError(`dd-foreach="${attrVal}" dd-id="${uid}" contains ${directive_found}`); continue; }
+      if (!Array.isArray(val)) { this._printWarn(`dd-foreach="${attrVal}" dd-id="${uid}" -> The value is not array. Value is: ${JSON.stringify(val)}`); continue; }
       if (!val.length) { continue; }
-      if (!opts || (!!opts && !opts.length)) { this._printError(`dd-foreach="${attrVal}" -> The option --val,key is not written`); continue; }
+      if (!opts || (!!opts && !opts.length)) { this._printError(`dd-foreach="${attrVal}" dd-id="${uid}" -> The option --val,key is not written`); continue; }
 
       // get forEach callback argument names from opts, for example: --val,key --> ['val', 'key']
       const [valName, keyName] = opts[0].split(',').map(v => v.trim()); // ['val', 'key']
 
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName, attrVal);
-      this._delDdRender(clonedElem, 'block'); // remove dd-render-block from cloned element (and its childrens) because it needs to be rendered
-      this._setDdRender(clonedElem, 'always');
-      if (!this._hasAnyOfClonerDirectives(clonedElem)) {
-        this._elemShow(clonedElem); // show cloned element
-      }
+      this._delDdRender(clonedElem, 'disabled'); // remove dd-render-disabled from cloned element (and its childrens) because it needs to be rendered
+      this._setDdRender(clonedElem, 'enabled');
+      this._elemShow(clonedElem, attrName); // show cloned element
 
       // remove dd-foreach element from cloned element (the case when dd-foreach elements are nested)
       const nestedDdForeachElem = clonedElem.querySelector(`[dd-foreach]`);
@@ -86,12 +67,12 @@ class DdCloners extends DdListeners {
 
       // solve template literals in the cloned element and insert cloned elements in the document
       val.forEach((valValue, keyValue) => {
-        let outerhtml = clonedElem.outerHTML.replace(/\n\s/g, '').trim();
+        let outerhtml = clonedElem.outerHTML.replace(/\s+/g, ' ').replace(/\n/g, '').trim();
         this._debug('ddForeach', `- ddForeach ${interpolationMark || ''}:: outerhtml (before):: ${outerhtml}`, 'navy');
         const interpolations = !!keyName ? { [valName]: valValue, [keyName]: keyValue } : { [valName]: valValue }; // {val: {name: 'Marko', age:21}, key: 1}
         outerhtml = this._solveTemplateLiteral(outerhtml, interpolations, interpolationMark); // solve ${...}
         outerhtml = this._solveDoubledollar(outerhtml, base, valName, keyValue); // solve $$var
-        this._debug('ddForeach', `- ddForeach ${interpolationMark || ''}:: outerhtml (after):: ${outerhtml}\n`, 'navy');
+        this._debug('ddForeach', `                  outerhtml (after):: ${outerhtml}`, 'navy');
         elem.insertAdjacentHTML('beforebegin', outerhtml); // insert new elements above elem
       });
 
@@ -110,12 +91,13 @@ class DdCloners extends DdListeners {
    * dd-repeat="$model.myNumber" or dd-repeat="this.$model.myNumber"
    * dd-repeat="(5)"
    * dd-repeat="(this.myNumber + 1)"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddRepeat() {
-    this._debug('ddRepeat', `--------- ddRepeat (start) ------`, 'navy', '#B6ECFF');
+  ddRepeat(modelName) {
+    this._debug('ddRepeat', `--------- ddRepeat (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-repeat';
-    const elems = this._listElements(attrName, '');
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddRepeat', `found elements:: ${elems.length}`, 'navy');
 
     // reverse elems because we want to render child dd-repeat first
@@ -127,8 +109,13 @@ class DdCloners extends DdListeners {
       const { val, prop_solved } = this._solveBase(base);
       this._debug('ddRepeat', `dd-repeat="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
-      this._elemHide(elem); // hide orig element
-      this._setDdRender(elem, 'block'); // set dd-render="block" in element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-repeat but dd-repeat-clone
+      this._clone_remove(elem, attrName); // remove cloned elements
+      this._setDdRender(elem, 'disabled'); // set dd-render-disabled in element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-repeat but dd-repeat-clone
+
+      // checks
+      const uid = elem.getAttribute('dd-id');
+      const directive_found = this._hasDirectives(elem, ['dd-foreach', 'dd-mustache']);
+      if (!!directive_found) { this._printError(`dd-repeat="${attrVal}" dd-id="${uid}" contains ${directive_found}`); continue; }
 
       // convert val to number
       const val_num = +val;
@@ -137,8 +124,8 @@ class DdCloners extends DdListeners {
       for (let i = 1; i <= val_num; i++) {
         // clone orig element
         const clonedElem = this._clone_define(elem, attrName, attrVal);
-        this._delDdRender(clonedElem, 'block'); // remove dd-render-block from cloned element (and its childrens) because it needs to be rendered
-        if (!this._hasAnyOfClonerDirectives(clonedElem)) { this._elemShow(clonedElem); }
+        this._delDdRender(clonedElem, 'disabled'); // remove dd-render-disabled from cloned element (and its childrens) because it needs to be rendered
+        this._elemShow(clonedElem, attrName);
 
         // insert cloned elem in the HTML document
         this._clone_insert(elem, clonedElem);
@@ -149,34 +136,46 @@ class DdCloners extends DdListeners {
   }
 
 
+
   /**
    * dd-mustache
-   *  Solve mustaches in the element's inner HTML.
+   *  Solve mustaches in the element's inner HTML and element attributes.
    *  The mustache can contain standalone controller property {{this.$model.name}} or expression {{this.id + 1}}. The this. must be used.
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddMustache() {
-    this._debug('ddMustache', `--------- ddMustache (start) ------`, 'navy', '#B6ECFF');
+  ddMustache(modelName) {
+    this._debug('ddMustache', `--------- ddMustache (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-mustache';
-    const elems = this._listElements(attrName, '');
+    const elems = this._listElements(attrName, modelName);
     this._debug('ddMustache', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
-      this._elemHide(elem); // hide orig element
-      this._setDdRender(elem, 'block'); // set dd-render="block" in element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-mustache but dd-mustache-clone
+      this._clone_remove_ddMustache(elem, attrName); // remove cloned elements
+      this._setDdRender(elem, 'disabled'); // set dd-render-disabled in element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-mustache but dd-mustache-clone
+      this._delDdRender(elem, 'enabled');
+
+      // checks
+      const uid = elem.getAttribute('dd-id');
+      const directive_found = this._hasDirectives(elem, ['dd-foreach', 'dd-repeat', 'dd-mustache']);
+      if (!!directive_found) { this._printError(`dd-mustache dd-id="${uid}" contains ${directive_found}`); continue; }
 
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName, '');
-      clonedElem.innerHTML = this._solveMustache(clonedElem.innerHTML); // solve mustache
-      this._delDdRender(clonedElem, 'block'); // remove dd.rendered from cloned element (and its childrens) because it needs to be rendered
-      if (!this._hasAnyOfClonerDirectives(elem, ['dd-foreach', 'dd-repeat'])) { this._elemShow(clonedElem); }
+      this._delDdRender(clonedElem, 'disabled'); // remove dd-render-disabled from cloned element (and its childrens) because it needs to be rendered
 
-      // solve mustache in attributes
+      // // solve mustache in innerHTML
+      clonedElem.innerHTML = this._solveMustache(clonedElem.innerHTML); // solve mustache
+
+      // // solve mustache in attributes
       for (const attribute of clonedElem.attributes) {
         attribute.value = this._solveMustache(attribute.value);
       }
 
-      // insert cloned elem in the HTML document
+      // // show cloned element
+      if (!this._hasClonerDirectives(clonedElem, ['dd-foreach', 'dd-repeat'])) { this._elemShow(clonedElem, attrName); }
+
+      // // insert cloned elem
       this._clone_insert(elem, clonedElem);
     }
 
