@@ -157,14 +157,14 @@ class DdCloners extends DdListeners {
 
       // checks
       const uid = elem.getAttribute('dd-id');
-      const directive_found = this._hasDirectives(elem, ['dd-foreach', 'dd-repeat', 'dd-mustache']);
+      const directive_found = this._hasDirectives(elem, ['dd-foreach', 'dd-repeat']);
       if (!!directive_found) { this._printError(`dd-mustache dd-id="${uid}" contains ${directive_found}`); continue; }
 
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName, '');
       this._delDdRender(clonedElem, 'disabled'); // remove dd-render-disabled from cloned element (and its childrens) because it needs to be rendered
 
-      // // solve mustache in innerHTML
+      // solve mustache in innerHTML
       clonedElem.innerHTML = this._solveMustache(clonedElem.innerHTML); // solve mustache
 
       // // solve mustache in attributes
@@ -172,10 +172,10 @@ class DdCloners extends DdListeners {
         attribute.value = this._solveMustache(attribute.value);
       }
 
-      // // show cloned element
-      if (!this._hasClonerDirectives(clonedElem, ['dd-foreach', 'dd-repeat'])) { this._elemShow(clonedElem, attrName); }
+      // show cloned element
+      this._elemShow(clonedElem, attrName);
 
-      // // insert cloned elem
+      // insert cloned elem
       this._clone_insert(elem, clonedElem);
     }
 
