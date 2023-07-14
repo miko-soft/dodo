@@ -101,7 +101,7 @@ class Controller extends Model {
     this._purgeDdRender('disabled');
     this.ddForeach(modelName);
     this.ddRepeat(modelName);
-    this.ddMustache(modelName);
+    this.ddMustache();
 
     /* Dd.js */
     this.ddElem(modelName);

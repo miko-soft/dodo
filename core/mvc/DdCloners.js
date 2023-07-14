@@ -141,13 +141,12 @@ class DdCloners extends DdListeners {
    * dd-mustache
    *  Solve mustaches in the element's inner HTML and element attributes.
    *  The mustache can contain standalone controller property {{this.$model.name}} or expression {{this.id + 1}}. The this. must be used.
-   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
-  ddMustache(modelName) {
-    this._debug('ddMustache', `--------- ddMustache (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+  ddMustache() {
+    this._debug('ddMustache', `--------- ddMustache (start) ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-mustache';
-    const elems = this._listElements(attrName, modelName);
+    const elems = this._listElements(attrName, '');
     this._debug('ddMustache', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {

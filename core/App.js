@@ -291,7 +291,7 @@ class App extends Router {
     const cssSelectors = directives_hide.join(',');
 
     const style = document.createElement('style');
-    style.textContent = `${cssSelectors} { display: none; }`;
+    style.textContent = `${cssSelectors} { display: none !important; }`;
     style.setAttribute('type', 'text/css');
     document.head.appendChild(style);
   }
