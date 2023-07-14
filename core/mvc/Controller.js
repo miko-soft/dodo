@@ -94,7 +94,7 @@ class Controller extends Model {
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    * @param {number} renderDelay - delay in miliseconds
    */
-  async render(modelName, renderDelay = 20) {
+  async render(modelName, renderDelay = 30) {
     this._debug('render', `--------- render (start) -- ctrl: ${this.constructor.name} -- renderDelay: ${renderDelay}  ------`, 'green', '#D9FC9B');
 
     /* DdCloners.js */
@@ -102,6 +102,8 @@ class Controller extends Model {
     this.ddForeach(modelName);
     this.ddRepeat(modelName);
     this.ddMustache();
+
+    await new Promise(r => setTimeout(r, renderDelay));
 
     /* Dd.js */
     this.ddElem(modelName);
