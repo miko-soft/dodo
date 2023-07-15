@@ -572,6 +572,9 @@ class Aux {
       vals.push(v);
     }
 
+    // corrections in the text
+    text = text.replace(/\&amp\;/g, '&'); // for example: ${var1 && var2 ? var1 : ''}
+
     // replace interpolation mark with pure dollar: $1 -> $
     if (!!interpolationMark) {
       const interpolationMark_reg = new RegExp(`\\${interpolationMark}\{`, 'g');
