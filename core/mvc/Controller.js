@@ -98,7 +98,6 @@ class Controller extends Model {
     this._debug('render', `--------- render (start) -- ctrl: ${this.constructor.name} -- renderDelay: ${renderDelay}  ------`, 'green', '#D9FC9B');
 
     /* DdCloners.js */
-    this._purgeDdRender('disabled');
     this.ddForeach(modelName);
     this.ddRepeat(modelName);
     this.ddMustache();
@@ -134,6 +133,11 @@ class Controller extends Model {
     this.ddKeyup();
     this.ddChange();
     this.ddEvt();
+
+    await new Promise(r => setTimeout(r, renderDelay));
+
+    this._purgeDdRender('disabled'); // remove dd-render-disabled
+    this._purgeDdRender('enabled'); // remove dd-render-enabled
 
     this._debug('render', `--------- render (end) -- ctrl: ${this.constructor.name} ------`, 'green', '#D9FC9B');
   }

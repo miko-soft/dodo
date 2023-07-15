@@ -80,37 +80,37 @@ class Aux {
 
   /***** HTML DOM *****/
   /**
-   * List DOM elements which has "dd-..." attribute and doesn't have dd-rendered.
+   * List DOM elements which has "dd-..." attribute and doesn't have dd-render-disabled.
    * @param {string} attrName - attribute name -> 'dd-text', 'dd.html', ...
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    * @returns {HTMLElement[]}
    */
   _listElements(attrName, modelName) {
     let elems = document.querySelectorAll(`[${attrName}]:not([dd-render-disabled])`);
-    // let elems = document.querySelectorAll(`[${attrName}]:not([dd-render-disabled]) , [dd-render-enabled]`);
     elems = Array.from(elems); // convert DOM node list to JS array so filter(), sort() can be used
 
-    // render when controller is opened
+    // render when controller is opened and modelName is undefined
     if (!modelName) { return elems; }
 
-    // render when $model value is changed
+    // filter elements
     elems = elems.filter(elem => {
-      // always render elements with dd-render-enabled i.e. which are cloned
-      if (elem.hasAttribute('dd-render-enabled')) { return true; }
-
       // get attribute value
       let attrValue = elem.getAttribute(attrName) || ''; // $model.users --user,key or $model.age < 28 or (5 > 2)
       attrValue = attrValue.trim();
 
-      // render elements with specific modelName
-      if (attrValue.includes('$model')) {
-        return attrValue.includes('$model.' + modelName);
-      } else {
-        return true;
-      }
+      // always render elements with dd-render-enabled i.e. cloned elements
+      if (elem.hasAttribute('dd-render-enabled')) { return true; }
 
+      // false cases
+      if (
+        this._hasBlockString(attrValue, '$$') ||
+        this._hasBlockString(attrValue, '${') ||
+        this._hasBlockString(attrValue, '{{')
+      ) { return false; }
+
+      // take elements with $model.<modelName>
+      return attrValue.includes('$model.' + modelName);
     });
-
 
     return elems;
   }
