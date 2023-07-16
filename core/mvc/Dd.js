@@ -175,6 +175,21 @@ class Dd extends DdCloners {
       // if val is undefined set it as empty string
       if (val === undefined || val === null) { val_str = ''; }
 
+      // add dd-id and dd-...-hide to dd- elements
+      if (val_str.includes('dd-')) {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = val_str;
+        const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
+        for (const directive of directives) {
+          const dd_elems = wrapper.querySelectorAll(`[${directive}]`);
+          for (const dd_elem of dd_elems) {
+            this._elemHide(dd_elem, directive);
+            this._uid(dd_elem);
+          }
+        }
+        val_str = wrapper.innerHTML;
+      }
+
       // apply pipe option, for example: --pipe:slice(0,10).trim() (val_str must be a string)
       const pipeOpt = opts.find(opt => opt.includes('pipe:')); // pipe:slice(0, 3).trim()
       if (!!pipeOpt) { val_str = this._pipeExe(val_str, pipeOpt); }
