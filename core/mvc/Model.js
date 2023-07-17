@@ -9,6 +9,7 @@ class Model extends View {
     this.$model = {};
     this.$modeler = {};
     this.$model.on = eventEmitter.on.bind(eventEmitter);
+    this.$model.offAll = eventEmitter.offAll.bind(eventEmitter);
   }
 
 

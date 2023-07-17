@@ -177,7 +177,7 @@ class Dd extends DdCloners {
 
       // add dd-id and dd-...-hide to dd- elements
       if (val_str.includes('dd-')) {
-        const wrapper = document.createElement('div');
+        const wrapper = val_str.includes('<td') ? document.createElement('table') : document.createElement('div');
         wrapper.innerHTML = val_str;
         const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
         for (const directive of directives) {
@@ -187,6 +187,7 @@ class Dd extends DdCloners {
             this._uid(dd_elem);
           }
         }
+        console.log(wrapper);
         val_str = wrapper.innerHTML;
       }
 
