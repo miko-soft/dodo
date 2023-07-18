@@ -142,17 +142,20 @@ class DdCloners extends DdListeners {
    *  Solve mustaches in the element's inner HTML and element attributes.
    *  The mustache can contain standalone controller property {{this.$model.name}} or expression {{this.id + 1}}. The this. must be used.
    */
-  ddMustache() {
-    this._debug('ddMustache', `--------- ddMustache (start) ------`, 'navy', '#B6ECFF');
+  ddMustache(modelName) {
+    this._debug('ddMustache', `--------- ddMustache (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
     const attrName = 'dd-mustache';
-    const elems = this._listElements(attrName, '');
+    let elems = this._listElements(attrName, '');
+    if (!!modelName) { elems = elems.filter(elem => elem.outerHTML.includes(`$model.${modelName}`)); }
     this._debug('ddMustache', `found elements:: ${elems.length}`, 'navy');
 
     for (const elem of elems) {
       this._clone_remove_ddMustache(elem, attrName); // remove cloned elements
       this._setDdRender(elem, 'disabled'); // set dd-render-disabled in element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-mustache but dd-mustache-clone
       this._delDdRender(elem, 'enabled');
+
+      this.$debugOpts.ddMustache && console.log(`\ndd-mustache elem::`, elem);
 
       // checks
       const uid = elem.getAttribute('dd-id');
@@ -176,6 +179,8 @@ class DdCloners extends DdListeners {
 
       // insert cloned elem
       this._clone_insert(elem, clonedElem);
+
+      this.$debugOpts.ddMustache && console.log(`dd-mustache clonedElem::`, clonedElem);
     }
 
     this._debug('ddMustache', '--------- ddMustache (end) ------', 'navy', '#B6ECFF');

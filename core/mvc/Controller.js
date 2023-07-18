@@ -100,9 +100,7 @@ class Controller extends Model {
     /* DdCloners.js */
     this.ddForeach(modelName);
     this.ddRepeat(modelName);
-    this.ddMustache();
-
-    await new Promise(r => setTimeout(r, renderDelay));
+    this.ddMustache(modelName);
 
     /* Dd.js */
     this.ddElem(modelName);
@@ -122,6 +120,10 @@ class Controller extends Model {
     this.ddIf(modelName);
     this.ddVisible(modelName);
 
+    // remove dd-render-disabled & // remove dd-render-enabled
+    this._purgeDdRender('disabled');
+    this._purgeDdRender('enabled');
+
     await new Promise(r => setTimeout(r, renderDelay));
 
     /* DdListeners.js */
@@ -133,11 +135,6 @@ class Controller extends Model {
     this.ddKeyup();
     this.ddChange();
     this.ddEvt();
-
-    await new Promise(r => setTimeout(r, renderDelay));
-
-    this._purgeDdRender('disabled'); // remove dd-render-disabled
-    this._purgeDdRender('enabled'); // remove dd-render-enabled
 
     this._debug('render', `--------- render (end) -- ctrl: ${this.constructor.name} ------`, 'green', '#D9FC9B');
   }
