@@ -28,8 +28,7 @@ class Controller extends Model {
 
     // controller hooks
     try { await this.__loader(trx); } catch (err) { console.error(err); }
-    this.ddSetinitial(); // parse dd-setinitial
-    this.ddLazyjs('after__loader'); // parse dd-lazyjs
+    this.prerender();
 
     try { await this.__init(trx); } catch (err) { console.error(err); }
     this.__initFinished = true;
@@ -137,6 +136,16 @@ class Controller extends Model {
     this.ddEvt();
 
     this._debug('render', `--------- render (end) -- ctrl: ${this.constructor.name} ------`, 'green', '#D9FC9B');
+  }
+
+
+  /**
+   * Render before __init() lifecycle hook because that hook can take longer if it is waiting for response from some API
+   */
+  prerender() {
+    this.ddSetinitial(); // dd-setinitial
+    this.ddLazyjs('after__loader'); // dd-lazyjs
+    this.ddHref(); // dd-href
   }
 
 
