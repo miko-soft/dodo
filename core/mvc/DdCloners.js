@@ -51,6 +51,8 @@ class DdCloners extends DdListeners {
 
       // get forEach callback argument names from opts, for example: --val,key --> ['val', 'key']
       const [valName, keyName] = opts[0].split(',').map(v => v.trim()); // ['val', 'key']
+      if (!this._isValidVariableName(valName)) { this._printError(`dd-foreach="${attrVal}" dd-id="${uid}" has invalid valName ${valName}`); continue; }
+      if (!this._isValidVariableName(keyName)) { this._printError(`dd-foreach="${attrVal}" dd-id="${uid}" has invalid valName ${keyName}`); continue; }
 
       // clone orig element
       const clonedElem = this._clone_define(elem, attrName, attrVal);
@@ -69,8 +71,8 @@ class DdCloners extends DdListeners {
       val.forEach((valValue, keyValue) => {
         let outerhtml = clonedElem.outerHTML.replace(/\s+/g, ' ').replace(/\n/g, '').trim();
         this._debug('ddForeach', `- ddForeach ${interpolationMark || ''}:: outerhtml (before):: ${outerhtml}`, 'navy');
-        const interpolations = !!keyName ? { [valName]: valValue, [keyName]: keyValue } : { [valName]: valValue }; // {val: {name: 'Marko', age:21}, key: 1}
-        outerhtml = this._solveTemplateLiteral(outerhtml, interpolations, interpolationMark); // solve ${...}
+        const interpolationValues = !!keyName ? { [valName]: valValue, [keyName]: keyValue } : { [valName]: valValue }; // {val: {name: 'Marko', age:21}, key: 1}
+        outerhtml = this._solveTemplateLiteral(outerhtml, interpolationValues, interpolationMark); // solve ${...}
         outerhtml = this._solveDoubledollar(outerhtml, base, valName, keyValue); // solve $$var
         this._debug('ddForeach', `                  outerhtml (after):: ${outerhtml}`, 'navy');
         elem.insertAdjacentHTML('beforebegin', outerhtml); // insert new elements above elem

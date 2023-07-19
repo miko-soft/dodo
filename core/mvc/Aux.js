@@ -548,25 +548,24 @@ class Aux {
    * Solve template literals and its string interpolations.
    * For example if the outerHtml is <b>${val.name}</b> it will be solved as <b>Marko</b>.
    * @param {string} text - text with string interpolations ${...}
-   * @param {object} interpolations - values for string interpolations ${val} ${key} --> for example: {val: {name: 'Marko', age:21}, key: 1}
+   * @param {object} interpolationValues - values for string interpolations ${val} ${key} --> for example: {val: {name: 'Marko', age:21}, key: 1}
    * @param {string} interpolationMark - marks to determine which interpolations should be solved. For example if interpolation mark is $1 it will solve only $1{...} in the text
    * @returns {string}
    */
-  _solveTemplateLiteral(text = '', interpolations = {}, interpolationMark = '') {
+  _solveTemplateLiteral(text = '', interpolationValues = {}, interpolationMark = '') {
     let func_body = '';
     const args = [];
     const vals = [];
-    for (const arr of Object.entries(interpolations)) {
+    for (const arr of Object.entries(interpolationValues)) {
       const k = arr[0]; // 'val'  or  'key'
+      const v = arr[1]; // {name: 'Marko', age:21}  or  1
 
-      let v = arr[1]; // {name: 'Marko', age:21}  or  1
-
-      if (typeof v === 'string') {
-        func_body += `${k} = '${v}';\n`;
-      } else {
-        v = this._val2str(v);
-        func_body += `${k} = ${v};\n`;
-      }
+      // if (typeof v === 'string') {
+      //   func_body += `${k} = '${v}';\n`;
+      // } else {
+      //   v = this._val2str(v);
+      //   func_body += `${k} = ${v};\n`;
+      // }
 
       args.push(k);
       vals.push(v);
@@ -922,6 +921,16 @@ class Aux {
    */
   _printWarn(warnMessage) {
     console.log(`%c WARNING:: ${warnMessage}`, `color:Maroon; background:LightYellow`);
+  }
+
+
+  /**
+   * Check if Js variable has valid name
+   * @param {string} varName
+   * @returns {boolean}
+   */
+  _isValidVariableName(varName) {
+    return /^[_\$A-Za-z0-9]+$/.test(varName);
   }
 
   /**

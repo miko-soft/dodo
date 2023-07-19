@@ -187,7 +187,6 @@ class Dd extends DdCloners {
             this._uid(dd_elem);
           }
         }
-        console.log(wrapper);
         val_str = wrapper.innerHTML;
       }
 
