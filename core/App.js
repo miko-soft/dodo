@@ -10,12 +10,12 @@ class App extends Router {
     this.$appName = appName || 'dodoApp';
     window[this.$appName] = { i18n: {} }; // window.dodoApp
 
+    this.ctrls = {}; // { HomeCtrl: {}, Page1Ctrl: {}, ...}
+    this.ctrlConstants = { $appName: this.$appName, $fridge: {} }; // {$appName, $fridge, $httpClient, $auth, $debugOpts,   $model, $modeler,   $dd, $elem}
+
     this.$debugOpts = {}; // select what debugger messages to show
     this.$preflight = []; // array of preflight functions, will be executed on every route before the controller's __loader()
     this.$postflight = []; // array of postflight functions, will be executed on every route ater the controller's __postrend()
-
-    this.ctrls = {}; // { HomeCtrl: {}, Page1Ctrl: {}, ...}
-    this.ctrlConstants = { $appName: this.$appName, $fridge: {} }; // {$appName, $fridge, $httpClient, $auth, $debugOpts,   $model, $modeler,   $dd, $elem}
 
     this._setAppStyle(); // set <style> tag
   }
@@ -49,7 +49,7 @@ class App extends Router {
 
 
   /**
-   * Inject the auth library into the all controllers and use it as this.$auth in the controller.
+   * Inject the auth library in all controllers and use it as this.$auth in the controller.
    * Useful in apps where authentication guards are required in all routes, for example when building a web panel.
    * @param {Auth} $auth - Auth class instance
    * @return {App}
@@ -83,7 +83,7 @@ class App extends Router {
 
   /*============================== MISC ==============================*/
   /**
-   * Setup the preflight functions which will be executed before controller __loader() hook.
+   * Define preflight functions which will be executed before controller __loader() hook.
    * @param {Function[]} $preflight - array of functions
    * @return {App}
    */
@@ -96,7 +96,7 @@ class App extends Router {
 
 
   /**
-   * Setup the postflight functions which will be executed after controller __postrend() hook.
+   * Define postflight functions which will be executed after controller __postrend() hook.
    * @param {Function[]} $postflight - array of functions
    * @return {App}
    */
@@ -146,7 +146,7 @@ class App extends Router {
   /**
    * Define routes.
    * @param {string[][]} $routes
-   * @return {App}
+   * @return {object}
    */
   routes($routes) {
     for (const $route of $routes) {

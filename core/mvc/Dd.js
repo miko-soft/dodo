@@ -11,7 +11,6 @@ class Dd extends DdCloners {
     super();
 
     this.$dd = {
-      elems: {},  // set by ddElem()
       listeners: [], // collector of the dd- listeners  [{attrName, elem, handler, eventName}]
       noncloner_directives: [
         'dd-setinitial',
@@ -80,7 +79,7 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-elem="<ddElemsProp>"     --> ddElemsProp is the property of the this.$elem, for example dd-elem="myElement" => this.$elem.myElement
+   * dd-elem="<$elemProp>"     --> $elemProp is the property of the this.$elem, for example dd-elem="myElement" => this.$elem.myElement
    *  Transfer the DOM element to the controller property "this.$elem".
    * Examples:
    * dd-elem="paragraf" -> fetch it with this.$elem.paragraf
