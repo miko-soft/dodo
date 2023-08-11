@@ -14,7 +14,7 @@ class Paginator {
    * Calculate the page links and make current page active.
    * @param {number} currentPage - current page
    * @param {number} itemsTotal - the total number of items
-   * @param {number} itemsPerPage - number of items on one page
+   * @param {number} itemsPerPage - number of items on the page
    * @returns {{ pageLinks:{i:number, c:string[]}[], pagesTotal:number }}
    */
   page(currentPage, itemsTotal, itemsPerPage) {

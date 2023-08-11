@@ -88,7 +88,7 @@ class Navig {
 
   /********** GETTERS ************/
   /**
-  * Get the current URI. The uri is path + query string, without hash, for example: /page1.html?q=12
+  * Get the previous URI. The uri is path + query string, without hash, for example: /page1.html?q=12
   * @returns {string}
   */
   getPrevioustURI() {

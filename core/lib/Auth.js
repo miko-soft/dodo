@@ -59,7 +59,7 @@ class Auth {
   /**
    * Send login request to the API.
    * @param {object} creds - credentials object send as body to the API, for example: {username, password}
-   * @returns {Promise<any>}
+   * @returns {Promise<object>}
    */
   async login(creds) {
     const url = this.authOpts.apiLogin;

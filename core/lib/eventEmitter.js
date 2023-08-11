@@ -84,11 +84,14 @@ class EventEmitter {
 
 
   /**
-   * Get all active listeners.
+   * Get active listeners filtered by eventName.
+   * @param {string} eventName - event name, for example: 'pushstate'
    * @returns {{eventName:string, listener:Function, listenerWindow:Function}[]}
    */
-  getListeners() {
-    return { ...this.activeOns };
+  getListeners(eventName) {
+    let activeListeners = [...this.activeOns];
+    activeListeners = activeListeners.filter(al => al.eventName === eventName);
+    return activeListeners;
   }
 
 

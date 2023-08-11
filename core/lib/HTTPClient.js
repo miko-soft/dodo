@@ -20,8 +20,8 @@ class HTTPClient {
         retryDelay: 5500,
         maxRedirects: 3,
         headers: {
-          'authorization': '',
-          'accept': '*/*' // 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'
+          authorization: '',
+          accept: '*/*' // 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'
         }
       };
     } else {
@@ -51,10 +51,10 @@ class HTTPClient {
    *  - retries are not handled
    * @param {string} url - https://www.example.com/something?q=15
    * @param {string} method - GET, POST, PUT, DELETE, PATCH
-   * @param {any} body_obj - http body payload
+   * @param {any} bodyPayload - http body payload
    * @returns {Promise<answer>}
    */
-  async askOnce(url, method = 'GET', body_obj) {
+  async askOnce(url, method = 'GET', bodyPayload) {
 
     // answer (response object)
     const answer = {
@@ -111,13 +111,13 @@ class HTTPClient {
 
 
     /*** 2) add body to HTTP request ***/
-    if (!!body_obj && !/GET/i.test(method)) {
-      answer.req.payload = body_obj;
+    if (!!bodyPayload && !/GET/i.test(method)) {
+      answer.req.payload = bodyPayload;
 
       const contentType = this.req_headers['content-type'] || '';
       let body2send;
-      if (/application\/json/.test(contentType)) { body2send = JSON.stringify(body_obj); }
-      else { body2send = body_obj; }
+      if (/application\/json/.test(contentType)) { body2send = JSON.stringify(bodyPayload); }
+      else { body2send = bodyPayload; }
 
       /*** 3) send request to server (with body) ***/
       this.xhr.send(body2send);
@@ -188,12 +188,12 @@ class HTTPClient {
    *  - retries are handled
    * @param {String} url - https://www.example.com/contact
    * @param {String} method - GET, POST, PUT, DELETE, PATCH
-   * @param {Object} body_obj - http body
+   * @param {Object} bodyPayload - http body
    * @returns {Promise<answer>}
    */
-  async ask(url, method = 'GET', body_obj) {
+  async ask(url, method = 'GET', bodyPayload) {
 
-    let answer = await this.askOnce(url, method, body_obj);
+    let answer = await this.askOnce(url, method, bodyPayload);
     const answers = [answer];
 
 
@@ -205,7 +205,7 @@ class HTTPClient {
       const url_new = new URL(url, answer.res.headers.location); // redirected URL is in 'location' header
       console.log(`#${redirectCounter} redirection ${answer.status} from ${this.url} to ${url_new}`);
 
-      answer = await this.askOnce(url_new, method, body_obj); // repeat request with new url
+      answer = await this.askOnce(url_new, method, bodyPayload); // repeat request with new url
       answers.push(answer);
 
       redirectCounter++;
@@ -219,7 +219,7 @@ class HTTPClient {
       console.log(`#${retryCounter} retry due to timeout (${this.opts.timeout}) on ${url}`);
       await new Promise(resolve => setTimeout(resolve, this.opts.retryDelay)); // delay before retrial
 
-      answer = await this.askOnce(url, method, body_obj);
+      answer = await this.askOnce(url, method, bodyPayload);
       answers.push(answer);
 
       retryCounter++;
@@ -235,16 +235,16 @@ class HTTPClient {
    * Fetch the JSON. Redirections and retries are not handled.
    * @param {string} url - https://api.example.com/someurl
    * @param {string} method - GET, POST, PUT, DELETE, PATCH
-   * @param {object|string} body - http body as Object or String type
+   * @param {object|string} body - http body as Object or String JSON type
    * @returns {Promise<answer>}
    */
   async askJSON(url, method = 'GET', body) {
 
     // convert body string to object
-    let body_obj = body;
+    let bodyPayload = body;
     if (!!body && typeof body === 'string') {
       try {
-        body_obj = JSON.parse(body);
+        bodyPayload = JSON.parse(body);
       } catch (err) {
         throw new Error('Body string is not valid JSON.');
       }
@@ -256,7 +256,7 @@ class HTTPClient {
       'content-type': 'application/json; charset=utf-8'
     });
 
-    const answer = await this.askOnce(url, method, body_obj);
+    const answer = await this.askOnce(url, method, bodyPayload);
 
     // convert content string to object
     if (!!answer.res.content) {
@@ -273,8 +273,7 @@ class HTTPClient {
 
 
   /**
-   * Get the HTML file content or part of it filtered by the css selector.
-   * NOTE: The answer.res.content contains a list of nodes and the HTML string  {Node[], string}.
+   * Get the HTML file content.
    * @param {string} url - http://example.com/page.html
    * @returns {Promise<answer>}
    */
@@ -308,7 +307,7 @@ class HTTPClient {
   /**
    * Send POST request where body is new FormData() object.
    * For example (frontend code):
-   * // create from data
+   * // create form data
    * const formData = new FormData();
    * formData.append('db_id', db_id);
    * formData.append('coll_name', coll_name);
@@ -342,7 +341,7 @@ class HTTPClient {
 
   /**
    * Convert JS Object to FormData and prepare it for sendFormData()
-   * @param {object} formObj - object which needs to be converted
+   * @param {object} formObj - object which needs to be converted to FormData
    * @returns {FormData}
    */
   object2formdata(formObj) {
@@ -362,7 +361,7 @@ class HTTPClient {
    */
   async sendForm(url, formData, contentType = 'application/x-www-form-urlencoded') {
     // define boundary
-    let boundary = 'DoDoWebHttpClient';
+    let boundary = 'DodoWebHttpClient';
     boundary += Math.floor(Math.random() * 32768);
     boundary += Math.floor(Math.random() * 32768);
     boundary += Math.floor(Math.random() * 32768);
@@ -378,7 +377,7 @@ class HTTPClient {
 
 
   /**
-   * Stop the sent request.
+   * Stop the sent request immediatelly.
    * @returns {void}
    */
   kill() {
