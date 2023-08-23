@@ -40,6 +40,7 @@ const $debugOpts = {
   ddSet: false,
   ddModel: false,
   ddClick: false,
+  ddEnter: false,
   ddKeyup: false,
   ddChange: false,
   ddEvt: false

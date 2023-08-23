@@ -133,6 +133,7 @@ class Controller extends Model {
     this.ddSet();
     this.ddModel();
     this.ddClick();
+    this.ddEnter();
     this.ddKeyup();
     this.ddChange();
     this.ddEvt();

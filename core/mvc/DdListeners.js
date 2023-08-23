@@ -208,6 +208,45 @@ class DdListeners extends Aux {
 
 
   /**
+   * dd-enter="<controllerMethod | expression [--preventDefault]>"
+   *  Listen when enter key is pressed and execute the function i.e. controller method.
+   *  Option --preventDefault is usually used to block a HTML form to execute.
+   * Examples:
+   *  <input type="text" dd-enter="myFunc()">
+   *  <input type="text" dd-enter="(alert('some txt')) --preventDefault">
+   */
+  ddEnter() {
+    this._debug('ddEnter', '--------- ddEnter ------', 'orange', '#F4EA9E');
+
+    const attrName = 'dd-enter';
+    const elems = this._listElements(attrName, '');
+    this._debug('ddEnter', `found elements:: ${elems.length}`, 'orange');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName); // string 'myFunc(x, y, ...restArgs);myFunc2(); -- preventDefault'
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const tf = opts.includes('preventDefault');
+
+      const handler = async event => {
+        const eventCode = event.code ? event.code.toLowerCase() : '';
+        if (eventCode !== 'enter') { return; }
+
+        if (tf) { event.preventDefault(); }
+
+        await this._exeFuncsOrExpression(base, elem, event);
+        this._debug('ddEnter', `Executed ddEnter listener --> ${base}`, 'orangered');
+      };
+
+      const eventName = 'keyup';
+      elem.addEventListener(eventName, handler);
+      this.$dd.listeners.push({ attrName, elem, handler, eventName });
+      this._debug('ddEnter', `pushed::  tag: ${elem.localName} | dd-enter="${attrVal}" | ddListeners: ${this.$dd.listeners.length}`, 'orange');
+    }
+  }
+
+
+
+  /**
    * dd-keyup="<controllerMethod | expression> [--keyCode]"
    *  Parse the "dd-keyup" attribute. Listen for the keyup event on certain element and execute the controller method or expression.
    * Examples:
