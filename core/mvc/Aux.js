@@ -10,6 +10,7 @@ class Aux {
    * @returns {any}
    */
   _getControllerValue(prop) {
+    if (this._hasBlockString(prop, '$$')) { return; }
     try {
       let func = new Function(`const val = this.${prop}; return val;`);
       func = func.bind(this);
@@ -500,6 +501,8 @@ class Aux {
    * @returns {string}
    */
   _solveExpression(expr) {
+    if (this._hasBlockString(expr, '$$')) { return; }
+
     let func;
     try {
       func = new Function(`const exprResult = ${expr}; return exprResult;`);
