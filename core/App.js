@@ -84,6 +84,7 @@ class App extends Router {
   /*============================== MISC ==============================*/
   /**
    * Define preflight functions which will be executed before controller __loader() hook.
+   * It will be executed on every controller.
    * @param {Function[]} $preflight - array of functions
    * @return {App}
    */
@@ -97,6 +98,7 @@ class App extends Router {
 
   /**
    * Define postflight functions which will be executed after controller __postrend() hook.
+   * It will be executed on every controller.
    * @param {Function[]} $postflight - array of functions
    * @return {App}
    */
@@ -104,6 +106,20 @@ class App extends Router {
     if (!Array.isArray($postflight)) { throw new Error('The $postflight is not array'); }
     for (const func of $postflight) { if (typeof func !== 'function') { throw new Error(`The $postflight func "${func}" is not a function`); } }
     this.$postflight = $postflight;
+    return this;
+  }
+
+
+  /**
+   * Define destroyflight function which will be executed when controller is destroyed i.e. when route is changed.
+   * It will be executed on every controller.
+   * It's useful to off() some event listeners.
+   * @param {Function} $destroyflight - one function
+   * @return {App}
+   */
+  destroyflight($destroyflight) {
+    if (typeof $destroyflight !== 'function') { throw new Error(`The $destroyflight "${$destroyflight}" is not a function`); }
+    this.ctrlConstants.$destroyflight = $destroyflight;
     return this;
   }
 
@@ -251,7 +267,8 @@ class App extends Router {
   /**
    * 1) Assign defined controller constants to all controllers.
    * 2) Save controller instances in the app.ctrls so every controller can be used in every controller.
-   * @param  {Class[]} Ctrls - array of controller classes
+   * @param  {string} CtrlName - controller name
+   * @param  {object} ctrl - controller instance
    * @return {Controller}
    */
   _saveController(CtrlName, ctrl) {

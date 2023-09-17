@@ -39,7 +39,11 @@ class Navig {
     const ctrl_prev = this.previous.ctrl;
     if (!ctrl_prev) { return; }
 
-    await ctrl_prev.__destroy(); // execute __destroy() defined in the previous controller
+    // execute __destroy() defined in the previous controller
+    await ctrl_prev.__destroy();
+
+    // execute $destroyflight function
+    if (!!ctrl_prev.$destroyflight) { await ctrl_prev.$destroyflight(); }
 
     ctrl_prev.ddUNLISTEN(); // kill the previous controller event listeners
     ctrl_prev.emptyModel(); // empty the previous controller $model
@@ -54,6 +58,7 @@ class Navig {
         ctrlProp !== '$fridge' &&
         ctrlProp !== '$httpClient' &&
         ctrlProp !== '$debugOpts' &&
+        ctrlProp !== '$destroyflight' &&
 
         // Model.js
         ctrlProp !== '$model' &&
