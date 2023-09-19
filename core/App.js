@@ -244,7 +244,7 @@ class App extends Router {
       if (this.$debugOpts.exeRoute) { console.log(`%c --------- exeRoute (start) "${uri}" ------`, 'color:#680C72; background:#E59FED'); }
 
       let trx = { uri, pevent };
-      trx = await this.exe(trx).catch(err => console.error(err.message));
+      trx = await this.exe(trx).catch(err => console.error(err));
 
       if (trx && this.$debugOpts.exeRoute) {
         console.log(' --------- exeRoute trx::', trx);
