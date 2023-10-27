@@ -35,7 +35,8 @@ class Dd extends DdCloners {
         'dd-foreach',
         'dd-repeat',
         'dd-mustache'
-      ]
+      ],
+      foreach: {} // dd-foreach elements -> foreach: {uid_056_504: HTMLElement}
     };
 
 

@@ -118,6 +118,53 @@ class Aux {
 
 
   /**
+   * List DOM elements which has "dd-..." attribute and doesn't have dd-render-disabled.
+   * @param {string} attrName - attribute name -> 'dd-text', 'dd.html', ...
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   * @returns {HTMLElement[]}
+   */
+  _listElements_new(attrName, modelName) {
+    const elements = document.querySelectorAll(`[${attrName}]:not([dd-render-disabled])`);
+
+    let elems = [];
+
+    // do not list dd-foreach elements which has dd-foreach parents
+    if (attrName === 'dd-foreach') {
+      for (const elem of elements) {
+        const parents = this._getParents(elem, ['dd-foreach']); // list parents of the elem which are dd-foreach
+        if (!parents.length) { elems.push(elem); }
+      }
+    }
+
+    // render when controller is opened and modelName is undefined
+    if (!modelName) { return elems; }
+
+    // filter elements
+    elems = elems.filter(elem => {
+      // get attribute value
+      let attrValue = elem.getAttribute(attrName) || ''; // $model.users --user,key or $model.age < 28 or (5 > 2)
+      attrValue = attrValue.trim();
+
+      // always render elements with dd-render-enabled i.e. cloned elements
+      if (elem.hasAttribute('dd-render-enabled')) { return true; }
+
+      // false cases
+      if (
+        this._hasBlockString(attrValue, '$$') ||
+        this._hasBlockString(attrValue, '${') ||
+        this._hasBlockString(attrValue, '{{')
+      ) { return false; }
+
+      // take elements with $model.<modelName>
+      return attrValue.includes('$model.' + modelName);
+    });
+
+
+    return elems;
+  }
+
+
+  /**
    * Sort elements by priority , dd-priority="<number>".
    * The highest priority will be listed first.
    * @param {HTMLElement[]} elems - elements
@@ -154,13 +201,13 @@ class Aux {
 
 
   /**
-   * List siblings of the elem with specific attributes (attrNames). The elem is included in the list;
+   * List siblings of the elem with specific attributes (attrNames). The elem is included in the list.
    * @param {HTMLElement} elem - element for which we are searching siblings, usually dd-if element
    * @param {string[]} attrNames - attribute names: ['dd-if', 'dd-elseif', 'dd-else']
    */
   _getSiblings(elem, attrNames) {
     const siblings = [];
-    if (!elem.parentNode) { return siblings; } // if no parent, return no sibling
+    if (!elem.parentNode) { return siblings; } // if no parent, return no sibling i.e return empty array
     let sibling = elem.parentNode.firstChild; // first child of the parent node
 
     let search = false;
@@ -191,6 +238,28 @@ class Aux {
 
     return siblings;
   }
+
+
+  /**
+   * List parents of the elem with specific attributes (attrNames). The elem is not included in the list.
+   * @param {HTMLElement} elem - element for which we are searching siblings, usually dd-if element
+   * @param {string[]} attrNames - attribute names: ['dd-if', 'dd-elseif', 'dd-else']
+   */
+  _getParents(elem, attrNames) {
+    const parents = [];
+    if (!elem.parentNode) { return parents; } // if no parent, return empty array
+
+    let currentElement = elem.parentNode;
+    while (currentElement !== null && currentElement !== document) {
+      for (const attrName of attrNames) {
+        currentElement.hasAttribute(attrName) && parents.push(currentElement);
+      }
+      currentElement = currentElement.parentNode;
+    }
+
+    return parents;
+  }
+
 
 
   /**
@@ -800,7 +869,7 @@ class Aux {
     const date = Date.now() / 1000;
     const ms = (date + '').split('.')[1];
     const rnd = Math.round(Math.random() * 1000);
-    const uid = ms + '-' + rnd;
+    const uid = 'uid_' + ms + '_' + rnd;
     return uid;
   }
 
