@@ -110,58 +110,12 @@ class Aux {
       ) { return false; }
 
       // take elements with $model.<modelName>
-      return attrValue.includes('$model.' + modelName);
+      return attrValue.includes('$model.' + modelName) || /\(.+\)/.test(attrValue);
     });
 
     return elems;
   }
 
-
-  /**
-   * List DOM elements which has "dd-..." attribute and doesn't have dd-render-disabled.
-   * @param {string} attrName - attribute name -> 'dd-text', 'dd.html', ...
-   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
-   * @returns {HTMLElement[]}
-   */
-  _listElements_new(attrName, modelName) {
-    const elements = document.querySelectorAll(`[${attrName}]:not([dd-render-disabled])`);
-
-    let elems = [];
-
-    // do not list dd-foreach elements which has dd-foreach parents
-    if (attrName === 'dd-foreach') {
-      for (const elem of elements) {
-        const parents = this._getParents(elem, ['dd-foreach']); // list parents of the elem which are dd-foreach
-        if (!parents.length) { elems.push(elem); }
-      }
-    }
-
-    // render when controller is opened and modelName is undefined
-    if (!modelName) { return elems; }
-
-    // filter elements
-    elems = elems.filter(elem => {
-      // get attribute value
-      let attrValue = elem.getAttribute(attrName) || ''; // $model.users --user,key or $model.age < 28 or (5 > 2)
-      attrValue = attrValue.trim();
-
-      // always render elements with dd-render-enabled i.e. cloned elements
-      if (elem.hasAttribute('dd-render-enabled')) { return true; }
-
-      // false cases
-      if (
-        this._hasBlockString(attrValue, '$$') ||
-        this._hasBlockString(attrValue, '${') ||
-        this._hasBlockString(attrValue, '{{')
-      ) { return false; }
-
-      // take elements with $model.<modelName>
-      return attrValue.includes('$model.' + modelName);
-    });
-
-
-    return elems;
-  }
 
 
   /**
@@ -565,29 +519,37 @@ class Aux {
 
   /***** SOLVERS *****/
   /**
-   * Solve the JS expression. For example:
+   * Solve the JS expression.
+   * For example:
+   *   _solveExpression('this.$model.companies')
+   *   _solveExpression('${company.name}', {company: {name: 'Mikosoft Ltd'}})
    * @param {string} expr - the JS expression
+   * @param {object} arg - function argument: {argName: argValue}
    * @returns {string}
    */
-  _solveExpression(expr) {
-    if (this._hasBlockString(expr, '$$')) { return; }
+  _solveExpression(expr, ...args) {
+    // if (this._hasBlockString(expr, '$$')) { return ''; }
 
-    let func;
-    try {
-      func = new Function(`const exprResult = ${expr}; return exprResult;`);
-      func = func.bind(this);
-    } catch (err) {
-      console.error(`_solveExpression:: Error in expression definition "${expr}"`, err);
-    }
+    const argNames = args.map(arg => Object.keys(arg)[0]);
+    const argValues = args.map(arg => Object.values(arg)[0]);
 
     let exprResult;
     try {
-      exprResult = func();
-    } catch (err) {
-      console.error(`_solveExpression:: Error in expression execution "${expr}"`, err);
-    }
+      // function definition
+      let func = new Function(...argNames, `return ${expr};`);
+      func = func.bind(this);
 
-    exprResult = exprResult === undefined || exprResult === null || exprResult === NaN ? '' : exprResult;
+      try {
+        // function execution
+        exprResult = func(...argValues);
+        exprResult = exprResult === undefined || exprResult === null || exprResult === NaN ? '' : exprResult;
+      } catch (err) {
+        this._printError(`_solveExpression:: Error in expression execution "${expr}"`, err);
+      }
+
+    } catch (err) {
+      this._printError(`_solveExpression:: Error in expression definition "${expr}"`, err);
+    }
 
     return exprResult;
   }
