@@ -663,7 +663,7 @@ class Aux {
       // solve the expression (this.product_{{this.pid}}.name + ' -prod')
       prop_solved = this._solveMustache(base);
       const expr = prop_solved;
-      val = !expr || this._hasBlockString(expr) ? '' : this._solveExpression(expr);
+      val = !expr || this._hasBlockString(expr, '${') || this._hasBlockString(expr, '$$') ? '' : this._solveExpression(expr);
     } else {
       // solve the controller property name and get the controller property value
       prop_solved = base.replace(/^this\./, ''); // this.product_{{this.pid}} -> product_{{this.pid}}

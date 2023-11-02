@@ -99,6 +99,7 @@ class Controller extends Model {
 
     /* DdCloners.js */
     this.ddForeach();
+    this.ddEach();
     this.ddRepeat();
     this.ddMustache();
 
