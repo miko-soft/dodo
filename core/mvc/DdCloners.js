@@ -14,7 +14,7 @@ class DdCloners extends DdListeners {
 
   /**
    * dd-foreach="controllerProperty --val,key" | dd-foreach="(expression) [--val,key]"
-   *  Multiply element based on controllerProperty (or expression) which is an array.
+   *  Generate multiple HTML elements based on an array stored in a controller property.
    * Examples:
    * dd-foreach="myArr --val,key" or dd-foreach="this.myArr --val,key"
    * dd-foreach="$model.myArr --val,key" or dd-foreach="this.$model.myArr --val,key"
@@ -43,8 +43,10 @@ class DdCloners extends DdListeners {
 
       // clone original elem
       this._clone_remove(elem, attrName); // remove cloned elements generated in previous execution of the ddForeach() function
+      this._setDdRender(elem, 'disabled'); // set dd-render-disabled option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-class in dd-foreach but dd-class in dd-foreach-clone
       const clonedElem = this._clone_define(elem, attrName, attrVal);
       this._elemShow(clonedElem, attrName); // show cloned element by removing dd-foreach-hide
+      this._setDdRender(clonedElem, 'enabled');
 
       const outerHTML = clonedElem.outerHTML;
 
@@ -128,9 +130,10 @@ class DdCloners extends DdListeners {
 
 
 
+
   /**
  * dd-each="controllerProperty --val,key" | dd-each="(expression) [--val,key]"
- *  Multiply element based on controllerProperty (or expression) which is an array.
+ *  Generate multiple HTML elements based on an array stored in a controller property.
  *  It's simplified and faster version of dd-foreach.
  *  Nested dd-each elements are not recommended !
  * Examples:
@@ -159,8 +162,10 @@ class DdCloners extends DdListeners {
 
       // clone original elem
       this._clone_remove(elem, attrName); // remove cloned elements generated in previous execution of the ddEach() function
+      this._setDdRender(elem, 'disabled'); // set dd-render-disabled option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-class in dd-each but dd-class in dd-each-clone
       const clonedElem = this._clone_define(elem, attrName, attrVal);
       this._elemShow(clonedElem, attrName); // show cloned element by removing dd-each-hide
+      this._setDdRender(clonedElem, 'enabled');
 
       const outerHTML = clonedElem.outerHTML;
 
