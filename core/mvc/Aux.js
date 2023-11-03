@@ -110,11 +110,12 @@ class Aux {
       ) { return false; }
 
       // take elements with $model.<modelName>
-      return attrValue.includes('$model.' + modelName);
+      return attrValue.includes('$model.' + modelName) || /\(.+\)/.test(attrValue);
     });
 
     return elems;
   }
+
 
 
   /**
@@ -154,13 +155,13 @@ class Aux {
 
 
   /**
-   * List siblings of the elem with specific attributes (attrNames). The elem is included in the list;
+   * List siblings of the elem with specific attributes (attrNames). The elem is included in the list.
    * @param {HTMLElement} elem - element for which we are searching siblings, usually dd-if element
    * @param {string[]} attrNames - attribute names: ['dd-if', 'dd-elseif', 'dd-else']
    */
   _getSiblings(elem, attrNames) {
     const siblings = [];
-    if (!elem.parentNode) { return siblings; } // if no parent, return no sibling
+    if (!elem.parentNode) { return siblings; } // if no parent, return no sibling i.e return empty array
     let sibling = elem.parentNode.firstChild; // first child of the parent node
 
     let search = false;
@@ -191,6 +192,28 @@ class Aux {
 
     return siblings;
   }
+
+
+  /**
+   * List parents of the elem with specific attributes (attrNames). The elem is not included in the list.
+   * @param {HTMLElement} elem - element for which we are searching siblings, usually dd-if element
+   * @param {string[]} attrNames - attribute names: ['dd-if', 'dd-elseif', 'dd-else']
+   */
+  _getParents(elem, attrNames) {
+    const parents = [];
+    if (!elem.parentNode) { return parents; } // if no parent, return empty array
+
+    let currentElement = elem.parentNode;
+    while (currentElement !== null && currentElement !== document) {
+      for (const attrName of attrNames) {
+        currentElement.hasAttribute(attrName) && parents.push(currentElement);
+      }
+      currentElement = currentElement.parentNode;
+    }
+
+    return parents;
+  }
+
 
 
   /**
@@ -496,29 +519,37 @@ class Aux {
 
   /***** SOLVERS *****/
   /**
-   * Solve the JS expression. For example:
+   * Solve the JS expression.
+   * For example:
+   *   _solveExpression('this.$model.companies')
+   *   _solveExpression('${company.name}', {company: {name: 'Mikosoft Ltd'}})
    * @param {string} expr - the JS expression
+   * @param {object} arg - function argument: {argName: argValue}
    * @returns {string}
    */
-  _solveExpression(expr) {
-    if (this._hasBlockString(expr, '$$')) { return; }
+  _solveExpression(expr, ...args) {
+    // if (this._hasBlockString(expr, '$$')) { return ''; }
 
-    let func;
-    try {
-      func = new Function(`const exprResult = ${expr}; return exprResult;`);
-      func = func.bind(this);
-    } catch (err) {
-      console.error(`_solveExpression:: Error in expression definition "${expr}"`, err);
-    }
+    const argNames = args.map(arg => Object.keys(arg)[0]);
+    const argValues = args.map(arg => Object.values(arg)[0]);
 
     let exprResult;
     try {
-      exprResult = func();
-    } catch (err) {
-      console.error(`_solveExpression:: Error in expression execution "${expr}"`, err);
-    }
+      // function definition
+      let func = new Function(...argNames, `return ${expr};`);
+      func = func.bind(this);
 
-    exprResult = exprResult === undefined || exprResult === null || exprResult === NaN ? '' : exprResult;
+      try {
+        // function execution
+        exprResult = func(...argValues);
+        exprResult = exprResult === undefined || exprResult === null || exprResult === NaN ? '' : exprResult;
+      } catch (err) {
+        this._printError(`_solveExpression:: Error in expression execution "${expr}"`, err);
+      }
+
+    } catch (err) {
+      this._printError(`_solveExpression:: Error in expression definition "${expr}"`, err);
+    }
 
     return exprResult;
   }
@@ -632,7 +663,7 @@ class Aux {
       // solve the expression (this.product_{{this.pid}}.name + ' -prod')
       prop_solved = this._solveMustache(base);
       const expr = prop_solved;
-      val = !expr || this._hasBlockString(expr) ? '' : this._solveExpression(expr);
+      val = !expr || this._hasBlockString(expr, '${') || this._hasBlockString(expr, '$$') ? '' : this._solveExpression(expr);
     } else {
       // solve the controller property name and get the controller property value
       prop_solved = base.replace(/^this\./, ''); // this.product_{{this.pid}} -> product_{{this.pid}}
@@ -800,7 +831,7 @@ class Aux {
     const date = Date.now() / 1000;
     const ms = (date + '').split('.')[1];
     const rnd = Math.round(Math.random() * 1000);
-    const uid = ms + '-' + rnd;
+    const uid = 'uid_' + ms + '_' + rnd;
     return uid;
   }
 

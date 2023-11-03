@@ -33,6 +33,7 @@ class Dd extends DdCloners {
       ],
       cloner_directives: [
         'dd-foreach',
+        'dd-each',
         'dd-repeat',
         'dd-mustache'
       ]

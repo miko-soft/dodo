@@ -28,59 +28,157 @@ class DdCloners extends DdListeners {
     const elems = this._listElements(attrName, modelName);
     this._debug('ddForeach', `found elements:: ${elems.length}`, 'navy');
 
-    // sort listed elements
-    let elems_sorted = [...elems].reverse(); // reverse elems because we want to render nested dd-foreach first
-    elems_sorted = this._sortElements(elems_sorted); // sort elems by dd-priority="<number>"
 
-    for (const elem of elems_sorted) {
+    for (const elem of elems) {
+      /*** PARENT ***/
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this.$debugOpts.ddForeach && console.log(`\nddForeach:: attrVal:: ${attrVal} , base:: ${base} , prop_solved:: ${prop_solved} -->`, val);
+      const { val: baseVal, prop_solved } = this._solveBase(base);
+      this.$debugOpts.ddForeach && console.log(`\nddForeach:: attrVal:: ${attrVal} , base:: ${base} , prop_solved:: ${prop_solved} -->`, baseVal);
 
-      this._clone_remove(elem, attrName); // remove cloned elements
-      this._setDdRender(elem, 'disabled'); // set dd-render-disabled option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-foreach but dd-foreach-clone
+      // get forEach callback argument names from opts, for example: pets --pet,key --> ['pet', 'key'] --> forEach((pet,key) => {...})
+      const [valName, keyName] = opts.length ? opts[0].split(',').map(v => v.trim()) : []; // ['pet', 'key']
+      if (!this._isValidVariableName(valName)) { this._printError(`dd-foreach="${attrVal}" has invalid valName:${valName}`); continue; }
+      if (!this._isValidVariableName(keyName)) { this._printError(`dd-foreach="${attrVal}" has invalid keyName:${keyName}`); continue; }
 
-      // checks
-      const uid = elem.getAttribute('dd-id');
-      const directive_found = this._hasDirectives(elem, ['dd-repeat', 'dd-mustache']);
-      if (!!directive_found) { this._printError(`dd-foreach="${attrVal}" dd-id="${uid}" contains ${directive_found}`); continue; }
-      if (!Array.isArray(val)) { this._printWarn(`dd-foreach="${attrVal}" dd-id="${uid}" -> The value is not array. Value is: ${JSON.stringify(val)}`); continue; }
-      if (!val.length) { continue; }
-      if (!opts || (!!opts && !opts.length)) { this._printError(`dd-foreach="${attrVal}" dd-id="${uid}" -> The option --val,key is not written`); continue; }
-
-      // get forEach callback argument names from opts, for example: --val,key --> ['val', 'key']
-      const [valName, keyName] = opts[0].split(',').map(v => v.trim()); // ['val', 'key']
-      if (!this._isValidVariableName(valName)) { this._printError(`dd-foreach="${attrVal}" dd-id="${uid}" has invalid valName ${valName}`); continue; }
-      if (!this._isValidVariableName(keyName)) { this._printError(`dd-foreach="${attrVal}" dd-id="${uid}" has invalid valName ${keyName}`); continue; }
-
-      // clone orig element
+      // clone original elem
+      this._clone_remove(elem, attrName); // remove cloned elements generated in previous execution of the ddForeach() function
       const clonedElem = this._clone_define(elem, attrName, attrVal);
-      this._delDdRender(clonedElem, 'disabled'); // remove dd-render-disabled from cloned element (and its childrens) because it needs to be rendered
-      this._setDdRender(clonedElem, 'enabled');
-      this._elemShow(clonedElem, attrName); // show cloned element
+      this._elemShow(clonedElem, attrName); // show cloned element by removing dd-foreach-hide
 
-      // remove dd-foreach element from cloned element (the case when dd-foreach elements are nested)
-      const nestedDdForeachElem = clonedElem.querySelector(`[dd-foreach]`);
-      !!nestedDdForeachElem && nestedDdForeachElem.remove();
+      const outerHTML = clonedElem.outerHTML;
 
-      // interpolation mark, for example --$0 will solve only $0{...}
-      const interpolationMark = opts[1]; // $1
 
-      // solve template literals in the cloned element and insert cloned elements in the document
-      val.forEach((valValue, keyValue) => {
-        let outerhtml = clonedElem.outerHTML.replace(/\s+/g, ' ').replace(/\n/g, '').trim();
-        this._debug('ddForeach', `- ddForeach ${interpolationMark || ''}:: outerhtml (before):: ${outerhtml}`, 'navy');
-        const interpolationValues = !!keyName ? { [valName]: valValue, [keyName]: keyValue } : { [valName]: valValue }; // {val: {name: 'Marko', age:21}, key: 1}
-        outerhtml = this._solveTemplateLiteral(outerhtml, interpolationValues, interpolationMark); // solve ${...}
-        outerhtml = this._solveDoubledollar(outerhtml, base, valName, keyValue); // solve $$var
-        this._debug('ddForeach', `                  outerhtml (after):: ${outerhtml}`, 'navy');
-        elem.insertAdjacentHTML('beforebegin', outerhtml); // insert new elements above elem
+      /*** CHILD ***/
+      const attrName_child = 'dd-foreach-child';
+      const elem_child = elem.querySelector(`[${attrName_child}]`);
+      const attrVal_child = elem_child ? elem_child.getAttribute(`${attrName_child}`) : '';
+      const { base: base_child, opts: opts_child } = this._decomposeAttribute(attrVal_child);
+      const [valName_child, keyName_child] = opts_child.length ? opts_child[0].split(',').map(v => v.trim()) : []; // ['pet', 'key']
+      if (!this._isValidVariableName(valName_child)) { this._printError(`dd-foreach="${attrVal}" has invalid valName:${valName_child}`); continue; }
+      if (!this._isValidVariableName(keyName_child)) { this._printError(`dd-foreach="${attrVal}" has invalid keyName:${keyName_child}`); continue; }
+      const outerHTML_child = elem_child ? elem_child.outerHTML : '';
+
+
+
+      /*** GRANDCHILD ***/
+      const attrName_grandchild = 'dd-foreach-grandchild';
+      const elem_grandchild = elem_child ? elem_child.querySelector(`[${attrName_grandchild}]`) : null;
+      const attrVal_grandchild = elem_grandchild ? elem_grandchild.getAttribute(`${attrName_grandchild}`) : '';
+      const { base: base_grandchild, opts: opts_grandchild } = this._decomposeAttribute(attrVal_grandchild);
+      const [valName_grandchild, keyName_grandchild] = opts_grandchild.length ? opts_grandchild[0].split(',').map(v => v.trim()) : []; // ['employer', 'key2']
+      if (!this._isValidVariableName(valName_grandchild)) { this._printError(`dd-foreach="${attrVal}" has invalid valName:${valName_grandchild}`); continue; }
+      if (!this._isValidVariableName(keyName_grandchild)) { this._printError(`dd-foreach="${attrVal}" has invalid keyName:${keyName_grandchild}`); continue; }
+      const outerHTML_grandchild = elem_grandchild ? elem_grandchild.outerHTML : '';
+
+
+      /*** MULTIPLICATION FUNCTION ***/
+      let html = '';
+      baseVal.forEach((val, key) => {
+
+        // CHILD
+        let baseVal_child = [];
+        if (base_child && base_child.includes('this.')) { // when baseVal_child is controller property, for example: dd-foreach-child="this.fields --field"  -- must have this.
+          baseVal_child = this._solveExpression(base_child);
+        } else if (base_child && base_child.includes(valName)) { // when baseVal_child is forEach() argument, for example: dd-foreach="companies --company" - dd-foreach-child="company.workers --worker"
+          baseVal_child = this._solveExpression(base_child, { [valName]: val });
+        }
+
+        let html_child = '';
+        baseVal_child && baseVal_child.forEach((val_child, key_child) => {
+
+          // GRANDCHILD
+          let baseVal_grandchild = [];
+          if (base_grandchild && base_grandchild.includes('this.')) { // when baseVal_grandchild is controller property, for example: dd-foreach-grandchild="this.fields --field"  -- must have this.
+            baseVal_grandchild = this._solveExpression(base_grandchild);
+          } else if (base_grandchild && base_grandchild.includes(valName_child)) { // when baseVal_grandchild is forEach() argument, for example: dd-foreach="companies --company" - dd-foreach-child="company.workers --worker" - dd-foreach-grandchild="worker.jobs --job"
+            baseVal_grandchild = this._solveExpression(base_grandchild, { [valName_child]: val_child });
+          }
+
+          let html_grandchild = '';
+          baseVal_grandchild && baseVal_grandchild.forEach((val_grandchild, key_grandchild) => {
+            const textWithBackticks_grandchild = elem_grandchild ? '`' + outerHTML_grandchild + '`' : '';
+            html_grandchild += this._solveExpression(textWithBackticks_grandchild, { [valName]: val }, { [keyName]: key }, { [valName_child]: val_child }, { [keyName_child]: key_child }, { [valName_grandchild]: val_grandchild }, { [keyName_grandchild]: key_grandchild });
+          });
+
+          // CHILD
+          let textWithBackticks_child = '`' + outerHTML_child + '`';
+          textWithBackticks_child = elem_grandchild ? ('`' + outerHTML_child + '`').replace(outerHTML_grandchild, html_grandchild) : '`' + outerHTML_child + '`';
+          html_child += this._solveExpression(textWithBackticks_child, { [valName]: val }, { [keyName]: key }, { [valName_child]: val_child }, { [keyName_child]: key_child });
+        });
+
+
+        // PARENT
+        // solve template literal -- ${var}
+        const textWithBackticks = elem_child ? ('`' + outerHTML + '`').replace(outerHTML_child, html_child) : '`' + outerHTML + '`';
+        html += this._solveExpression(textWithBackticks, { [valName]: val }, { [keyName]: key });
+
+        // solve doubledollar -- $$var
+        html = this._solveDoubledollar(html, base, valName, key); // solve $$var
       });
+
+      // insert multiplied dd-foreach element
+      elem.insertAdjacentHTML('afterend', html);
 
     }
 
     this._debug('ddForeach', '--------- ddForeach (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+
+
+  /**
+ * dd-each="controllerProperty --val,key" | dd-each="(expression) [--val,key]"
+ *  Multiply element based on controllerProperty (or expression) which is an array.
+ *  It's simplified and faster version of dd-foreach.
+ *  Nested dd-each elements are not recommended !
+ * Examples:
+ * dd-each="myArr --val,key" or dd-each="this.myArr --val,key"
+ * dd-each="$model.myArr --val,key" or dd-each="this.$model.myArr --val,key"
+ * dd-foraech="(['a','b','c']) --val,key"
+ * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+ */
+  ddEach(modelName) {
+    this._debug('ddEach', `--------- ddEach (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-each';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddEach', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const { val: baseVal, prop_solved } = this._solveBase(base);
+      this.$debugOpts.ddEach && console.log(`\nddEach:: attrVal:: ${attrVal} , base:: ${base} , prop_solved:: ${prop_solved} -->`, baseVal);
+
+      // get forEach callback argument names from opts, for example: pets --pet,key --> ['pet', 'key'] --> forEach((pet,key) => {...})
+      const [valName, keyName] = opts.length ? opts[0].split(',').map(v => v.trim()) : []; // ['pet', 'key']
+      if (!this._isValidVariableName(valName)) { this._printError(`dd-each="${attrVal}" has invalid valName:${valName}`); continue; }
+      if (!this._isValidVariableName(keyName)) { this._printError(`dd-each="${attrVal}" has invalid keyName:${keyName}`); continue; }
+
+      // clone original elem
+      this._clone_remove(elem, attrName); // remove cloned elements generated in previous execution of the ddEach() function
+      const clonedElem = this._clone_define(elem, attrName, attrVal);
+      this._elemShow(clonedElem, attrName); // show cloned element by removing dd-each-hide
+
+      const outerHTML = clonedElem.outerHTML;
+
+
+      let html = '';
+      baseVal.forEach((val, key) => {
+        // solve template literal -- ${var}
+        const textWithBackticks = '`' + outerHTML + '`';
+        html += this._solveExpression(textWithBackticks, { [valName]: val }, { [keyName]: key });
+
+        // solve doubledollar -- $$var
+        html = this._solveDoubledollar(html, base, valName, key); // solve $$var
+      });
+
+      elem.insertAdjacentHTML('afterend', html);
+
+    }
+
   }
 
 
@@ -161,7 +259,7 @@ class DdCloners extends DdListeners {
 
       // checks
       const uid = elem.getAttribute('dd-id');
-      const directive_found = this._hasDirectives(elem, ['dd-foreach', 'dd-repeat']);
+      const directive_found = this._hasDirectives(elem, ['dd-repeat']);
       if (!!directive_found) { this._printError(`dd-mustache dd-id="${uid}" contains ${directive_found}`); continue; }
 
       // clone orig element
