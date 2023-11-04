@@ -90,17 +90,11 @@ class Aux {
     let elems = document.querySelectorAll(`[${attrName}]:not([dd-render-disabled])`);
     elems = Array.from(elems); // convert DOM node list to JS array so filter(), sort() can be used
 
-    // render when controller is opened and modelName is undefined
-    if (!modelName) { return elems; }
-
     // filter elements
     elems = elems.filter(elem => {
       // get attribute value
       let attrValue = elem.getAttribute(attrName) || ''; // $model.users --user,key or $model.age < 28 or (5 > 2)
       attrValue = attrValue.trim();
-
-      // always render elements with dd-render-enabled i.e. cloned elements
-      if (elem.hasAttribute('dd-render-enabled')) { return true; }
 
       // false cases
       if (
@@ -109,8 +103,20 @@ class Aux {
         this._hasBlockString(attrValue, '{{')
       ) { return false; }
 
+      /*
+      // always render elements with dd-render-enabled i.e. cloned elements
+      if (elem.hasAttribute('dd-render-enabled')) { return true; }
+
       // take elements with $model.<modelName>
-      return attrValue.includes('$model.' + modelName) || /\(.+\)/.test(attrValue);
+      if (!!modelName) {
+        attrValue.includes('$model.' + modelName);
+      }
+
+      // take elements with expressions
+      return /\(.+\)/.test(attrValue);
+      */
+
+      return true;
     });
 
     return elems;
@@ -545,10 +551,12 @@ class Aux {
         exprResult = exprResult === undefined || exprResult === null || exprResult === NaN ? '' : exprResult;
       } catch (err) {
         this._printError(`_solveExpression:: Error in expression execution "${expr}"`, err);
+        console.error(err);
       }
 
     } catch (err) {
       this._printError(`_solveExpression:: Error in expression definition "${expr}"`, err);
+      console.error(err);
     }
 
     return exprResult;
@@ -644,7 +652,7 @@ class Aux {
    * @returns {string}
    */
   _solveDoubledollar(text, base, valName, keyValue) {
-    const replacement = `this.${base}[${keyValue}]`;
+    const replacement = /^this\./.test(base) ? `${base}[${keyValue}]` : `this.${base}[${keyValue}]`;
     const reg = new RegExp(`\\$\\$${valName}|this\\.\\$\\$${valName}`, 'g');
     text = text.replace(reg, replacement); // replace $$company or this.$$company with this.companies[0]
     return text;

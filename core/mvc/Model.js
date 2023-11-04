@@ -21,7 +21,7 @@ class Model extends View {
       set: (obj, modelName, modelValue) => {
         this.$debugOpts.model && console.log(`DEBUG: Model set trigered. this.$model.${modelName} = `, modelValue, ' | __initFinished:', this.__initFinished);
         const tf = Reflect.set(obj, modelName, modelValue); // set obj.modelName = modelValue i.e. this.$model.modelName = modelValue
-        this.__initFinished && this.render(); // prevent $model rendering in __init()
+        this.__initFinished && this.render(modelName); // prevent $model rendering in __init()
         eventEmitter.emit('model-change', { modelName, modelValue });
         return tf;
       }
@@ -49,13 +49,13 @@ class Model extends View {
         setValue: (modelValue, path) => {
           const prop = !!path ? `$model.${modelName}.${path}` : `$model.${modelName}`;
           this._setControllerValue(prop, modelValue); // see Aux class
-          this.render();
+          this.render(modelName);
         },
 
         delValue: (path) => {
           const prop = !!path ? `$model.${modelName}.${path}` : `$model.${modelName}`;
           this._setControllerValue(prop, undefined); // see Aux class
-          this.render();
+          this.render(modelName);
         },
 
         getValue: (path) => {
@@ -66,26 +66,26 @@ class Model extends View {
 
         mpush: (arrElem) => {
           this.$model[modelName].push(arrElem);
-          this.render();
+          this.render(modelName);
         },
 
         mpop: () => {
           this.$model[modelName].pop();
-          this.render();
+          this.render(modelName);
         },
 
         munshift: (arrElem) => {
           this.$model[modelName].unshift(arrElem);
-          this.render();
+          this.render(modelName);
         },
 
         mshift: () => {
           this.$model[modelName].shift();
-          this.render();
+          this.render(modelName);
         },
 
         mrender: () => {
-          this.render();
+          this.render(modelName);
         },
 
       };

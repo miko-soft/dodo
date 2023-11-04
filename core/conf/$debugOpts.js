@@ -20,7 +20,6 @@ const $debugOpts = {
   ddVisible: false,
   ddText: false,
   ddHtml: false,
-  ddMustache: false,
   ddValue: false,
   ddDisabled: false,
   ddChecked: false,
@@ -33,7 +32,9 @@ const $debugOpts = {
   // DdCloners.js
   ddForeach: false,
   ddEach: false,
+  ddLoop: false,
   ddRepeat: false,
+  ddMustache: false,
 
   // DdListeners.js
   ddUNLISTEN: false,

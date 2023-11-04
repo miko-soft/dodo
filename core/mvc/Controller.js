@@ -92,34 +92,36 @@ class Controller extends Model {
   /************ RENDER METHODS ***********/
   /**
    * Render the view i.e. the dd- elements.
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    * @param {number} renderDelay - delay in miliseconds
    */
-  async render(renderDelay = 30) {
+  async render(modelName, renderDelay = 30) {
     this._debug('render', `--------- render (start) -- ctrl: ${this.constructor.name} -- renderDelay: ${renderDelay}  ------`, 'green', '#D9FC9B');
 
     /* DdCloners.js */
-    this.ddForeach();
-    this.ddEach();
-    this.ddRepeat();
-    this.ddMustache();
+    this.ddForeach(modelName);
+    this.ddEach(modelName);
+    this.ddLoop(modelName);
+    this.ddRepeat(modelName);
+    this.ddMustache(modelName);
 
     /* Dd.js */
-    this.ddElem();
+    this.ddElem(modelName);
     // writers
-    this.ddText();
-    this.ddHtml();
+    this.ddText(modelName);
+    this.ddHtml(modelName);
     // attribute managers
-    this.ddValue();
-    this.ddDisabled();
-    this.ddChecked();
-    this.ddSelected();
-    this.ddClass();
-    this.ddStyle();
-    this.ddSrc();
-    this.ddAttr();
+    this.ddValue(modelName);
+    this.ddDisabled(modelName);
+    this.ddChecked(modelName);
+    this.ddSelected(modelName);
+    this.ddClass(modelName);
+    this.ddStyle(modelName);
+    this.ddSrc(modelName);
+    this.ddAttr(modelName);
     // switchers
-    this.ddIf();
-    this.ddVisible();
+    this.ddIf(modelName);
+    this.ddVisible(modelName);
 
     // remove dd-render-disabled & // remove dd-render-enabled
     this._purgeDdRender('disabled');

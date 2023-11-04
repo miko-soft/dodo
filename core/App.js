@@ -302,6 +302,7 @@ class App extends Router {
       /* cloner directives */
       'dd-foreach',
       'dd-each',
+      'dd-loop',
       'dd-repeat',
       'dd-mustache'
     ];
