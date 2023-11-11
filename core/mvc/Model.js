@@ -48,19 +48,19 @@ class Model extends View {
          */
         setValue: (modelValue, path) => {
           const prop = !!path ? `$model.${modelName}.${path}` : `$model.${modelName}`;
-          this._setControllerValue(prop, modelValue); // see Aux class
+          this._setControllerValue(prop, modelValue); // see Auxiliary class
           this.render(modelName);
         },
 
         delValue: (path) => {
           const prop = !!path ? `$model.${modelName}.${path}` : `$model.${modelName}`;
-          this._setControllerValue(prop, undefined); // see Aux class
+          this._setControllerValue(prop, undefined); // see Auxiliary class
           this.render(modelName);
         },
 
         getValue: (path) => {
           const mprop = !!path ? `$model.${modelName}.${path}` : `$model.${modelName}`;
-          const modelValue = this._getControllerValue(mprop); // see Aux class
+          const modelValue = this._getControllerValue(mprop); // see Auxiliary class
           return modelValue;
         },
 

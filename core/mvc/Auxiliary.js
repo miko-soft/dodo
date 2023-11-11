@@ -1,7 +1,7 @@
 /**
  * Auxilary methods.
  */
-class Aux {
+class Auxiliary {
 
   /***** CONTROLLER *****/
   /**
@@ -989,4 +989,4 @@ class Aux {
 }
 
 
-export default Aux;
+export default Auxiliary;

@@ -1,11 +1,11 @@
-import Aux from './Aux.js';
+import Auxiliary from './Auxiliary.js';
 import navig from '../lib/navig.js';
 
 
 /**
  * Parse HTML elements with the "dd-" attribute (event listeners)
  */
-class DdListeners extends Aux {
+class DdListeners extends Auxiliary {
 
   constructor() {
     super();
