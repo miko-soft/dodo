@@ -399,7 +399,7 @@ class Dd extends DdCloners {
       if (val === undefined) { continue; }
       if (!Array.isArray(val)) { this._printWarn(`dd-class="${attrVal}" -> The value is not array.`); continue; }
 
-      if (act === 'replace' && !!val.length) { elem.removeAttribute('class'); }
+      if (act === 'replace') { elem.removeAttribute('class'); }
       for (const v of val) {
         elem.classList.add(v);
       }
