@@ -251,9 +251,26 @@ class Form {
    * @returns {void}
    */
   delControls(keys) {
-    if (!keys) { console.error('delControlsErr: Argument "keys" is not defined. It should be an array.'); }
+    if (!keys) { console.error('delControlsErr: The argument "keys" must be provided and it should be an array.'); }
     this._debug('delControls', '--------- delControls ------', 'green', '#A1F8DC');
     this._debug('delControls', keys, 'green');
+    for (const key of keys) {
+      this.delControl(key);
+    }
+  }
+
+
+  /**
+   * Empty all form control values.
+   * @returns {void}
+   */
+  delAllControls() {
+    let elems = document.querySelectorAll(`[dd-form="${this.formName}"] input,select,textarea`);
+    if (!elems) { return; }
+    elems = Array.from(elems);
+    const keys = elems.map(elem => elem.getAttribute('name'));
+    this._debug('delAllControls', '--------- delAllControls ------', 'green', '#A1F8DC');
+    this._debug('delAllControls', keys, 'green');
     for (const key of keys) {
       this.delControl(key);
     }
