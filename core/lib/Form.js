@@ -268,7 +268,9 @@ class Form {
     let elems = document.querySelectorAll(`[dd-form="${this.formName}"] input,select,textarea`);
     if (!elems) { return; }
     elems = Array.from(elems);
-    const keys = elems.map(elem => elem.getAttribute('name'));
+    const keys = elems
+      .map(elem => elem.getAttribute('name'))
+      .filter(elem => !!elem); // filter null values (elements with no name attribute)
     this._debug('delAllControls', '--------- delAllControls ------', 'green', '#A1F8DC');
     this._debug('delAllControls', keys, 'green');
     for (const key of keys) {
