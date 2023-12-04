@@ -10,8 +10,10 @@ class Form {
       setControls: false,
       getControl: false,
       getControls: false,
+      getAllControls: false,
       delControl: false,
-      delControls: false
+      delControls: false,
+      delAllControls: false
     };
   }
 
@@ -113,12 +115,14 @@ class Form {
       for (const elem of elems) {
         let val, attrVal;
         if (!!elem) {
-          attrVal = elem.getAttribute('name'); // seller.name
-          const keys = attrVal.split('.'); // ['seller', 'name']
-          const key1 = keys[0]; // seller
-          const key2 = keys[1]; // name
-          if (key1 && !key2) { val = obj[key1]; }
-          else if (key1 && key2) { val = obj[key1][key2]; }
+          attrVal = elem.getAttribute('name'); // company.seller.name
+          const keys = attrVal.split('.'); // ['company', 'seller', 'name']
+          const key1 = keys[0]; // company
+          const key2 = keys[1]; // seller
+          const key3 = keys[2]; // name
+          if (key1 && !key2 && !key3) { val = obj[key1]; }
+          else if (key1 && key2 && !key3) { val = obj[key1][key2]; }
+          else if (key1 && key2 && key3) { val = obj[key1][key2][key3]; }
         }
 
         if (!!attrVal) { this.setControl(attrVal, val); }
@@ -193,19 +197,52 @@ class Form {
 
 
   /**
-   * Get the form controll values and return corresponding object
+   * Get the form control values and return corresponding object
    * @param {string[]} keys - the value of the "name" HTML attribute
    * @param {boolean} convertType - default true
    * @returns {object}
    */
   getControls(keys, convertType = true) {
-    if (!keys) { console.error('getControlsErr: Argument "keys" is not defined. It should be an array.'); }
+    if (!keys) { console.error('getControlsErr: Argument "keys" is not defined.'); return; }
+    if (!Array.isArray(keys)) { console.error('getControlsErr: Argument "keys" should be an array.'); return; }
     this._debug('getControls', '--------- getControls ------', 'green', '#A1F8DC');
     this._debug('getControls', keys, 'green');
+
     const obj = {};
     for (const key of keys) {
-      obj[key] = this.getControl(key, convertType);
+      const val = this.getControl(key, convertType);
+      if (!key.includes('.')) { // 'name'
+        obj[key] = val;
+      } else { // 'company.seller.name
+        const key_parts = key.split('.');
+        const key_part1 = key_parts[0]; // company
+        const key_part2 = key_parts[1]; // seller
+        const key_part3 = key_parts[2]; // name
+        if (key_part1 && !key_part2 && !key_part3) { obj[key_part1] = val; }
+        else if (key_part1 && key_part2 && !key_part3) { obj[key_part1] = {}; obj[key_part1][key_part2] = val; }
+        else if (key_part1 && key_part2 && key_part3) { obj[key_part1] = {}; obj[key_part1][key_part2] = {}; obj[key_part1][key_part2][key_part3] = val; }
+      }
     }
+
+    return obj;
+  }
+
+
+  /**
+   * Get all form control values and return corresponding object
+   * @param {boolean} convertType - default true
+   * @returns {object}
+   */
+  getAllControls(convertType = true) {
+    let elems = document.querySelectorAll(`[dd-form="${this.formName}"] input,select,textarea`);
+    if (!elems) { return; }
+    elems = Array.from(elems);
+    const keys = elems
+      .map(elem => elem.getAttribute('name'))
+      .filter(elem => !!elem); // filter null values (elements with no name attribute)
+    this._debug('getAllControls', '--------- getAllControls ------', 'green', '#A1F8DC');
+    this._debug('getAllControls', keys, 'green');
+    const obj = this.getControls(keys, convertType);
     return obj;
   }
 
@@ -219,7 +256,7 @@ class Form {
     this._debug('delControl', '--------- delControl ------', 'green', '#A1F8DC');
     this._debug('delControl', key, 'green');
     const elems = document.querySelectorAll(`[dd-form="${this.formName}"] [name^="${key}"]`);
-    if (!elems.length) { console.error(`Form "${this.formName}" doesn't have name^="${key}" control.`); }
+    if (!elems.length) { console.error(`Form "${this.formName}" doesn't have name^="${key}" control.`); return; }
 
     for (const elem of elems) {
       if (elem.type === 'checkbox' || elem.type === 'radio') {
@@ -251,7 +288,8 @@ class Form {
    * @returns {void}
    */
   delControls(keys) {
-    if (!keys) { console.error('delControlsErr: The argument "keys" must be provided and it should be an array.'); }
+    if (!keys) { console.error('delControlsErr: Argument "keys" is not defined.'); return; }
+    if (!Array.isArray(keys)) { console.error('delControlsErr: Argument "keys" should be an array.'); return; }
     this._debug('delControls', '--------- delControls ------', 'green', '#A1F8DC');
     this._debug('delControls', keys, 'green');
     for (const key of keys) {
