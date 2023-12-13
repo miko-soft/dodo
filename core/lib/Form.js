@@ -234,7 +234,7 @@ class Form {
    * @returns {object}
    */
   getAllControls(convertType = true) {
-    let elems = document.querySelectorAll(`[dd-form="${this.formName}"] input,select,textarea`);
+    let elems = document.querySelectorAll(`[dd-form="${this.formName}"] input,[dd-form="${this.formName}"] select,[dd-form="${this.formName}"] textarea`);
     if (!elems) { return; }
     elems = Array.from(elems);
     const keys = elems
@@ -303,7 +303,7 @@ class Form {
    * @returns {void}
    */
   delAllControls() {
-    let elems = document.querySelectorAll(`[dd-form="${this.formName}"] input,select,textarea`);
+    let elems = document.querySelectorAll(`[dd-form="${this.formName}"] input,[dd-form="${this.formName}"] select,[dd-form="${this.formName}"] textarea`);
     if (!elems) { return; }
     elems = Array.from(elems);
     const keys = elems
