@@ -90,31 +90,31 @@ class Auxiliary {
     let elems = document.querySelectorAll(`[${attrName}]:not([dd-render-disabled])`);
     elems = Array.from(elems); // convert DOM node list to JS array so filter(), sort() can be used
 
+
     // filter elements
     elems = elems.filter(elem => {
       // get attribute value
-      let attrValue = elem.getAttribute(attrName) || ''; // $model.users --user,key or $model.age < 28 or (5 > 2)
-      attrValue = attrValue.trim();
+      let attrVal = elem.getAttribute(attrName) || ''; // $model.users --user,key or $model.age < 28 or (5 > 2)
+      attrVal = attrVal.trim();
 
-      // false cases
-      if (
-        this._hasBlockString(attrValue, '$$') ||
-        this._hasBlockString(attrValue, '${') ||
-        this._hasBlockString(attrValue, '{{')
-      ) { return false; }
+      // dd- directives with --forceRender option
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      if (opts.includes('forceRender')) { return true; }
 
-      /*
       // always render elements with dd-render-enabled i.e. cloned elements
       if (elem.hasAttribute('dd-render-enabled')) { return true; }
 
-      // take elements with $model.<modelName>
-      if (!!modelName) {
-        attrValue.includes('$model.' + modelName);
-      }
+      // false cases
+      if (
+        this._hasBlockString(attrVal, '$$')
+        // this._hasBlockString(attrVal, '${') ||
+        // this._hasBlockString(attrVal, '{{')
+      ) { return false; }
 
-      // take elements with expressions
-      return /\(.+\)/.test(attrValue);
-      */
+      // take elements with $model.<modelName> or with expression (...)
+      if (!!modelName) {
+        return attrVal.includes('$model.' + modelName) || /\(.+\)/.test(attrVal);
+      }
 
       return true;
     });
