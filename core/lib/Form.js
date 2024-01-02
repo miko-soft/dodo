@@ -34,6 +34,11 @@ class Form {
         elem.value = val;
         elem.setAttribute('value', val);
 
+      } else if (elem.type === 'hidden') { // INPUT[type="hidden"]
+        if (typeof val === 'object') { val = JSON.stringify(val); }
+        elem.value = val;
+        elem.defaultValue = val;
+
       } else if (elem.type === 'number') { // INPUT[type="number"]
         if (val === '') { val = 0; }
         else if (typeof val === 'string') { val = +val; }
@@ -87,6 +92,7 @@ class Form {
 
       } else { // ALL OTHER: select-one
         elem.value = val;
+        elem.setAttribute('value', val);
       }
       this._debug('setControl', `${elem.type}[name="${key}"] got value="${val}"`, 'green');
     }
