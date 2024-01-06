@@ -40,6 +40,8 @@ class Model extends View {
      * @param {string} modelName - the model name, for example in $model.company.name --> modelName is company
      */
     this.$modeler.use = (modelName) => {
+      if (!this.$model[modelName]) { this._printWarn(`Error in this.$modeler.use('${modelName}'). Init the this.$model."${modelName}".`); return; }
+
       const methods = {
         /**
          * Set the model value
@@ -48,19 +50,19 @@ class Model extends View {
          */
         setValue: (modelValue, path) => {
           const prop = !!path ? `$model.${modelName}.${path}` : `$model.${modelName}`;
-          this._setControllerValue(prop, modelValue); // see Auxiliary class
+          this._setControllerValue(prop, modelValue);
           this.render(modelName);
         },
 
         delValue: (path) => {
           const prop = !!path ? `$model.${modelName}.${path}` : `$model.${modelName}`;
-          this._setControllerValue(prop, undefined); // see Auxiliary class
+          this._setControllerValue(prop, undefined);
           this.render(modelName);
         },
 
         getValue: (path) => {
           const mprop = !!path ? `$model.${modelName}.${path}` : `$model.${modelName}`;
-          const modelValue = this._getControllerValue(mprop); // see Auxiliary class
+          const modelValue = this._getControllerValue(mprop);
           return modelValue;
         },
 
@@ -81,6 +83,11 @@ class Model extends View {
 
         mshift: () => {
           this.$model[modelName].shift();
+          this.render(modelName);
+        },
+
+        mreverse: () => {
+          this.$model[modelName].reverse();
           this.render(modelName);
         },
 
