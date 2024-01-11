@@ -346,7 +346,7 @@ class DdCloners extends DdListeners {
       // solve mustache in innerHTML
       clonedElem.innerHTML = this._solveMustache(clonedElem.innerHTML); // solve mustache
 
-      // // solve mustache in attributes
+      // solve mustache in attributes
       for (const attribute of clonedElem.attributes) {
         attribute.value = this._solveMustache(attribute.value);
       }

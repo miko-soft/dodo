@@ -566,7 +566,7 @@ class Auxiliary {
 
   /**
    * Find {{...}} mustaches in the txt and replace it with the real value. The real value is solution of JS expression like: '2+4' or 'this.$model.n + 1'.
-   * @param {string} txt - text with mustache, for example: '$model.company{{this.n + 1}}' or $model.company{{'something'.slice(0,1)}}
+   * @param {string} txt - text with mustache, for example: '$model.company.{{this.n + 1}}' or $model.company.{{'something'.slice(0,1)}}
    * @returns {string}
    */
   _solveMustache(txt) {
@@ -578,7 +578,8 @@ class Auxiliary {
 
     for (const mustacheExpression of mustacheExpressions) {
       const expr = mustacheExpression.replace(openingChar, '').replace(closingChar, '').trim();
-      let exprResult = this._hasBlockString(expr, '${') ? expr : this._solveExpression(expr);
+      // let exprResult = this._hasBlockString(expr, '${') ? expr : this._solveExpression(expr);
+      let exprResult = this._solveExpression(expr);
       exprResult = exprResult.toString();
       txt = txt.replace(mustacheExpression, exprResult);
     }
