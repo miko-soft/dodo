@@ -10,7 +10,7 @@ class Auxiliary {
    * @returns {any}
    */
   _getControllerValue(prop) {
-    if (this._hasBlockString(prop, '$$')) { return; }
+    if (prop.includes('$$')) { return; }
     try {
       let func = new Function(`const val = this.${prop}; return val;`);
       func = func.bind(this);
@@ -103,14 +103,6 @@ class Auxiliary {
 
       // always render elements with dd-render-enabled i.e. cloned elements
       if (this._hasDdRender(elem, 'enabled')) { return true; }
-      // if (elem.hasAttribute('dd-render-enabled')) { return true; }
-
-      // false cases
-      // if (
-      //   this._hasBlockString(attrVal, '$$')
-      //   // this._hasBlockString(attrVal, '${') ||
-      //   // this._hasBlockString(attrVal, '{{')
-      // ) { return false; }
 
       // take elements with $model.<modelName> or with expression (...)
       if (!!modelName) {
@@ -535,8 +527,6 @@ class Auxiliary {
    * @returns {string}
    */
   _solveExpression(expr, ...args) {
-    // if (this._hasBlockString(expr, '$$')) { return ''; }
-
     const argNames = args.map(arg => Object.keys(arg)[0]);
     const argValues = args.map(arg => Object.values(arg)[0]);
 
@@ -578,7 +568,6 @@ class Auxiliary {
 
     for (const mustacheExpression of mustacheExpressions) {
       const expr = mustacheExpression.replace(openingChar, '').replace(closingChar, '').trim();
-      // let exprResult = this._hasBlockString(expr, '${') ? expr : this._solveExpression(expr);
       let exprResult = this._solveExpression(expr);
       exprResult = exprResult.toString();
       txt = txt.replace(mustacheExpression, exprResult);
@@ -852,19 +841,6 @@ class Auxiliary {
   _uid(elem) {
     const uid = this._uid_generate();
     elem.setAttribute('dd-id', uid);
-  }
-
-
-  /**
-   * Check if the text has substring which will block rendering.
-   * The text can have HTML tags. In most cases the block string is string interpolation ${.
-   * This method should block rendering of the $$ variables in the dd-foreach orig element. The $$ variables in cloned dd-foreach element will be solved by _solveDoubleDollar()
-   * @param {string} text - the text which is under test
-   * @param {string} blockString - the string which will block the rendering, usually '$$'
-   * @returns {boolean}
-   */
-  _hasBlockString(text, blockString = '${') {
-    return text.includes(blockString);
   }
 
 
