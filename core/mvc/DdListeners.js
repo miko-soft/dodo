@@ -53,11 +53,13 @@ class DdListeners extends Auxiliary {
       const handler = async event => {
         event.preventDefault();
 
-        const attrVal = elem.getAttribute('dd-href') || elem.getAttribute('href') || '';
-        const { base } = this._decomposeAttribute(attrVal);
+        const attrVal = elem.getAttribute('dd-href');
+        const { base, opts } = this._decomposeAttribute(attrVal);
+        const { val, prop_solved } = this._solveBase(base);
+        this._debug('ddHref', `dd-href="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'orangered');
 
         // change browser's address bar (emit 'pushstate' event)
-        const url = base;
+        const url = val || elem.getAttribute('href');
         const state = { href: url };
         const title = !!elem.innerText ? elem.innerText.trim() : '';
         if (!!url) { navig.goto(url, state, title); }

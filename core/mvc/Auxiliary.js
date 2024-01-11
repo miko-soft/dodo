@@ -102,14 +102,15 @@ class Auxiliary {
       if (opts.includes('forceRender')) { return true; }
 
       // always render elements with dd-render-enabled i.e. cloned elements
-      if (elem.hasAttribute('dd-render-enabled')) { return true; }
+      if (this._hasDdRender(elem, 'enabled')) { return true; }
+      // if (elem.hasAttribute('dd-render-enabled')) { return true; }
 
       // false cases
-      if (
-        this._hasBlockString(attrVal, '$$')
-        // this._hasBlockString(attrVal, '${') ||
-        // this._hasBlockString(attrVal, '{{')
-      ) { return false; }
+      // if (
+      //   this._hasBlockString(attrVal, '$$')
+      //   // this._hasBlockString(attrVal, '${') ||
+      //   // this._hasBlockString(attrVal, '{{')
+      // ) { return false; }
 
       // take elements with $model.<modelName> or with expression (...)
       if (!!modelName) {
@@ -671,12 +672,12 @@ class Auxiliary {
       // solve the expression (this.product_{{this.pid}}.name + ' -prod')
       prop_solved = this._solveMustache(base);
       const expr = prop_solved;
-      val = !expr || this._hasBlockString(expr, '${') || this._hasBlockString(expr, '$$') ? '' : this._solveExpression(expr);
+      val = !!expr ? this._solveExpression(expr) : '';
     } else {
       // solve the controller property name and get the controller property value
       prop_solved = base.replace(/^this\./, ''); // this.product_{{this.pid}} -> product_{{this.pid}}
       prop_solved = this._solveMustache(prop_solved); // product_{{this.pid}} -> product_2
-      val = !prop_solved || this._hasBlockString(prop_solved) ? '' : this._getControllerValue(prop_solved);
+      val = !!prop_solved ? this._getControllerValue(prop_solved) : '';
     }
     return { val, prop_solved };
   }
