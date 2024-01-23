@@ -106,7 +106,8 @@ class Auxiliary {
 
       // take elements with $model.<modelName> or with expression (...)
       if (!!modelName) {
-        return attrVal.includes('$model.' + modelName) || /\(.+\)/.test(attrVal);
+        return attrVal.includes('$model.' + modelName) || /\(((?!\$\{|\$\$).)*\)/.test(attrVal); // /\(((?!\$\{|\$\$).)*\)/ --> expression with no ${ and $$ in (), for example dont render (${val2} < 5) or (this.x !== $$skript.y ? {color: 'green'} : {})
+        // return attrVal.includes('$model.' + modelName) || /\(.+\)/.test(attrVal);
       }
 
       return true;

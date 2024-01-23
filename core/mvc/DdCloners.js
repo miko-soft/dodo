@@ -34,7 +34,7 @@ class DdCloners extends DdListeners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
       const { val: baseVal, prop_solved } = this._solveBase(base);
-      if (!baseVal) { this._printError(`The ${base} has undefined value`); continue; }
+      if (!baseVal) { this._printError(`The ${base} has undefined value in dd-foreach="${attrVal}"`); continue; }
       this.$debugOpts.ddForeach && console.log(`\nddForeach:: attrVal:: ${attrVal} , base:: ${base} , prop_solved:: ${prop_solved} -->`, baseVal);
 
       // get forEach callback argument names from opts, for example: pets --pet,key --> ['pet', 'key'] --> forEach((pet,key) => {...})
@@ -148,7 +148,7 @@ class DdCloners extends DdListeners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
       const { val: baseVal, prop_solved } = this._solveBase(base);
-      if (!baseVal) { this._printError(`The ${base} has undefined value`); continue; }
+      if (!baseVal) { this._printError(`The ${base} has undefined value in dd-each="${attrVal}"`); continue; }
       this.$debugOpts.ddEach && console.log(`\nddEach:: attrVal:: ${attrVal} , base:: ${base} , prop_solved:: ${prop_solved} -->`, baseVal);
 
       // get forEach callback argument names from opts, for example: pets --pet,key --> ['pet', 'key'] --> forEach((pet,key) => {...})
@@ -208,7 +208,7 @@ class DdCloners extends DdListeners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
-      if (!val) { this._printError(`The ${base} has undefined value`); continue; }
+      if (!val) { this._printError(`The ${base} has undefined value in dd-loop="${attrVal}"`); continue; }
       this.$debugOpts.ddLoop && console.log(`\nddLoop:: attrVal:: ${attrVal} , base:: ${base} , prop_solved:: ${prop_solved} -->`, val);
 
       this._clone_remove(elem, attrName); // remove cloned elements
@@ -283,7 +283,7 @@ class DdCloners extends DdListeners {
       const attrVal = elem.getAttribute(attrName);
       const { base } = this._decomposeAttribute(attrVal);
       const { val, prop_solved } = this._solveBase(base);
-      if (!val) { this._printError(`The ${base} has undefined value`); continue; }
+      if (!val) { this._printError(`The ${base} has undefined value in dd-repeat="${attrVal}"`); continue; }
       this._debug('ddRepeat', `dd-repeat="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
 
       this._clone_remove(elem, attrName); // remove cloned elements
