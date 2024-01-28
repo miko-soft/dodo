@@ -432,6 +432,7 @@ class HTTPClient {
    */
   delReqHeaders(headerNames) {
     headerNames.forEach(headerName => {
+      headerName = headerName.toLowerCase();
       delete this.req_headers[headerName];
     });
   }

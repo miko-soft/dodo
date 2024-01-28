@@ -111,10 +111,10 @@ class Form {
     if (!obj) { return; }
     const keys = Object.keys(obj);
     for (const key of keys) {
-      const elems = document.querySelectorAll(`[dd-form="${this.formName}"] [name^="${key}"]`);
-      this._debug('setControls', `\nElems found: ${elems.length} in the form for name^="${key}".`, 'green');
+      const elems = document.querySelectorAll(`[dd-form="${this.formName}"] [name="${key}"]`);
+      this._debug('setControls', `\nElems found: ${elems.length} in the form for name="${key}".`, 'green');
       if (!elems.length) {
-        this._debug('setControls', `FormWarn::setControls -> Form "${this.formName}" doesn't have control with name^="${key}" attribute.`, 'green');
+        this._debug('setControls', `FormWarn::setControls -> Form "${this.formName}" doesn't have control with name="${key}" attribute.`, 'green');
         continue;
       }
 
@@ -261,8 +261,8 @@ class Form {
   delControl(key) {
     this._debug('delControl', '--------- delControl ------', 'green', '#A1F8DC');
     this._debug('delControl', key, 'green');
-    const elems = document.querySelectorAll(`[dd-form="${this.formName}"] [name^="${key}"]`);
-    if (!elems.length) { console.error(`Form "${this.formName}" doesn't have name^="${key}" control.`); return; }
+    const elems = document.querySelectorAll(`[dd-form="${this.formName}"] [name="${key}"]`);
+    if (!elems.length) { console.error(`Form "${this.formName}" doesn't have name="${key}" control.`); return; }
 
     for (const elem of elems) {
       if (elem.type === 'checkbox' || elem.type === 'radio') {
