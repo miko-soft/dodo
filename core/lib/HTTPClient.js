@@ -15,7 +15,7 @@ class HTTPClient {
       this.opts = {
         encodeURI: false,
         timeout: 8000,
-        responseType: '', // 'blob' for file download (https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseType)
+        responseType: '', // 'text' or 'blob' for file download (https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseType)
         retry: 3,
         retryDelay: 5500,
         maxRedirects: 3,
