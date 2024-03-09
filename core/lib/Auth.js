@@ -64,10 +64,9 @@ class Auth {
   async login(creds) {
     const url = this.authOpts.apiLogin;
     const answer = await this.httpClient.askJSON(url, 'POST', creds);
+    const apiResp = answer.res.content || [];
 
     if (answer.status === 200) {
-      const apiResp = answer.res.content;
-
       this.jwtToken = apiResp.jwtToken;
       this.loggedUser = apiResp.loggedUser;
 
@@ -83,8 +82,11 @@ class Auth {
     } else {
       this.loggedUser = null;
       this.cookie.removeAll();
-      const errMSg = !!answer.res.content && (answer.res.content.message || answer.res.content.msg) ? answer.res.content.message || answer.res.content.msg : 'Bad Login';
-      throw new Error(errMSg);
+      let errMsg = 'Bad Login';
+      for (const [key, val] of Object.entries(apiResp)) {
+        if (/msg|message/.test(key)) { errMsg = val; }
+      }
+      throw new Error(errMsg);
     }
 
   }
