@@ -94,7 +94,7 @@ class Form {
         elem.value = val;
         elem.setAttribute('value', val);
       }
-      this._debug('setControl', `${elem.type}[name="${key}"] got value="${val}"`, 'green');
+      this._debug('setControl', `${elem.type}[name="${key}"] got value "${val}"`, 'green');
     }
 
   }
@@ -109,34 +109,16 @@ class Form {
   setControls(obj) {
     this._debug('setControls', '--------- setControls ------', 'green', '#88DBC0');
     if (!obj) { return; }
-    const keys = Object.keys(obj);
-    for (const key of keys) {
-      const elems = document.querySelectorAll(`[dd-form="${this.formName}"] [name="${key}"]`);
-      this._debug('setControls', `\nElems found: ${elems.length} in the form for name="${key}".`, 'green');
-      if (!elems.length) {
-        this._debug('setControls', `FormWarn::setControls -> Form "${this.formName}" doesn't have control with name="${key}" attribute.`, 'green');
-        continue;
-      }
 
-      for (const elem of elems) {
-        let val, attrVal;
-        if (!!elem) {
-          attrVal = elem.getAttribute('name'); // company.seller.name
-          const keys = attrVal.split('.'); // ['company', 'seller', 'name']
-          const key1 = keys[0]; // company
-          const key2 = keys[1]; // seller
-          const key3 = keys[2]; // name
-          if (key1 && !key2 && !key3) { val = obj[key1]; }
-          else if (key1 && key2 && !key3) { val = obj[key1][key2]; }
-          else if (key1 && key2 && key3) { val = obj[key1][key2][key3]; }
-        }
+    const obj_flat = this._flattenObject(obj);
 
-        if (!!attrVal) { this.setControl(attrVal, val); }
-
-        if (this._debug().setControls) { console.log(`setControls:: obj-key:: ${key} , attrVal:: ${attrVal} , elem::`, elem); }
-      }
-
+    for (const [attrVal, val] of Object.entries(obj_flat)) {
+      const elem = document.querySelector(`[dd-form="${this.formName}"] [name="${attrVal}"]`); // key: 'user.company.name'
+      if (!elem) { continue; }
+      this.setControl(attrVal, val);
+      this._debug('setControls', `\n[dd-form="${this.formName}"] ${elem.type}[name="${attrVal}"] got value "${val}"`, 'green');
     }
+
   }
 
 
@@ -214,22 +196,13 @@ class Form {
     this._debug('getControls', '--------- getControls ------', 'green', '#A1F8DC');
     this._debug('getControls', keys, 'green');
 
-    const obj = {};
+    const obj_flat = {};
     for (const key of keys) {
       const val = this.getControl(key, convertType);
-      if (!key.includes('.')) { // 'name'
-        obj[key] = val;
-      } else { // 'company.seller.name
-        const key_parts = key.split('.');
-        const key_part1 = key_parts[0]; // company
-        const key_part2 = key_parts[1]; // seller
-        const key_part3 = key_parts[2]; // name
-        if (key_part1 && !key_part2 && !key_part3) { obj[key_part1] = val; }
-        else if (key_part1 && key_part2 && !key_part3) { obj[key_part1] = {}; obj[key_part1][key_part2] = val; }
-        else if (key_part1 && key_part2 && key_part3) { obj[key_part1] = {}; obj[key_part1][key_part2] = {}; obj[key_part1][key_part2][key_part3] = val; }
-      }
+      obj_flat[key] = val;
     }
 
+    const obj = this._unflattenObject(obj_flat);
     return obj;
   }
 
@@ -281,10 +254,7 @@ class Form {
         elem.value = '';
 
       }
-
-
     }
-
   }
 
 
@@ -352,6 +322,73 @@ class Form {
   _debug(tip, text, color, background) {
     if (this.debugOptions[tip]) { console.log(`%c ${text}`, `color: ${color}; background: ${background}`); }
     return this.debugOptions;
+  }
+
+
+  /**
+   * Convert a nested JavaScript object into an array of key-value pairs with flattened keys
+   * Example:
+   * {
+   *   a: 1,
+   *   b: {
+   *     c: 3,
+   *     d: {
+   *       e: 4,
+   *       f: 5
+   *     }
+   *   }
+   * }
+   * converts to:
+   * {
+   *   'a': 1,
+   *   'b.c': 3,
+   *   'b.d.e': 4,
+   *   'b.d.f': 5
+   * }
+   *
+   * @param {object} obj - The object to be flattened.
+   * @param {string} parentKey - A string that keeps track of the current nested path (default is an empty string).
+   * @param {object} obj_flat - An object that accumulates the flattened key-value pairs (default is an empty object).
+   * @returns {object}
+   */
+  _flattenObject(obj, parentKey = '', obj_flat = {}) {
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const newKey = parentKey ? `${parentKey}.${key}` : key;
+        if (typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+          this._flattenObject(obj[key], newKey, obj_flat);
+        } else {
+          obj_flat[newKey] = obj[key];
+        }
+      }
+    }
+    return obj_flat;
+  }
+
+
+
+  /**
+   * Convert a flattened object with dot-separated keys back into a nested JavaScript object.
+   * @param {object} obj_flat - flattened object
+   * @returns {object}
+   */
+  _unflattenObject(obj_flat) {
+    const obj = {};
+    for (const key in obj_flat) {
+      if (obj_flat.hasOwnProperty(key)) {
+        const keys = key.split('.');
+        keys.reduce((acc, part, index) => {
+          if (index === keys.length - 1) {
+            acc[part] = obj_flat[key];
+          } else {
+            acc[part] = acc[part] || {};
+          }
+          return acc[part];
+        }, obj);
+      }
+    }
+
+    return obj;
   }
 
 
