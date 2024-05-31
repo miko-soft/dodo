@@ -57,6 +57,7 @@ class Form {
         }
 
       } else if (elem.type === 'radio') { // RADIO
+        val = this._convertToString(val);
         elem.checked = false;
         elem.removeAttribute('checked');
         if (val === elem.value) {
@@ -65,6 +66,7 @@ class Form {
         }
 
       } else if (elem.type === 'select-one') { // SELECT without "multiple" attribute
+        val = this._convertToString(val);
         const options = elem.options;
         for (const option of options) {
           option.selected = false;
@@ -76,6 +78,8 @@ class Form {
         }
 
       } else if (elem.type === 'select-multiple') { // on SELECT with "multiple", for example <select name="family" size="4" multiple>
+        if (!Array.isArray(val)) { console.error(`The select-multiple element requires array value: ${elem.outerHTML}`); return; }
+        val = val.map(v => this._convertToString(v));
         const options = elem.options; // all options
         for (const option of options) {
           option.selected = false;
@@ -389,6 +393,32 @@ class Form {
     }
 
     return obj;
+  }
+
+
+
+  /**
+   * Convert any data type to string
+   * @param {any} val
+   * @returns {string}
+   */
+  _convertToString(val) {
+    if (val === null) return 'null';
+    if (val === undefined) return 'undefined';
+    if (typeof val === 'boolean') return val.toString();
+    if (typeof val === 'number') return val.toString();
+    if (typeof val === 'bigint') return val.toString();
+    if (typeof val === 'string') return val;
+    if (typeof val === 'symbol') return val.toString();
+    if (typeof val === 'function') return val.toString();
+    if (typeof val === 'object') {
+      try {
+        return JSON.stringify(val);
+      } catch (e) {
+        return val.toString();
+      }
+    }
+    return val.toString();
   }
 
 
