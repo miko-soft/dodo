@@ -2,6 +2,9 @@ import Router from './misc/Router.js';
 import navig from './lib/navig.js';
 
 
+/**
+ * Single Page Application
+ */
 class App extends Router {
 
   constructor(appName) {
@@ -39,7 +42,7 @@ class App extends Router {
 
   /**
    * Set the $httpClient property in all controllers. It can be invoked with this.$httpClient in the controller.
-   * @param {object} $httpClient - default HTTP Client to fetch views
+   * @param {object} $httpClient - default HTTP Client
    * @return {App}
    */
   httpClient($httpClient) {
@@ -71,7 +74,7 @@ class App extends Router {
 
   /**
    * Set the debug options.
-   * @param {object} $debugOpts - default HTTP Client to fetch views
+   * @param {object} $debugOpts - debug options object (see conf/$debugOpts.js)
    * @return {App}
    */
   debug($debugOpts) {
