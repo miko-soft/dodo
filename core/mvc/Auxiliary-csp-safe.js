@@ -594,13 +594,13 @@ class Auxiliary {
 
 
   /**
- * Solve template literals and its string interpolations.
- * For example if the outerHtml is <b>${val.name}</b> it will be solved as <b>Marko</b>.
- * @param {string} text - text with string interpolations ${...}
- * @param {object} interpolationValues - values for string interpolations ${val} ${key} --> for example: {val: {name: 'Marko', age:21}, key: 1}
- * @param {string} interpolationMark - marks to determine which interpolations should be solved. For example if interpolation mark is $1 it will solve only $1{...} in the text
- * @returns {string}
- */
+   * Solve template literals and its string interpolations.
+   * For example if the outerHtml is <b>${val.name}</b> it will be solved as <b>Marko</b>.
+   * @param {string} text - text with string interpolations ${...}
+   * @param {object} interpolationValues - values for string interpolations ${val} ${key} --> for example: {val: {name: 'Marko', age:21}, key: 1}
+   * @param {string} interpolationMark - marks to determine which interpolations should be solved. For example if interpolation mark is $1 it will solve only $1{...} in the text
+   * @returns {string}
+   */
   _solveTemplateLiteral(text = '', interpolationValues = {}, interpolationMark = '') {
     // Handle corrections in the text
     text = text.replace(/\&amp\;/g, '&'); // for example: ${var1 && var2 ? var1 : ''}

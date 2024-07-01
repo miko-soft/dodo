@@ -34,7 +34,6 @@ class Dd extends DdCloners {
       cloner_directives: [
         'dd-foreach',
         'dd-each',
-        'dd-loop',
         'dd-repeat',
         'dd-mustache'
       ]
@@ -65,12 +64,11 @@ class Dd extends DdCloners {
       const { base, opts } = this._decomposeAttribute(attrVal);
 
       // solve the controller property name and get the controller property value
-      let prop_solved = base.replace(/^this\./, '');
-      prop_solved = this._solveMustache(prop_solved);
+      const prop = base.replace(/^this\./, '');
       const convertType = opts[0] === 'convertType';
       const val = this._getElementValue(elem, convertType); // element value, for example <input value="55">
-      this._setControllerValue(prop_solved, val);
-      this._debug('ddSetinitial', `dd-setinitial="${attrVal}" :: ${base} --> ${prop_solved} = ${val} , convertType: ${convertType}`, 'navy');
+      this._setControllerValue(prop, val);
+      this._debug('ddSetinitial', `dd-setinitial="${attrVal}" :: ${base} = ${val} , convertType: ${convertType}`, 'navy');
 
       this._elemShow(elem, attrName);
     }
@@ -106,12 +104,14 @@ class Dd extends DdCloners {
 
   /********************************* WRITERS **********************************/
   /**
-   * dd-text="controllerProperty" | dd-text="(expression)"
+   * dd-text="controllerProperty" | dd-text="controllerMethod()"
    *  Print pure text in the dd-text element.
    * Examples:
-   * dd-text="firstName"                  - firstName is the controller property, it can also be model $model.firstname
+   * dd-text="firstName"                  - firstName is the controller property
+   * dd-text="$model.firstName"           - $model.firstName is the controller property, when value is change it will re-render the element
    * dd-text="this.firstName"             - this. will not cause the error
    * dd-text="$model.product___{{id}}"    - dynamic controller property name
+   * dd-text="get_first_name()"           - function which returns a string
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddText(modelName) {
@@ -124,8 +124,8 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddText', `dd-text="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+      const val = this._solveBase(base);
+      this._debug('ddText', `dd-text="${attrVal}" :: ${base} = ${JSON.stringify(val)}`, 'navy');
 
       // convert controller val to string
       let val_str = this._val2str(val);
@@ -167,8 +167,8 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddHtml', `dd-html="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+      const val = this._solveBase(base);
+      this._debug('ddHtml', `dd-html="${attrVal}" :: ${base} = ${val}`, 'navy');
 
       // convert controller val to string
       let val_str = this._val2str(val);
@@ -228,8 +228,8 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddValue', `dd-value="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+      const val = this._solveBase(base);
+      this._debug('ddValue', `dd-value="${attrVal}" :: ${base} = ${val}`, 'navy');
 
       this._elemShow(elem, attrName);
 
@@ -263,8 +263,8 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddDisabled', `dd-disabled="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+      const val = this._solveBase(base);
+      this._debug('ddDisabled', `dd-disabled="${attrVal}" :: ${base} = ${val}`, 'navy');
 
       // hide orig element
       elem.disabled = !!val;
@@ -295,8 +295,8 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddChecked', `dd-checked="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+      const val = this._solveBase(base);
+      this._debug('ddChecked', `dd-checked="${attrVal}" :: ${base} = ${val}`, 'navy');
 
       this._elemShow(elem, attrName);
 
@@ -350,8 +350,8 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddSelected', `dd-selected="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+      const val = this._solveBase(base);
+      this._debug('ddSelected', `dd-selected="${attrVal}" :: ${base} = ${val}`, 'navy');
 
       this._elemShow(elem, attrName);
 
@@ -390,9 +390,9 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
+      const val = this._solveBase(base);
       const act = opts && opts[0] ? opts[0] : '';
-      this._debug('ddClass', `dd-class="${attrVal}" :: ${base} --> ${prop_solved} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
+      this._debug('ddClass', `dd-class="${attrVal}" :: ${base} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
 
       this._elemShow(elem, attrName);
 
@@ -430,9 +430,9 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
+      const val = this._solveBase(base);
       const act = opts[0] || '';
-      this._debug('ddStyle', `dd-style="${attrVal}" :: ${base} --> ${prop_solved} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
+      this._debug('ddStyle', `dd-style="${attrVal}" :: ${base} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
 
       this._elemShow(elem, attrName);
 
@@ -471,9 +471,9 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
+      const val = this._solveBase(base);
       const defaultSrc = opts[0] || '';
-      this._debug('ddSrc', `dd-src="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | defaultSrc:: ${defaultSrc}`, 'navy');
+      this._debug('ddSrc', `dd-src="${attrVal}" :: ${base} = ${val} | defaultSrc:: ${defaultSrc}`, 'navy');
 
       const src = val || defaultSrc;
       elem.src = src;
@@ -504,9 +504,9 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
+      const val = this._solveBase(base);
       const attributeName = opts[0] || '';
-      this._debug('ddAttr', `dd-attr="${attrVal}" :: ${base} --> ${prop_solved} = ${val} | attributeName:: ${attributeName}`, 'navy');
+      this._debug('ddAttr', `dd-attr="${attrVal}" :: ${base} = ${val} | attributeName:: ${attributeName}`, 'navy');
 
       this._elemShow(elem, attrName);
 
@@ -603,8 +603,8 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base } = this._decomposeAttribute(attrVal);
-      const { val, prop_solved } = this._solveBase(base);
-      this._debug('ddVisible', `dd-visible="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'navy');
+      const val = this._solveBase(base);
+      this._debug('ddVisible', `dd-visible="${attrVal}" :: ${base} = ${val}`, 'navy');
 
       // show or hide original element
       val ? elem.style.visibility = 'visible' : elem.style.visibility = 'hidden';

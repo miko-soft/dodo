@@ -183,7 +183,7 @@ class Form {
       i++;
     }
 
-    this._debug('getControl', `${key} = ${val}`, 'green');
+    this._debug('getControl', `[${typeof val}] ${key} = ${JSON.stringify(val)}`, 'green');
     return val;
   }
 
@@ -298,7 +298,7 @@ class Form {
 
 
   /**
-   * Convert string into integer, float or boolean.
+   * Convert string into integer, float, boolean, object.
    * @param {string} value
    * @returns {string | number | boolean | object}
    */

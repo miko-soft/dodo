@@ -1,7 +1,3 @@
-import Router from './misc/Router.js';
-import navig from './lib/navig.js';
-
-
 /**
  * One Page (Controller) Application
  * ( No routes like in Single Page Application, it's just one HTML page. )
@@ -171,7 +167,6 @@ class AppOne {
       /* cloner directives */
       'dd-foreach',
       'dd-each',
-      'dd-loop',
       'dd-repeat',
       'dd-mustache'
     ];

@@ -55,8 +55,8 @@ class DdListeners extends Auxiliary {
 
         const attrVal = elem.getAttribute('dd-href');
         const { base, opts } = this._decomposeAttribute(attrVal);
-        const { val, prop_solved } = this._solveBase(base);
-        this._debug('ddHref', `dd-href="${attrVal}" :: ${base} --> ${prop_solved} = ${val}`, 'orangered');
+        const val = this._solveBase(base);
+        this._debug('ddHref', `dd-href="${attrVal}" :: ${base} = ${val}`, 'orangered');
 
         // change browser's address bar (emit 'pushstate' event)
         const url = val || elem.getAttribute('href');
@@ -95,15 +95,14 @@ class DdListeners extends Auxiliary {
       const { base, opts } = this._decomposeAttribute(attrVal);
 
       // solve the controller property name and get the controller property value
-      let prop_solved = base.replace(/^this\./, '');
-      prop_solved = this._solveMustache(prop_solved);
+      const prop = base.replace(/^this\./, '');
 
       const convertType = opts[0] === 'convertType';
 
       const handler = async event => {
         const val = this._getElementValue(elem, convertType);
-        this._setControllerValue(prop_solved, val);
-        this._debug('ddSet', `Executed ddSet listener --> ${base} -> ${prop_solved} = ${val} - convertType: ${convertType}`, 'orangered');
+        this._setControllerValue(prop, val);
+        this._debug('ddSet', `Executed ddSet listener --> ${base} = ${val} - convertType: ${convertType}`, 'orangered');
       };
 
       const eventName = 'input';
@@ -136,14 +135,13 @@ class DdListeners extends Auxiliary {
       const { base, opts } = this._decomposeAttribute(attrVal);
 
       // solve the controller property name and get the controller property value
-      let prop_solved = base.replace(/^this\./, '');
-      if (!!prop_solved && !prop_solved.includes('$model')) { prop_solved = '$model.' + prop_solved; }
-      prop_solved = this._solveMustache(prop_solved); // $model.product_{{this.productID}}
+      let prop = base.replace(/^this\./, '');
+      if (!!prop && !prop.includes('$model')) { prop = '$model.' + prop; }
 
       const convertType = opts[0] === 'convertType';
 
       /** set element value, checked, selected attributes **/
-      const val_ctrl = this._getControllerValue(prop_solved);
+      const val_ctrl = this._getControllerValue(prop);
       if (elem.type === 'checkbox' || elem.type === 'radio') {
         this._setElementChecked(elem, val_ctrl);
       } else if (elem.type === 'select-one') {
@@ -156,13 +154,13 @@ class DdListeners extends Auxiliary {
         this._setElementValue(elem, val_ctrl);
       }
 
-      this._debug('ddModel', `ddModel set the element value  --> ${base} -> ${prop_solved} = ${val_ctrl} | elem.type:: ${elem.type}`, 'orangered');
+      this._debug('ddModel', `ddModel set the element value  --> ${base} = ${val_ctrl} | elem.type:: ${elem.type}`, 'orangered');
 
       /* set controller value */
       const handler = async event => {
         const val = this._getElementValue(elem, convertType);
-        this._setControllerValue(prop_solved, val);
-        this._debug('ddModel', `Executed ddModel listener --> ${base} -> ${prop_solved} = ${val}`, 'orangered');
+        this._setControllerValue(prop, val);
+        this._debug('ddModel', `Executed ddModel listener --> ${base} = ${val}`, 'orangered');
       };
 
       const eventName = 'input';

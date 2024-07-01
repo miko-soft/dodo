@@ -12,22 +12,30 @@ class Auxiliary {
   _getControllerValue(prop) {
     if (prop.includes('$$')) { return; }
     try {
-      // Regular expression to split by dot or bracket notation
-      const propParts = prop.match(/([^[.\]]+)/g);
-      let val = this;
-      for (const part of propParts) {
-        if (val && part in val) {
-          val = val[part];
-        } else if (Array.isArray(val) && !isNaN(part)) {
-          val = val[parseInt(part)];
-        } else {
-          return undefined; // If any part is undefined, return undefined
-        }
-      }
+      let func = new Function(`const val = this.${prop}; return val;`);
+      func = func.bind(this);
+      const val = func();
       return val;
     } catch (err) {
       console.warn(`_getControllerValue (Bad controller property: this.${prop})`, err);
     }
+
+  }
+
+  /** ALTERNATIVE METHOD
+   * Get the controller property's value. For example controller's property is this.$model.firstName in JS and in HTML dd-text="$model.firstName"
+   * @param {string} prop - controller property name, for example: company.name, this.company.name, $model.car.color, this.$model.car.color, $fridge.color, ...
+   * @returns {any}
+   */
+  _getControllerValue_alt(prop) {
+    const propSplitted = prop.split('.'); // ['company', 'name']
+    const prop1 = propSplitted[0]; // company
+
+    let val = this[prop1]; // controller property value
+    propSplitted.forEach((prop, key) => {
+      if (key !== 0 && val != undefined) { val = val[prop]; }
+    });
+    return val;
   }
 
 
@@ -39,18 +47,32 @@ class Auxiliary {
    */
   _setControllerValue(prop, val) {
     try {
-      const propParts = prop.split('.');
-      let obj = this;
-      for (let i = 0; i < propParts.length - 1; i++) {
-        const part = propParts[i];
-        if (!(part in obj)) { // If any part is not found, create an empty object
-          obj[part] = {};
-        }
-        obj = obj[part];
-      }
-      obj[propParts[propParts.length - 1]] = val;
+      let func = new Function('val2', `this.${prop} = val2`);
+      func = func.bind(this, val);
+      func();
     } catch (err) {
       console.error(`_setControllerValue (${prop})`, err);
+    }
+  }
+
+  /** ALTERNATIVE METHOD
+   * Set the controller property's value.
+   * For example controller's property is this.product.name
+   * @param {string} prop - controller property name, for example: $model.product.name
+   * @param {any} val - controller property value
+   */
+  _setControllerValue_alt(prop, val) {
+    const propSplitted = prop.split('.'); // ['$model', 'product', 'name']
+    let i = 1;
+    let obj = this;
+    for (const prop of propSplitted) {
+      if (i !== propSplitted.length) { // not last property
+        if (obj[prop] === undefined || obj[prop] === null || obj[prop] === NaN) { obj[prop] = {}; }
+        obj = obj[prop];
+      } else { // on last property associate the value
+        obj[prop] = val;
+      }
+      i++;
     }
   }
 
@@ -497,39 +519,118 @@ class Auxiliary {
 
   /***** SOLVERS *****/
   /**
-   * Solve value from directive base.
-   * @param {string} base - the directive base, for example dd-selected="$model.myProducts --multiple" => base is '$model.myProducts'
-   * @returns {{val:any, prop_solved:string}}
+   * Solve the JS expression.
+   * For example:
+   *   _solveExpression('this.$model.companies')
+   *   _solveExpression('${company.name}', {company: {name: 'Mikosoft Ltd'}})
+   * @param {string} expr - the JS expression
+   * @param {object} arg - function argument: {argName: argValue}
+   * @returns {string}
    */
-  _solveBase(base) {
-    let val = '';
-    if (/^[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the controller method and get returned value
-      const funcDef = base;
-      const { funcName, funcArgs } = this._funcParse(funcDef, null, null);
-      val = this[funcName](...funcArgs);
-    } else { // get value from the controller property
-      const prop = base.replace(/^this\./, ''); // this.product_{{this.pid}} -> product_{{this.pid}}
-      val = this._getControllerValue(prop);
+  _solveExpression(expr, ...args) {
+    const argNames = args.map(arg => Object.keys(arg)[0]);
+    const argValues = args.map(arg => Object.values(arg)[0]);
+
+    let exprResult;
+    try {
+      // function definition
+      let func = new Function(...argNames, `return ${expr};`);
+      func = func.bind(this);
+
+      try {
+        // function execution
+        exprResult = func(...argValues);
+        exprResult = exprResult === undefined || exprResult === null || exprResult === NaN ? '' : exprResult;
+      } catch (err) {
+        this._printError(`_solveExpression:: Error in expression execution "${expr}"`, err);
+        console.error(err);
+      }
+
+    } catch (err) {
+      this._printError(`_solveExpression:: Error in expression definition "${expr}"`, err);
+      console.error(err);
     }
-    return val;
+
+    return exprResult;
   }
 
 
   /**
-   * Find {{...}} mustaches (template placeholders) in the text (txt) and replace it with the value.
-   * @param {string} txt - text with mustache, usually outerHTML, for example: <b>{{age}}</b> or <span>{{animal.name}}</span> or {{$model.car}} ...etc
-   * @param {object} obj - the object which value will be used to replace the mustache placeholder, for example: txt is {{animal.name}} and obj is {animal: {name: 'dog'}} the result is 'dog'
-   * @param {object} obj2 - additional object, for example obj can be val and obj2 can be key in ddEach
+   * Find {{...}} mustaches in the txt and replace it with the real value. The real value is solution of JS expression like: '2+4' or 'this.$model.n + 1'.
+   * @param {string} txt - text with mustache, for example: '$model.company.{{this.n + 1}}' or $model.company.{{'something'.slice(0,1)}}
    * @returns {string}
    */
-  _solveMustache(txt, obj, obj2) {
-    const flattenedObj = this._flattenObject(obj);
-    if (obj2) { Object.assign(flattenedObj, this._flattenObject(obj2)); }
+  _solveMustache(txt) {
+    const openingChar = '{{';
+    const closingChar = '}}';
 
-    // replace placeholders with values from the flattened object
-    return txt.replace(/{{\s*([^{}\s]+)\s*}}/g, (match, key) => {
-      return flattenedObj[key] !== undefined ? flattenedObj[key] : match;
-    });
+    const reg = new RegExp(`${openingChar}(.+?)${closingChar}`, 'g');
+    const mustacheExpressions = txt.match(reg) || []; // ["{{2+4}}", "{{this.$model.n + 1}}"]
+
+    for (const mustacheExpression of mustacheExpressions) {
+      const expr = mustacheExpression.replace(openingChar, '').replace(closingChar, '').trim();
+      let exprResult = this._solveExpression(expr);
+      exprResult = exprResult.toString();
+      txt = txt.replace(mustacheExpression, exprResult);
+    }
+
+    return txt;
+  }
+
+
+  /**
+   * Solve template literals and its string interpolations.
+   * For example if the outerHtml is <b>${val.name}</b> it will be solved as <b>Marko</b>.
+   * @param {string} text - text with string interpolations ${...}
+   * @param {object} interpolationValues - values for string interpolations ${val} ${key} --> for example: {val: {name: 'Marko', age:21}, key: 1}
+   * @param {string} interpolationMark - marks to determine which interpolations should be solved. For example if interpolation mark is $1 it will solve only $1{...} in the text
+   * @returns {string}
+   */
+  _solveTemplateLiteral(text = '', interpolationValues = {}, interpolationMark = '') {
+    let func_body = '';
+    const args = [];
+    const vals = [];
+    for (const arr of Object.entries(interpolationValues)) {
+      const k = arr[0]; // 'val'  or  'key'
+      const v = arr[1]; // {name: 'Marko', age:21}  or  1
+
+      // if (typeof v === 'string') {
+      //   func_body += `${k} = '${v}';\n`;
+      // } else {
+      //   v = this._val2str(v);
+      //   func_body += `${k} = ${v};\n`;
+      // }
+
+      args.push(k);
+      vals.push(v);
+    }
+
+    // corrections in the text
+    text = text.replace(/\&amp\;/g, '&'); // for example: ${var1 && var2 ? var1 : ''}
+
+    // replace interpolation mark with pure dollar: $1 -> $
+    if (!!interpolationMark) {
+      const interpolationMark_reg = new RegExp(`\\${interpolationMark}\{`, 'g');
+      text = text.replace(interpolationMark_reg, '${'); // $1{ replaces with ${
+    }
+
+    const textWithBackticks = '`' + text + '`';
+
+    func_body += `
+      const txt = ${textWithBackticks};
+      return txt;
+    `;
+
+    try {
+      let func = new Function(...args, func_body);
+      func = func.bind(this);
+      text = func(...vals);
+    } catch (err) {
+      const interpolations = text.match(/\$\{[^\}]+\}/g);
+      throw new Error(`_solveTemplateLiteral:: Probably error in one of the string interpolations: ${interpolations} \n` + err.message);
+    }
+
+    return text; // text with solved string interpolations ${}
   }
 
 
@@ -547,6 +648,29 @@ class Auxiliary {
     const reg = new RegExp(`\\$\\$${valName}|this\\.\\$\\$${valName}`, 'g');
     text = text.replace(reg, replacement); // replace $$company or this.$$company with this.companies[0]
     return text;
+  }
+
+
+  /**
+   * Solve value from directive base.
+   * @param {string} base - the directive base, for example dd-selected="$model.myProducts --multiple" => base is '$model.myProducts'
+   * @returns {{val:any, prop_solved:string}}
+   */
+  _solveBase(base) {
+    let val = '';
+    let prop_solved = '';
+    if (/^\(.*\)$/.test(base)) {
+      // solve the expression (this.product_{{this.pid}}.name + ' -prod')
+      prop_solved = this._solveMustache(base);
+      const expr = prop_solved;
+      val = !!expr ? this._solveExpression(expr) : '';
+    } else {
+      // solve the controller property name and get the controller property value
+      prop_solved = base.replace(/^this\./, ''); // this.product_{{this.pid}} -> product_{{this.pid}}
+      prop_solved = this._solveMustache(prop_solved); // product_{{this.pid}} -> product_2
+      val = !!prop_solved ? this._getControllerValue(prop_solved) : '';
+    }
+    return { val, prop_solved };
   }
 
 
@@ -608,11 +732,10 @@ class Auxiliary {
    * Execute the function. It can be the controller method or the function defined in the controller property.
    * @param {string} funcName - function name, for example: runKEYUP or products.list
    * @param {any[]} funcArgs - function argumants
-   * @return {any}
+   * @return {void}
    */
   async _funcExe(funcName, funcArgs) {
     try {
-      let result;
       if (/\./.test(funcName)) {
         // execute the function in the controller property, for example: this.print.inConsole = () => {...}
         let propSplitted = funcName.split('.') || []; // ['print', 'inConsole']
@@ -626,15 +749,13 @@ class Auxiliary {
         }
         func = func.bind(bindObj); // bind the function to corresponding object, for example: $auth.logout() bind to $auth
 
-        result = await func(...funcArgs);
+        await func(...funcArgs);
 
       } else {
         // execute the controller method
         if (!this[funcName]) { throw new Error(`Method "${funcName}" is not defined in the "${this.constructor.name}" controller.`); }
-        result = await this[funcName](...funcArgs);
+        await this[funcName](...funcArgs);
       }
-
-      return result;
 
     } catch (err) {
       console.error(err);
@@ -664,43 +785,17 @@ class Auxiliary {
    */
   _pipeExe(str, pipeOpt) {
     if (str === undefined || str === null || (!!str && typeof str !== 'string')) { return ''; }
-
     str = str.replace(/\n/g, ' ').replace(/\s+/g, ' ').replace(/\'|\`/g, '').trim();
-    const pipeFuncs = pipeOpt.replace('pipe:', '').trim().split('.');
-
+    const pipeFuncs = pipeOpt.replace('pipe:', '').trim();
+    const func_body = `const str = '${str}'.${pipeFuncs}; return str;`;
     try {
-      for (const func of pipeFuncs) {
-        const match = func.match(/(\w+)\((.*)\)/);
-        if (match) {
-          const [_, methodName, args] = match;
-          const methodArgs = args.split(',').map(arg => {
-            arg = arg.trim();
-            if (arg === 'undefined') return undefined;
-            if (arg === 'null') return null;
-            if (arg === 'NaN') return NaN;
-            if (arg === 'true') return true;
-            if (arg === 'false') return false;
-            if (!isNaN(arg)) return Number(arg);
-            return arg.replace(/['"]/g, '');
-          });
-
-          // Apply the method if it exists on the string prototype
-          if (typeof String.prototype[methodName] === 'function') {
-            str = String.prototype[methodName].apply(str, methodArgs);
-          } else {
-            throw new Error(`Unsupported method: ${methodName}`);
-          }
-        } else {
-          throw new Error(`Invalid pipe function format: ${func}`);
-        }
-      }
-
+      const func = new Function(func_body);
+      str = func();
       return str;
-
     } catch (err) {
-      this._printError('_pipeExe:: Error in pipe execution', err);
-      return '';
+      this._printError('_pipeExe:: ' + func_body);
     }
+
   }
 
 
@@ -712,8 +807,16 @@ class Auxiliary {
    * @param {Event} event - the event object
    */
   async _exeFuncsOrExpression(base, elem, event) {
-    const funcDefs = base;
-    await this._funcsExe(funcDefs, elem, event);
+    if (/^\(.*\)$/.test(base)) {
+      // solve the expression
+      const prop_solved = this._solveMustache(base);
+      const expr = prop_solved;
+      this._solveExpression(expr);
+    } else {
+      // execute the controller method
+      const funcDefs = base;
+      await this._funcsExe(funcDefs, elem, event);
+    }
   }
 
 
@@ -793,73 +896,6 @@ class Auxiliary {
     }
 
     return val;
-  }
-
-
-  /**
-   * Convert a nested JavaScript object into an array of key-value pairs with flattened keys
-   * Example:
-   * {
-   *   a: 1,
-   *   b: {
-   *     c: 3,
-   *     d: {
-   *       e: 4,
-   *       f: 5
-   *     }
-   *   }
-   * }
-   * converts to:
-   * {
-   *   'a': 1,
-   *   'b.c': 3,
-   *   'b.d.e': 4,
-   *   'b.d.f': 5
-   * }
-   *
-   * @param {object} obj - The object to be flattened.
-   * @param {string} parentKey - A string that keeps track of the current nested path (default is an empty string).
-   * @param {object} obj_flat - An object that accumulates the flattened key-value pairs (default is an empty object).
-   * @returns {object}
-   */
-  _flattenObject(obj, parentKey = '', obj_flat = {}) {
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        const newKey = parentKey ? `${parentKey}.${key}` : key;
-        if (typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
-          this._flattenObject(obj[key], newKey, obj_flat);
-        } else {
-          obj_flat[newKey] = obj[key];
-        }
-      }
-    }
-    return obj_flat;
-  }
-
-
-
-  /**
-   * Convert a flattened object with dot-separated keys back into a nested JavaScript object.
-   * @param {object} obj_flat - flattened object
-   * @returns {object}
-   */
-  _unflattenObject(obj_flat) {
-    const obj = {};
-    for (const key in obj_flat) {
-      if (obj_flat.hasOwnProperty(key)) {
-        const keys = key.split('.');
-        keys.reduce((acc, part, index) => {
-          if (index === keys.length - 1) {
-            acc[part] = obj_flat[key];
-          } else {
-            acc[part] = acc[part] || {};
-          }
-          return acc[part];
-        }, obj);
-      }
-    }
-
-    return obj;
   }
 
 
