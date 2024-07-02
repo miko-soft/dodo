@@ -149,12 +149,13 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-html="controllerProperty" | dd-html="(expression)"
+   * dd-html="controllerProperty" | dd-html="controllerMethod()"
    *  Embed HTML node in the DOM at a place marked with dd-html attribute.
    * Examples:
    * dd-html="firstName"                  - firstName is the controller property, it can also be model $model.firstname
    * dd-html="this.firstName"             - this. will not cause the error
-   * dd-html="$model.product___{{id}}"    - dynamic controller property name
+   * dd-html="$model.product"             - model
+   * dd-html="get_product_name()"         - controller method
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddHtml(modelName) {
@@ -525,12 +526,12 @@ class Dd extends DdCloners {
 
   /********************************* SWITCHERS **********************************/
   /**
-   * dd-if="controllerProperty" | dd-if="(expression)"
-   *  Display element from if group when the controllerProperty or expression has truthy value.
+   * dd-if="controllerProperty" | dd-if="controllerMethod()"
+   *  Display element from if group when the controllerProperty or controllerMethod returns a truthy value.
    *  The term "if group" means a group of sibling dd-if, dd-elseif and dd-else elements. Usually a group should be wraped in HTML tag so it is separated from another group, but that's not obligatory.
    * Examples:
    * dd-if="myBool" ; dd-else
-   * dd-if="(this.x > 5)" ; dd-elseif="(this.x <= 5)" ; dd-else
+   * dd-if="result('eq A')" ; dd-elseif="result('eq B')" ; dd-else
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddIf(modelName) {
@@ -554,7 +555,7 @@ class Dd extends DdCloners {
       for (const ifGroupElem of ifGroupElems) {
         const attrVal = ifGroupElem.getAttribute('dd-if') || ifGroupElem.getAttribute('dd-elseif') || ifGroupElem.getAttribute('dd-else');
         const { base } = this._decomposeAttribute(attrVal);
-        const { val } = this._solveBase(base);
+        const val = this._solveBase(base);
         this._debug().ddIf && console.log(ifGroupElem.outerHTML, val);
 
         // show or hide element from the if group

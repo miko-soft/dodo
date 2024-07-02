@@ -10,10 +10,13 @@ class Auxiliary {
    * @returns {any}
    */
   _getControllerValue(prop) {
-    if (prop.includes('$$')) { return; }
     try {
       // Regular expression to split by dot or bracket notation
       const propParts = prop.match(/([^[.\]]+)/g);
+      if (!propParts) {
+        console.warn(`_getControllerValue (Bad controller property: this.${prop})`);
+        return;
+      }
       let val = this;
       for (const part of propParts) {
         if (val && part in val) {
@@ -21,14 +24,16 @@ class Auxiliary {
         } else if (Array.isArray(val) && !isNaN(part)) {
           val = val[parseInt(part)];
         } else {
-          return undefined; // If any part is undefined, return undefined
+          return; // If any part is undefined
         }
       }
       return val;
     } catch (err) {
       console.warn(`_getControllerValue (Bad controller property: this.${prop})`, err);
+      return;
     }
   }
+
 
 
   /**
@@ -502,11 +507,13 @@ class Auxiliary {
    * @returns {{val:any, prop_solved:string}}
    */
   _solveBase(base) {
+    if (!base) { return; } // for example the base in dd-href is empty string
     let val = '';
     if (/^[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the controller method and get returned value
       const funcDef = base;
       const { funcName, funcArgs } = this._funcParse(funcDef, null, null);
-      val = this[funcName](...funcArgs);
+      try { val = this[funcName](...funcArgs); }
+      catch (err) { this._printError(`${err.message}. Check ${funcDef}`); }
     } else { // get value from the controller property
       const prop = base.replace(/^this\./, ''); // this.product_{{this.pid}} -> product_{{this.pid}}
       val = this._getControllerValue(prop);
@@ -663,7 +670,9 @@ class Auxiliary {
    * @param {string} pipeOpt - pipe option, for example: pipe:slice(0,10).replace(/as/, '').trim()
    */
   _pipeExe(str, pipeOpt) {
-    if (str === undefined || str === null || (!!str && typeof str !== 'string')) { return ''; }
+    if (str === undefined || str === null || (!!str && typeof str !== 'string')) {
+      return '';
+    }
 
     str = str.replace(/\n/g, ' ').replace(/\s+/g, ' ').replace(/\'|\`/g, '').trim();
     const pipeFuncs = pipeOpt.replace('pipe:', '').trim().split('.');
@@ -681,6 +690,10 @@ class Auxiliary {
             if (arg === 'true') return true;
             if (arg === 'false') return false;
             if (!isNaN(arg)) return Number(arg);
+            if (arg.match(/^\/.*\/[gimsuy]*$/)) { // Detect regex
+              const parts = arg.match(/^\/(.*)\/([gimsuy]*)$/);
+              return new RegExp(parts[1], parts[2]);
+            }
             return arg.replace(/['"]/g, '');
           });
 
