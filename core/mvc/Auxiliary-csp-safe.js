@@ -151,7 +151,7 @@ class Auxiliary {
   /**
    * Hide DOM element.
    * @param {HTMLElement} elem
-   * @param {directive} directive - dd-text, dd-foreach, ...
+   * @param {directive} directive - dd-text, ...
    */
   _elemHide(elem, directive) {
     elem.setAttribute(`${directive}-hide`, '');
@@ -423,9 +423,9 @@ class Auxiliary {
   /**
    * Remove cloned elements from DOM.
    * The cloned element have dd-xyz-clone attribute and dd-id of orig element,
-   * for example dd-foreach-clone="$model.companie --company,key"  dd-id="704-978"
+   * for example dd-each-clone="$model.companie --company,key"  dd-id="704-978"
    * @param {Element} elem - original element
-   * @param {string} attrName - attribute name: dd-foreach, dd-repeat
+   * @param {string} attrName - attribute name: dd-each, dd-repeat
    */
   _clone_remove(elem, attrName) {
     const uid = elem.getAttribute('dd-id');

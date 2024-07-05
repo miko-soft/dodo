@@ -130,7 +130,7 @@ class Auxiliary {
   /**
    * Hide DOM element.
    * @param {HTMLElement} elem
-   * @param {directive} directive - dd-text, dd-foreach, ...
+   * @param {directive} directive - dd-text, dd-each, ...
    */
   _elemHide(elem, directive) {
     elem.setAttribute(`${directive}-hide`, '');
@@ -402,9 +402,9 @@ class Auxiliary {
   /**
    * Remove cloned elements from DOM.
    * The cloned element have dd-xyz-clone attribute and dd-id of orig element,
-   * for example dd-foreach-clone="$model.companie --company,key"  dd-id="704-978"
+   * for example dd-each-clone="$model.companie --company,key"  dd-id="704-978"
    * @param {Element} elem - original element
-   * @param {string} attrName - attribute name: dd-foreach, dd-repeat
+   * @param {string} attrName - attribute name: dd-each, dd-repeat
    */
   _clone_remove(elem, attrName) {
     const uid = elem.getAttribute('dd-id');
@@ -515,46 +515,27 @@ class Auxiliary {
       try { val = this[funcName](...funcArgs); }
       catch (err) { this._printError(`${err.message}. Check ${funcDef}`); }
     } else { // get value from the controller property
-      const prop = base.replace(/^this\./, ''); // this.product_{{this.pid}} -> product_{{this.pid}}
+      const prop = base.replace(/^this\./, ''); // this.product -> product
       val = this._getControllerValue(prop);
     }
     return val;
   }
 
 
+
   /**
-   * Find {{...}} mustaches (template placeholders) in the text (txt) and replace it with the value.
+   * Find {{...}} mustaches (template placeholders) in the text (txt) and replace it with the value from obj object.
    * @param {string} txt - text with mustache, usually outerHTML, for example: <b>{{age}}</b> or <span>{{animal.name}}</span> or {{$model.car}} ...etc
-   * @param {object} obj - the object which value will be used to replace the mustache placeholder, for example: txt is {{animal.name}} and obj is {animal: {name: 'dog'}} the result is 'dog'
-   * @param {object} obj2 - additional object, for example obj can be val and obj2 can be key in ddEach
+   * @param {object} obj - { [valName]: val, [keyName]: key } - the object which value will be used to replace the mustache placeholder, for example: txt is {{animal.name}} and obj is {animal: {name: 'dog'}, key: 0} the result is 'dog'
    * @returns {string}
    */
-  _solveMustache(txt, obj, obj2) {
+  _solveMustache(txt, obj) {
     const flattenedObj = this._flattenObject(obj);
-    if (obj2) { Object.assign(flattenedObj, this._flattenObject(obj2)); }
-
-    // replace placeholders with values from the flattened object
     return txt.replace(/{{\s*([^{}\s]+)\s*}}/g, (match, key) => {
       return flattenedObj[key] !== undefined ? flattenedObj[key] : match;
     });
   }
 
-
-  /**
-   * Replace double dollar marks with controller variable name.
-   * For example in dd-foreach="$model.companies --company,key" the $$company will be replaced with $model.companies[key]
-   * @param {string} text - text with double dollars $$company
-   * @param {string} base - the base of dd- element attribute, for example $model.companies
-   * @param {string} valName - name of the val variable, for example in --company,key it is company
-   * @param {string} keyValue - the key value of the iteration: 0,1,2,3,...
-   * @returns {string}
-   */
-  _solveDoubledollar(text, base, valName, keyValue) {
-    const replacement = /^this\./.test(base) ? `${base}[${keyValue}]` : `this.${base}[${keyValue}]`;
-    const reg = new RegExp(`\\$\\$${valName}|this\\.\\$\\$${valName}`, 'g');
-    text = text.replace(reg, replacement); // replace $$company or this.$$company with this.companies[0]
-    return text;
-  }
 
 
 

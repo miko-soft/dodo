@@ -30,7 +30,6 @@ const $debugOpts = {
   ddAttr: false,
 
   // DdCloners.js
-  ddForeach: false,
   ddEach: false,
   ddRepeat: false,
   ddMustache: false,

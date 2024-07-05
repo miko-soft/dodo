@@ -99,7 +99,6 @@ class Controller extends Model {
     this._debug('render', `--------- render (start) -- ctrl: ${this.constructor.name} -- renderDelay: ${renderDelay}  ------`, 'green', '#D9FC9B');
 
     /* DdCloners.js */
-    this.ddForeach(modelName);
     this.ddEach(modelName);
     this.ddRepeat(modelName);
     this.ddMustache(modelName);

@@ -13,69 +13,15 @@ class DdCloners extends DdListeners {
 
 
   /**
- * dd-foreach="controllerProperty --val,key"
+ * dd-each="controllerProperty --val,key" | dd-each="controllerMethod() --val,key"
  *  Generate multiple HTML elements based on an array stored in a controller property.
- *  Nested dd-foreach elements are not recommended !
+ *  Nested dd-each elements are not recommended !
  * Examples:
- * dd-foreach="myArr --val,key" or dd-foreach="this.myArr --val,key"
- * dd-foreach="$model.myArr --val,key" or dd-foreach="this.$model.myArr --val,key"
+ * dd-each="myArr --val,key" or dd-each="this.myArr --val,key"
+ * dd-each="$model.myArr --val,key" or dd-each="this.$model.myArr --val,key"
+ * dd-each="genSomeArray() --val,key"
  * @param {string} modelName - model name, for example in $model.users the model name is 'users'
  */
-  ddForeach(modelName) {
-    this._debug('ddForeach', `--------- ddForeach (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-foreach';
-    const elems = this._listElements(attrName, modelName);
-    this._debug('ddForach', `found elements:: ${elems.length}`, 'navy');
-
-    for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName);
-      const { base, opts } = this._decomposeAttribute(attrVal);
-      const baseVal = this._solveBase(base);
-      if (!baseVal) { this._printError(`The ${base} has undefined value in dd-foreach="${attrVal}"`); continue; }
-      this.$debugOpts.ddForeach && console.log(`\nddForeach:: attrVal:: ${attrVal} , base:: ${base} -->`, baseVal);
-
-      // get forEach callback argument names from opts, for example: pets --pet,key --> ['pet', 'key'] --> forEach((pet,key) => {...})
-      const [valName, keyName] = opts.length ? opts[0].split(',').map(v => v.trim()) : []; // ['pet', 'key']
-      if (!this._isValidVariableName(valName)) { this._printError(`dd-foreach="${attrVal}" has invalid valName:${valName}`); continue; }
-      if (!this._isValidVariableName(keyName)) { this._printError(`dd-foreach="${attrVal}" has invalid keyName:${keyName}`); continue; }
-
-      // clone original elem
-      this._clone_remove(elem, attrName); // remove cloned elements generated in previous execution of the ddEach() function
-      this._setDdRender(elem, 'disabled'); // set dd-render-disabled option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-class in dd-foreach but dd-class in dd-foreach-clone
-      const clonedElem = this._clone_define(elem, attrName, attrVal);
-      this._elemShow(clonedElem, attrName); // show cloned element by removing dd-foreach-hide
-      this._setDdRender(clonedElem, 'enabled');
-      this._delDdRender(clonedElem, 'disabled');
-
-      const outerHTML = clonedElem.outerHTML;
-
-      let html = '';
-      baseVal.forEach((val, key) => {
-        // solve mustache -- {{var}}
-        html += this._solveMustache(outerHTML, { [valName]: val }, { [keyName]: key });
-
-        // solve doubledollar -- $$var
-        html = this._solveDoubledollar(html, base, valName, key);
-      });
-
-      elem.insertAdjacentHTML('afterend', html);
-
-    }
-
-  }
-
-
-
-  /**
-   * dd-each="controllerProperty --val,key" | dd-each="(expression) [--val,key]"
-   *  Generate multiple HTML elements based on an array stored in a controller property.
-   * Examples:
-   * dd-each="myArr --val,key" or dd-each="this.myArr --val,key"
-   * dd-each="$model.myArr --val,key" or dd-each="this.$model.myArr --val,key"
-   * dd-foraech="(['a','b','c']) --val,key"
-   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
-   */
   ddEach(modelName) {
     this._debug('ddEach', `--------- ddEach (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 
@@ -83,9 +29,7 @@ class DdCloners extends DdListeners {
     const elems = this._listElements(attrName, modelName);
     this._debug('ddEach', `found elements:: ${elems.length}`, 'navy');
 
-
     for (const elem of elems) {
-      /*** PARENT ***/
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
       const baseVal = this._solveBase(base);
@@ -107,76 +51,15 @@ class DdCloners extends DdListeners {
 
       const outerHTML = clonedElem.outerHTML;
 
-      /*** CHILD ***/
-      const attrName_child = 'dd-each-child';
-      const elem_child = elem.querySelector(`[${attrName_child}]`);
-      const attrVal_child = elem_child ? elem_child.getAttribute(`${attrName_child}`) : '';
-      const { base: base_child, opts: opts_child } = this._decomposeAttribute(attrVal_child);
-      const [valName_child, keyName_child] = opts_child.length ? opts_child[0].split(',').map(v => v.trim()) : []; // ['pet', 'key']
-      if (!this._isValidVariableName(valName_child)) { this._printError(`dd-each="${attrVal}" has invalid valName:${valName_child}`); continue; }
-      if (!this._isValidVariableName(keyName_child)) { this._printError(`dd-each="${attrVal}" has invalid keyName:${keyName_child}`); continue; }
-      const outerHTML_child = elem_child ? elem_child.outerHTML : '';
-
-      /*** GRANDCHILD ***/
-      const attrName_grandchild = 'dd-each-grandchild';
-      const elem_grandchild = elem_child ? elem_child.querySelector(`[${attrName_grandchild}]`) : null;
-      const attrVal_grandchild = elem_grandchild ? elem_grandchild.getAttribute(`${attrName_grandchild}`) : '';
-      const { base: base_grandchild, opts: opts_grandchild } = this._decomposeAttribute(attrVal_grandchild);
-      const [valName_grandchild, keyName_grandchild] = opts_grandchild.length ? opts_grandchild[0].split(',').map(v => v.trim()) : []; // ['employer', 'key2']
-      if (!this._isValidVariableName(valName_grandchild)) { this._printError(`dd-each="${attrVal}" has invalid valName:${valName_grandchild}`); continue; }
-      if (!this._isValidVariableName(keyName_grandchild)) { this._printError(`dd-each="${attrVal}" has invalid keyName:${keyName_grandchild}`); continue; }
-      const outerHTML_grandchild = elem_grandchild ? elem_grandchild.outerHTML : '';
-
-      /*** MULTIPLICATION FUNCTION ***/
       let html = '';
       baseVal.forEach((val, key) => {
-
-        // CHILD
-        let baseVal_child = [];
-        if (base_child && base_child.includes('this.')) { // when baseVal_child is controller property, for example: dd-each-child="this.fields --field"  -- must have this.
-          baseVal_child = this._solveExpression(base_child);
-        } else if (base_child && base_child.includes(valName)) { // when baseVal_child is forEach() argument, for example: dd-each="companies --company" - dd-each-child="company.workers --worker"
-          baseVal_child = this._solveExpression(base_child, { [valName]: val });
-        }
-
-        let html_child = '';
-        baseVal_child && baseVal_child.forEach((val_child, key_child) => {
-
-          // GRANDCHILD
-          let baseVal_grandchild = [];
-          if (base_grandchild && base_grandchild.includes('this.')) { // when baseVal_grandchild is controller property, for example: dd-each-grandchild="this.fields --field"  -- must have this.
-            baseVal_grandchild = this._solveExpression(base_grandchild);
-          } else if (base_grandchild && base_grandchild.includes(valName_child)) { // when baseVal_grandchild is forEach() argument, for example: dd-each="companies --company" - dd-each-child="company.workers --worker" - dd-each-grandchild="worker.jobs --job"
-            baseVal_grandchild = this._solveExpression(base_grandchild, { [valName_child]: val_child });
-          }
-
-          let html_grandchild = '';
-          baseVal_grandchild && baseVal_grandchild.forEach((val_grandchild, key_grandchild) => {
-            const textWithBackticks_grandchild = elem_grandchild ? '`' + outerHTML_grandchild + '`' : '';
-            html_grandchild += this._solveExpression(textWithBackticks_grandchild, { [valName]: val }, { [keyName]: key }, { [valName_child]: val_child }, { [keyName_child]: key_child }, { [valName_grandchild]: val_grandchild }, { [keyName_grandchild]: key_grandchild });
-          });
-
-          // CHILD
-          let textWithBackticks_child = '`' + outerHTML_child + '`';
-          textWithBackticks_child = elem_grandchild ? ('`' + outerHTML_child + '`').replace(outerHTML_grandchild, html_grandchild) : '`' + outerHTML_child + '`';
-          textWithBackticks_child = this._solveDoubledollar(textWithBackticks_child, base_child, valName_child, key_child); // solve $$var in a child
-          html_child += this._solveExpression(textWithBackticks_child, { [valName]: val }, { [keyName]: key }, { [valName_child]: val_child }, { [keyName_child]: key_child });
-        });
-
-
-        // PARENT
-        // solve template literal -- ${var}
-        let textWithBackticks = elem_child ? ('`' + outerHTML + '`').replace(outerHTML_child, html_child) : '`' + outerHTML + '`';
-        textWithBackticks = this._solveDoubledollar(textWithBackticks, base, valName, key); // solve $$var
-        html += this._solveExpression(textWithBackticks, { [valName]: val }, { [keyName]: key });
+        html += this._solveMustache(outerHTML, { [valName]: val, [keyName]: key }); // solve mustaches in outerHTML -- {{val}}
       });
 
-      // insert multiplied dd-each element
       elem.insertAdjacentHTML('afterend', html);
 
     }
 
-    this._debug('ddEach', '--------- ddEach (end) ------', 'navy', '#B6ECFF');
   }
 
 
@@ -213,7 +96,7 @@ class DdCloners extends DdListeners {
 
       // checks
       const uid = elem.getAttribute('dd-id');
-      const directive_found = this._hasDirectives(elem, ['dd-foreach', 'dd-mustache']);
+      const directive_found = this._hasDirectives(elem, ['dd-each', 'dd-mustache']);
       if (!!directive_found) { this._printError(`dd-repeat="${attrVal}" dd-id="${uid}" contains ${directive_found}`); continue; }
 
       // convert val to number

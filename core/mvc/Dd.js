@@ -32,7 +32,6 @@ class Dd extends DdCloners {
         'dd-attr',
       ],
       cloner_directives: [
-        'dd-foreach',
         'dd-each',
         'dd-repeat',
         'dd-mustache'
@@ -210,13 +209,13 @@ class Dd extends DdCloners {
 
   /********************************* ATTRIBUTE MANAGERS **********************************/
   /**
-   * dd-value="controllerProperty" | dd-value="(expression)"
+   * dd-value="controllerProperty" | dd-value="controllerMethod()"
    *  Take controller property and set the element attribute and DOM property value.
    *  The controller property value is automatically converted to string.
    * Examples:
    * dd-value="product"
    * dd-value="$model.product"
-   * dd-value="(this.product)"
+   * dd-value="setVal('some text')"
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddValue(modelName) {
@@ -244,14 +243,12 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-disabled="controllerProperty" | dd-disabled="(expression)"
+   * dd-disabled="controllerProperty" | dd-disabled="controllerMethod()"
    *  Disable the HTML element by setting disabled attribute.
    * Examples:
    * dd-disabled="isActive"                         - isActive is the controller property, it can also be model $model.isActive
    * dd-disabled="this.isActive"                    - this. will not cause the error
-   * dd-disabled="(this.a < 5 && this.a >= 8)"      - expression
-   * dd-disabled="(this.$model.name === 'John')"    - expression with model
-   * dd-disabled="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   * dd-disabled="isDisabled()"                     - controller method which returns boolean
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddDisabled(modelName) {
@@ -279,7 +276,7 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-checked="controllerProperty" | dd-checked="(expression)"
+   * dd-checked="controllerProperty" | dd-checked="controllerMethod()"
    *  Set the "checked" attribute with the controller property value.
    *  Use it for checkbox or radio input elements only.
    *   CHECKBOX --> The controller value should be array of strings
@@ -332,7 +329,7 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-selected="controllerProperty [--multiple]" | dd-checked="(expression) [--multiple]"
+   * dd-selected="controllerProperty [--multiple]" | dd-checked="controllerMethod() [--multiple]"
    *  Sets the "selected" attribute with the controller property value.
    *  Use it for select input element.
    *   SELECT-MULTIPLE --> The controller value should be array of strings.
@@ -373,12 +370,13 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-class="controllerProperty [--replace]" | dd-class="(expression) [--replace]"
+   * dd-class="controllerProperty [--replace]" | dd-class="controllerMethod() [--replace]"
    *  Sets the "class" attribute with the controller property value.
    *  The controller property value should be an array of strings, for example: ['red-bold', 'centered-text']
    * Examples:
    * dd-class="myKlass"             - add new classes to existing classes
    * dd-class="myKlass --replace"   - replace existing classes with new classes
+   * dd-class="setClass() --replace"
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddClass(modelName) {
@@ -412,7 +410,7 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-style="controllerProperty [--replace]" | dd-style="(expression) [--replace]"
+   * dd-style="controllerProperty [--replace]" | dd-style="controllerMethod() [--replace]"
    *  Sets the "style" attribute with the controller property value.
    *  The controller property value should be an object, for example: {'font-size': '25px'}
    * Examples:
@@ -455,11 +453,12 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-src="controllerProperty [--<defaultSrc>]"
+   * dd-src="controllerProperty [--<defaultSrc>]" | dd-src="controllerMethod() [--<defaultSrc>]"
    *  Set the element src attribute.
    * Examples:
    * dd-src="imageURL"
    * dd-src="imageURL --https://via.placeholder.com/130"
+   * dd-src="setImage('url')"
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddSrc(modelName) {
@@ -488,11 +487,12 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-attr="controllerProperty [--attributeName]"
+   * dd-attr="controllerProperty [--attributeName]" | dd-attr="controllerMethod() [--attributeName]"
    *  Sets any attribute with the controller property value.
    *  The controller property value should a string.
    * Examples:
    * dd-attr="$model.myURL --href"     - sets href in the A tag
+   * dd-attr="setUrl() --href"        - sets href in the A tag
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddAttr(modelName) {
@@ -582,16 +582,14 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-visible="controllerProperty" | dd-visible="(expression)"
+   * dd-visible="controllerProperty" | dd-visible="controllerMethod()"
    *  Show or hide the HTML element by setting CSS property visibility:visible|hidden.
    * Option:
    * dd-visible="ctrlProp" → Show/hide elements by setting up visibility:none inline CSS style.
    * Examples:
    * dd-visible="isActive"                         - isActive is the controller property, it can also be model $model.isActive
    * dd-visible="this.isActive"                    - this. will not cause the error
-   * dd-visible="(this.a < 5 && this.a >= 8)"      - expression
-   * dd-visible="(this.$model.name === 'John')"    - expression with model
-   * dd-visible="(this.$model.name_{{this.num}} === 'Betty')"    - dynamic controller property name (mustcahe)
+   * dd-visible="toggleVisibility()"      - controller method
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddVisible(modelName) {
