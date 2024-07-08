@@ -100,24 +100,6 @@ class Auxiliary {
   }
 
 
-
-  /**
-   * Sort elements by priority , dd-priority="<number>".
-   * The highest priority will be listed first.
-   * @param {HTMLElement[]} elems - elements
-   */
-  _sortElements(elems) {
-    elems = Array.from(elems); // convert NodeList to JS array
-    elems = elems.sort((elemA, elemB) => {
-      const priorityA = +elemA.getAttribute('dd-priority') || 0;
-      const priorityB = +elemB.getAttribute('dd-priority') || 0;
-      const dif = priorityB - priorityA;
-      return dif;
-    });
-    return elems;
-  }
-
-
   /**
    * Show DOM element.
    * @param {HTMLElement} elem
@@ -174,27 +156,6 @@ class Auxiliary {
     } // \while
 
     return siblings;
-  }
-
-
-  /**
-   * List parents of the elem with specific attributes (attrNames). The elem is not included in the list.
-   * @param {HTMLElement} elem - element for which we are searching siblings, usually dd-if element
-   * @param {string[]} attrNames - attribute names: ['dd-if', 'dd-elseif', 'dd-else']
-   */
-  _getParents(elem, attrNames) {
-    const parents = [];
-    if (!elem.parentNode) { return parents; } // if no parent, return empty array
-
-    let currentElement = elem.parentNode;
-    while (currentElement !== null && currentElement !== document) {
-      for (const attrName of attrNames) {
-        currentElement.hasAttribute(attrName) && parents.push(currentElement);
-      }
-      currentElement = currentElement.parentNode;
-    }
-
-    return parents;
   }
 
 
@@ -387,17 +348,6 @@ class Auxiliary {
     elem.parentNode.insertBefore(clonedElem, elem);
   }
 
-  /**
-   * Insert cloned element in the DOM. Every new element will be appended to last added element.
-   * The cloned elem is inserted as sibling to orig elem.
-   * The cloned element have dd-xyz-clone attribute.
-   * @param {Element} elem - original element
-   * @param {Element} clonedElem - element which will be cloned and placed in the elem sibling position
-   */
-  _clone_insert_append(elem, clonedElem) {
-    elem.parentElement.appendChild(clonedElem);
-  }
-
 
   /**
    * Remove cloned elements from DOM.
@@ -417,16 +367,6 @@ class Auxiliary {
   }
 
 
-  /**
-   * Remove dd-mustcahe-clone.
-   * @param {Element} elem - original element
-   */
-  _clone_remove_ddMustache(elem) {
-    const prevSibling = elem.previousElementSibling;
-    prevSibling && prevSibling.hasAttribute('dd-mustache-clone') && prevSibling.remove();
-  }
-
-
 
   /***** DD-RENDER *****/
   /**
@@ -441,7 +381,7 @@ class Auxiliary {
     elem.setAttribute(attrName, '');
 
     // set to its childrens
-    const directives = [...this.$dd.noncloner_directives, 'dd-mustache'];
+    const directives = [...this.$dd.noncloner_directives];
     directives.forEach(directive => {
       const ddElems = elem.querySelectorAll(`[${directive}]`);
       ddElems.forEach(ddElem => {
@@ -463,7 +403,7 @@ class Auxiliary {
     elem.removeAttribute(attrName);
 
     // remove from its childrens
-    const directives = [...this.$dd.noncloner_directives, 'dd-mustache'];
+    const directives = [...this.$dd.noncloner_directives];
     directives.forEach(directive => {
       const ddElems = elem.querySelectorAll(`[${directive}]`);
       ddElems.forEach(ddElem => {
@@ -699,18 +639,6 @@ class Auxiliary {
 
 
 
-  /**
-   * Execute function or expression. Used in DdListeners.js
-   * @param {string} base - the base of the attribute value, dd-click="fja() --preventDefault" -> base is fja()
-   * @param {HTMLElement} elem - the dd- element
-   * @param {Event} event - the event object
-   */
-  async _exeFuncsOrExpression(base, elem, event) {
-    const funcDefs = base;
-    await this._funcsExe(funcDefs, elem, event);
-  }
-
-
 
 
   /***** MISC *****/
@@ -739,7 +667,7 @@ class Auxiliary {
   /**
    * Check if the HTMl element and it's childrens has directives.
    * @param {HTMLElement} elem - element with the dd-... attribute
-   * @param {string[]} directives - array of directives: ['dd-mustache', 'dd-repeat']
+   * @param {string[]} directives - array of directives: ['dd-each', 'dd-repeat']
    * @returns {string}
    */
   _hasDirectives(elem, directives) {
@@ -858,17 +786,27 @@ class Auxiliary {
 
 
   /**
-   * Convert value to string. Usually convert controller value to string.
+   * Convert any data type value to string. Usually convert controller value to string.
    * @param {any} val - input value of any type
    * @returns {string}
    */
   _val2str(val) {
-    if (typeof val === 'string') { val = val; }
-    else if (typeof val === 'number') { val = val.toString(); }
-    else if (typeof val === 'boolean') { val = val.toString(); }
-    else if (typeof val === 'object') { val = JSON.stringify(val); }
-    else { val = val; }
-    return val;
+    if (val === null) return 'null';
+    if (val === undefined) return 'undefined';
+    if (typeof val === 'boolean') return val.toString();
+    if (typeof val === 'number') return val.toString();
+    if (typeof val === 'bigint') return val.toString();
+    if (typeof val === 'string') return val;
+    if (typeof val === 'symbol') return val.toString();
+    if (typeof val === 'function') return val.toString();
+    if (typeof val === 'object') {
+      try {
+        return JSON.stringify(val);
+      } catch (e) {
+        return val.toString();
+      }
+    }
+    return val.toString();
   }
 
 
@@ -911,15 +849,6 @@ class Auxiliary {
   _isValidVariableName(varName) {
     return /^[_\$A-Za-z0-9]+$/.test(varName);
   }
-
-  /**
-   * A delay
-   * @param {number} ms - miliseconds
-   */
-  async _delay(ms) {
-    await new Promise(r => setTimeout(r, ms));
-  }
-
 
 
 

@@ -166,8 +166,7 @@ class AppOne {
 
       /* cloner directives */
       'dd-each',
-      'dd-repeat',
-      'dd-mustache'
+      'dd-repeat'
     ];
     const directives_hide = directives.map(directive => `[${directive}-hide]`);
     const cssSelectors = directives_hide.join(',');

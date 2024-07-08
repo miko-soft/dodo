@@ -96,7 +96,7 @@ class DdCloners extends DdListeners {
 
       // checks
       const uid = elem.getAttribute('dd-id');
-      const directive_found = this._hasDirectives(elem, ['dd-each', 'dd-mustache']);
+      const directive_found = this._hasDirectives(elem, ['dd-each']);
       if (!!directive_found) { this._printError(`dd-repeat="${attrVal}" dd-id="${uid}" contains ${directive_found}`); continue; }
 
       // convert val to number
@@ -116,58 +116,6 @@ class DdCloners extends DdListeners {
 
     this._debug('ddRepeat', '--------- ddRepeat (end) ------', 'navy', '#B6ECFF');
   }
-
-
-
-  /**
-   * dd-mustache
-   *  Solve mustaches in the element's inner HTML and element attributes.
-   *  The mustache can contain standalone controller property {{this.$model.name}} or expression {{this.id + 1}}. The this. must be used.
-   */
-  ddMustache(modelName) {
-    this._debug('ddMustache', `--------- ddMustache (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
-
-    const attrName = 'dd-mustache';
-    let elems = this._listElements(attrName, '');
-    if (!!modelName) { elems = elems.filter(elem => elem.outerHTML.includes(`$model.${modelName}`)); }
-    this._debug('ddMustache', `found elements:: ${elems.length}`, 'navy');
-
-    for (const elem of elems) {
-      this._clone_remove_ddMustache(elem, attrName); // remove cloned elements
-      this._setDdRender(elem, 'disabled'); // set dd-render-disabled in element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-mustache but dd-mustache-clone
-      this._delDdRender(elem, 'enabled');
-
-      this.$debugOpts.ddMustache && console.log(`\ndd-mustache elem::`, elem);
-
-      // checks
-      const uid = elem.getAttribute('dd-id');
-      const directive_found = this._hasDirectives(elem, ['dd-repeat']);
-      if (!!directive_found) { this._printError(`dd-mustache dd-id="${uid}" contains ${directive_found}`); continue; }
-
-      // clone orig element
-      const clonedElem = this._clone_define(elem, attrName, '');
-      this._delDdRender(clonedElem, 'disabled'); // remove dd-render-disabled from cloned element (and its childrens) because it needs to be rendered
-
-      // solve mustache in innerHTML
-      // clonedElem.innerHTML = this._solveMustache(clonedElem.innerHTML); // solve mustache
-
-      // solve mustache in attributes
-      for (const attribute of clonedElem.attributes) {
-        // attribute.value = this._solveMustache(attribute.value);
-      }
-
-      // show cloned element
-      this._elemShow(clonedElem, attrName);
-
-      // insert cloned elem
-      this._clone_insert(elem, clonedElem);
-
-      this.$debugOpts.ddMustache && console.log(`dd-mustache clonedElem::`, clonedElem);
-    }
-
-    this._debug('ddMustache', '--------- ddMustache (end) ------', 'navy', '#B6ECFF');
-  }
-
 
 
 

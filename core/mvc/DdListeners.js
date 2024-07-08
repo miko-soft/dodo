@@ -194,7 +194,7 @@ class DdListeners extends Auxiliary {
 
       const handler = async event => {
         if (tf) { event.preventDefault(); }
-        await this._exeFuncsOrExpression(base, elem, event);
+        await this._funcsExe(base, elem, event);
         this._debug('ddClick', `Executed ddClick listener --> ${base} | preventDefault: ${tf}`, 'orangered');
       };
 
@@ -233,7 +233,7 @@ class DdListeners extends Auxiliary {
 
         if (tf) { event.preventDefault(); }
 
-        await this._exeFuncsOrExpression(base, elem, event);
+        await this._funcsExe(base, elem, event);
         this._debug('ddEnter', `Executed ddEnter listener --> ${base}`, 'orangered');
       };
 
@@ -268,7 +268,7 @@ class DdListeners extends Auxiliary {
       const handler = async event => {
         const eventCode = event.code ? event.code.toLowerCase() : '';
         if (!!keyCode && keyCode !== eventCode) { return; }
-        await this._exeFuncsOrExpression(base, elem, event);
+        await this._funcsExe(base, elem, event);
         this._debug('ddKeyup', `Executed ddKeyup listener --> ${base} | eventCode: ${eventCode}`, 'orangered');
       };
 
@@ -299,7 +299,7 @@ class DdListeners extends Auxiliary {
       const { base } = this._decomposeAttribute(attrVal);
 
       const handler = async event => {
-        await this._exeFuncsOrExpression(base, elem, event);
+        await this._funcsExe(base, elem, event);
         this._debug('ddChange', `Executed ddChange listener --> ${base}`, 'orangered');
       };
 
@@ -338,7 +338,7 @@ class DdListeners extends Auxiliary {
         if (!eventName) { this._printError(`dd-evt="${attrVal}" -> The eventName is not defined`); continue; }
 
         const handler = async event => {
-          await this._exeFuncsOrExpression(base, elem, event);
+          await this._funcsExe(base, elem, event);
           this._debug('ddEvt', `Executed ddEvt listener --> ${base}`, 'orangered');
         };
 

@@ -1,9 +1,12 @@
+import Auxiliary from '../mvc/Auxiliary.js';
+
 /**
  * HTML Form Library based on the W3C Standard https://html.spec.whatwg.org/multipage/forms.html
  */
-class Form {
+class Form extends Auxiliary {
 
   constructor(formName) {
+    super();
     this.formName = formName;
     this.debugOptions = {
       setControl: false,
@@ -57,7 +60,7 @@ class Form {
         }
 
       } else if (elem.type === 'radio') { // RADIO
-        val = this._convertToString(val);
+        val = this._val2str(val);
         elem.checked = false;
         elem.removeAttribute('checked');
         if (val === elem.value) {
@@ -66,7 +69,7 @@ class Form {
         }
 
       } else if (elem.type === 'select-one') { // SELECT without "multiple" attribute
-        val = this._convertToString(val);
+        val = this._val2str(val);
         const options = elem.options;
         for (const option of options) {
           option.selected = false;
@@ -79,7 +82,7 @@ class Form {
 
       } else if (elem.type === 'select-multiple') { // on SELECT with "multiple", for example <select name="family" size="4" multiple>
         if (!Array.isArray(val)) { console.error(`The select-multiple element requires array value: ${elem.outerHTML}`); return; }
-        val = val.map(v => this._convertToString(v));
+        val = val.map(v => this._val2str(v));
         const options = elem.options; // all options
         for (const option of options) {
           option.selected = false;
@@ -295,132 +298,6 @@ class Form {
       this.delControl(key);
     }
   }
-
-
-  /**
-   * Convert string into integer, float, boolean, object.
-   * @param {string} value
-   * @returns {string | number | boolean | object}
-   */
-  _stringTypeConvert(value) {
-    function isJSON(str) {
-      try { JSON.parse(str); }
-      catch (err) { return false; }
-      return true;
-    }
-
-    if (!!value && !isNaN(value) && !/\./.test(value)) { // convert string into integer (12)
-      value = parseInt(value, 10);
-    } else if (!!value && !isNaN(value) && /\./.test(value)) { // convert string into float (12.35)
-      value = parseFloat(value);
-    } else if (value === 'true' || value === 'false') { // convert string into boolean (true)
-      value = JSON.parse(value);
-    } else if (isJSON(value)) {
-      value = JSON.parse(value);
-    }
-
-    return value;
-  }
-
-
-  _debug(tip, text, color, background) {
-    if (this.debugOptions[tip]) { console.log(`%c ${text}`, `color: ${color}; background: ${background}`); }
-    return this.debugOptions;
-  }
-
-
-  /**
-   * Convert a nested JavaScript object into an array of key-value pairs with flattened keys
-   * Example:
-   * {
-   *   a: 1,
-   *   b: {
-   *     c: 3,
-   *     d: {
-   *       e: 4,
-   *       f: 5
-   *     }
-   *   }
-   * }
-   * converts to:
-   * {
-   *   'a': 1,
-   *   'b.c': 3,
-   *   'b.d.e': 4,
-   *   'b.d.f': 5
-   * }
-   *
-   * @param {object} obj - The object to be flattened.
-   * @param {string} parentKey - A string that keeps track of the current nested path (default is an empty string).
-   * @param {object} obj_flat - An object that accumulates the flattened key-value pairs (default is an empty object).
-   * @returns {object}
-   */
-  _flattenObject(obj, parentKey = '', obj_flat = {}) {
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        const newKey = parentKey ? `${parentKey}.${key}` : key;
-        if (typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
-          this._flattenObject(obj[key], newKey, obj_flat);
-        } else {
-          obj_flat[newKey] = obj[key];
-        }
-      }
-    }
-    return obj_flat;
-  }
-
-
-
-  /**
-   * Convert a flattened object with dot-separated keys back into a nested JavaScript object.
-   * @param {object} obj_flat - flattened object
-   * @returns {object}
-   */
-  _unflattenObject(obj_flat) {
-    const obj = {};
-    for (const key in obj_flat) {
-      if (obj_flat.hasOwnProperty(key)) {
-        const keys = key.split('.');
-        keys.reduce((acc, part, index) => {
-          if (index === keys.length - 1) {
-            acc[part] = obj_flat[key];
-          } else {
-            acc[part] = acc[part] || {};
-          }
-          return acc[part];
-        }, obj);
-      }
-    }
-
-    return obj;
-  }
-
-
-
-  /**
-   * Convert any data type to string
-   * @param {any} val
-   * @returns {string}
-   */
-  _convertToString(val) {
-    if (val === null) return 'null';
-    if (val === undefined) return 'undefined';
-    if (typeof val === 'boolean') return val.toString();
-    if (typeof val === 'number') return val.toString();
-    if (typeof val === 'bigint') return val.toString();
-    if (typeof val === 'string') return val;
-    if (typeof val === 'symbol') return val.toString();
-    if (typeof val === 'function') return val.toString();
-    if (typeof val === 'object') {
-      try {
-        return JSON.stringify(val);
-      } catch (e) {
-        return val.toString();
-      }
-    }
-    return val.toString();
-  }
-
 
 
 }

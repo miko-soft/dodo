@@ -101,7 +101,6 @@ class Controller extends Model {
     /* DdCloners.js */
     this.ddEach(modelName);
     this.ddRepeat(modelName);
-    this.ddMustache(modelName);
 
     /* Dd.js */
     this.ddElem(modelName);
