@@ -9,7 +9,7 @@ class AppOne {
 
   constructor(appName) {
 
-    this.$appName = appName || 'dodoApp';
+    this.$appName = appName || 'dodoAppOne';
     window[this.$appName] = { i18n: {} }; // window.dodoApp
 
     this.ctrls = {}; // { HomeCtrl: {} } - always will be just one controller
