@@ -14,7 +14,7 @@ class App extends Router {
     window[this.$appName] = { i18n: {} }; // window.dodoApp
 
     this.ctrls = {}; // { HomeCtrl: {}, Page1Ctrl: {}, ...}
-    this.ctrlConstants = { $appName: this.$appName, $fridge: {} }; // {$appName, $fridge, $httpClient, $auth, $debugOpts,   $model, $modeler,   $dd, $elem}
+    this.ctrlConstants = { $appName: this.$appName }; // {$appName, $fridge, $httpClient, $auth, $debugOpts,   $model, $modeler,   $dd, $elem}
 
     this.$debugOpts = {}; // select what debugger messages to show
     this.$preflight = []; // array of preflight functions, will be executed on every route before the controller's __loader()
@@ -27,15 +27,14 @@ class App extends Router {
 
   /*============================== CONTROLLER CONSTANTS ==============================*/
   /**
-   * Set the subproperty of the controller's $fridge property in all controllers.
+   * Set the $fridge property in all controllers.
    * Sometimes it's useful that all controllers have same property with the same value i.e. to share data across all controllers.
    * The $fridge object will be preserved during controller middleware execution. Other controller's properties will be deleted when controller is destroyed.
-   * @param {string} name - $fridge property name
-   * @param {any} val - value
+   * @param {object} $fridge - $fridge object
    * @return {App}
    */
-  fridge(name, val) {
-    this.ctrlConstants.$fridge[name] = val;
+  fridge($fridge) {
+    this.ctrlConstants.$fridge = $fridge;
     return this;
   }
 
@@ -231,7 +230,7 @@ class App extends Router {
 
 
   /**
-   * Listen for specific route (URL) and execute it.
+   * Listen for a specific route (URL) and execute the corresponding functions.
    */
   listen() {
 
@@ -244,12 +243,12 @@ class App extends Router {
       let uri = navig.getCurrentURI(); // current uri is path + query string, without hash, for example: /page1.html?q=12
       uri = decodeURI(uri); // /sh/po%C5%A1ta?field=title --> /sh/pošta?field=title
 
-      if (this.$debugOpts.exeRoute) { console.log(`%c --------- exeRoute (start) "${uri}" ------`, 'color:#680C72; background:#E59FED'); }
+      if (this.$debugOpts?.exeRoute) { console.log(`%c --------- exeRoute (start) "${uri}" ------`, 'color:#680C72; background:#E59FED'); }
 
       let trx = { uri, pevent };
       trx = await this.exe(trx).catch(err => console.error(err));
 
-      if (trx && this.$debugOpts.exeRoute) {
+      if (trx && this.$debugOpts?.exeRoute) {
         console.log(' --------- exeRoute trx::', trx);
         console.log(`%c --------- exeRoute (end) "${uri}" -- elapsedTime: ${trx.elapsedTime} ------`, 'color:#680C72; background:#E59FED');
       }

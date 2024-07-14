@@ -34,7 +34,7 @@ class DdCloners extends DdListeners {
       const { base, opts } = this._decomposeAttribute(attrVal);
       const baseVal = this._solveBase(base);
       if (!baseVal) { this._printError(`The ${base} has undefined value in dd-each="${attrVal}"`); continue; }
-      this.$debugOpts.ddEach && console.log(`\nddEach:: attrVal:: ${attrVal} , base:: ${base} -->`, baseVal);
+      this.$debugOpts?.ddEach && console.log(`\nddEach:: attrVal:: ${attrVal} , base:: ${base} -->`, baseVal);
 
       // get forEach callback argument names from opts, for example: pets --pet,key --> ['pet', 'key'] --> forEach((pet,key) => {...})
       const [valName, keyName] = opts.length ? opts[0].split(',').map(v => v.trim()) : []; // ['pet', 'key']

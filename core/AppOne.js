@@ -1,6 +1,7 @@
 /**
- * One Page (Controller) Application
- * ( No routes like in Single Page Application, it's just one HTML page. )
+ * One Page Application
+ * - no routes i.e. one controller i.e. one page
+ * ( No routes like in Single Page Application (App.js), it's just one HTML page. )
  * An application with just one page that doesn't require a dedicated HTTP Server.
  * It can be easily hosted via the file system, making it convenient for browser extensions.
  */
@@ -22,18 +23,6 @@ class AppOne {
 
 
   /*============================== CONTROLLER CONSTANTS ==============================*/
-  /**
-   * Set the subproperty of the controller's $fridge property.
-   * @param {string} name - $fridge property name
-   * @param {any} val - value
-   * @return {App}
-   */
-  fridge(name, val) {
-    this.ctrlConstants.$fridge[name] = val;
-    return this;
-  }
-
-
   /**
    * Set the $httpClient property in the controller. It can be invoked with this.$httpClient in the controller.
    * @param {object} $httpClient - default HTTP Client to fetch views
