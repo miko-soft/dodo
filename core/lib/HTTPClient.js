@@ -1,3 +1,6 @@
+/**
+ * HTTP Client based on XMLHttpRequest - XHR (https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest)
+ */
 class HTTPClient {
 
   /**
@@ -162,23 +165,27 @@ class HTTPClient {
       };
 
 
+      /*** TIMOUT ***/
       this.xhr.ontimeout = () => {
         this.kill();
-
         // format answer
         const ans = { ...answer }; // clone object to prevent overwrite of object properies once promise is resolved
         ans.status = 408; // 408 - timeout
         ans.statusMessage = `Request aborted due to timeout (${this.opts.timeout} ms) ${url} `;
         ans.time.res = this._getTime();
         ans.time.duration = this._getTimeDiff(ans.time.req, ans.time.res);
-
         resolve(ans);
       };
 
-
       // force timeout when server doesn't send response
       setTimeout(() => {
-        reject(new Error(`Server did not respond and timeout is forced after ${this.timeout} ms.`));
+        // format answer
+        const ans = { ...answer }; // clone object to prevent overwrite of object properies once promise is resolved
+        ans.status = 408; // 408 - timeout
+        ans.statusMessage = `Server did not respond and timeout is forced after ${this.timeout} ms.`;
+        ans.time.res = this._getTime();
+        ans.time.duration = this._getTimeDiff(ans.time.req, ans.time.res);
+        resolve(ans);
       }, this.timeout);
 
     });
@@ -322,7 +329,7 @@ class HTTPClient {
    * @param {FormData} formData - the FormData instance
    * @returns {Promise<answer>}
    */
-  async sendFormData(url, formData) {
+  async askForm(url, formData) {
     // content-type should be removed for multipart/form-data as defined at https://fetch.spec.whatwg.org/#typedefdef-xmlhttprequestbodyinit
     this.setReqHeaders({
       'accept': '*/*',
@@ -358,30 +365,6 @@ class HTTPClient {
 
 
 
-  /** TODO
-   * Send HTML Form fields. Custom boundary for multipart/form-data .
-   * @param {string} url - https://api.example.com/someurl
-   * @param {FormData} formData - the FormData instance
-   * @param {string} contentType - request header content-type value, which can be application/x-www-form-urlencoded or multipart/form-data (for files) or text/plain (Forms with mailto:)
-   * @returns {Promise<answer>}
-   */
-  async sendForm(url, formData, contentType = 'application/x-www-form-urlencoded') {
-    // define boundary
-    let boundary = 'DodoWebHttpClient';
-    boundary += Math.floor(Math.random() * 32768);
-    boundary += Math.floor(Math.random() * 32768);
-    boundary += Math.floor(Math.random() * 32768);
-    console.log('boundary::', boundary);
-
-    const body = `--${boundary}\r\nContent-Disposition: form-data; name="db_id"\r\n\r\n12345\r\n--${boundary}--`;
-    console.log('body::', body);
-
-    const answer = await this.askOnce(url, 'POST', formData);
-    return answer;
-  }
-
-
-
   /**
    * Stop the sent request immediatelly.
    * @returns {void}
@@ -405,7 +388,6 @@ class HTTPClient {
 
 
   /********** HEADERS *********/
-
   /**
    * Change request header object. The headerObj will be appended to previously defined this.req_headers and headers with the same name will be overwritten.
    * @param {Object} headerObj - {'authorization', 'user-agent', accept, 'cache-control', 'host', 'accept-encoding', 'connection'}
