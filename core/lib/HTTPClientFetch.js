@@ -311,3 +311,6 @@ class HTTPClientFetch {
   }
 }
 
+
+export default HTTPClientFetch;
+
