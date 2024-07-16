@@ -66,7 +66,7 @@ class EventEmitter {
 
 
   /**
-   * Stop listening the event for all listeners defined with on().
+   * Stop listening the event for all listeners with specific event name.
    * For example eventEmitter.on('msg', fja1) & eventEmitter.on('msg', fja2) then eventEmitter.off('msg') will remove fja1 and fja2 listeners.
    * @param {string} eventName - event name, for example: 'pushstate'
    * @returns {void}
@@ -80,6 +80,18 @@ class EventEmitter {
       }
       ind++;
     }
+  }
+
+
+  /**
+   * Stop listening all events.
+   * @returns {void}
+   */
+  deaf() {
+    for (const activeOn of this.activeOns) {
+      window.removeEventListener(activeOn.eventName, activeOn.listenerWindow);
+    }
+    this.activeOns = [];
   }
 
 

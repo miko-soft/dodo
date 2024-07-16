@@ -287,6 +287,83 @@ class HTTPClientFetch {
   }
 
 
+  /**
+   * Set the interceptor function which will be executed every time before the HTTP request is sent.
+   * @param {Function} interceptor - callback function, for example (httpClient) => { httpClient.setReqHeader('Authorization', 'JWT aswas); }
+   * @returns {void}
+   */
+  setInterceptor(interceptor) {
+    this.interceptor = interceptor.bind(this);
+  }
+
+
+  /********** HEADERS *********/
+  /**
+   * Change request header object. The headerObj will be appended to previously defined this.req_headers and headers with the same name will be overwritten.
+   * @param {Object} headerObj - {'authorization', 'user-agent', accept, 'cache-control', 'host', 'accept-encoding', 'connection'}
+   * @returns {void}
+   */
+  setReqHeaders(headerObj) {
+    Object.keys(headerObj).forEach(prop => {
+      const headerName = prop;
+      const headerValue = headerObj[prop];
+      this.setReqHeader(headerName, headerValue);
+    });
+  }
+
+  /**
+   * Set (add/update) request header.
+   * Previously defined header will be overwritten.
+   * @param {String} headerName - 'content-type'
+   * @param {String} headerValue - 'text/html; charset=UTF-8'
+   * @returns {void}
+   */
+  setReqHeader(headerName, headerValue) {
+    headerName = headerName.toLowerCase();
+    this.req_headers[headerName] = headerValue;
+  }
+
+  /**
+   * Delete multiple request headers.
+   * @param {Array} headerNames - array of header names, for example: ['content-type', 'accept']
+   * @returns {void}
+   */
+  delReqHeaders(headerNames) {
+    headerNames.forEach(headerName => {
+      headerName = headerName.toLowerCase();
+      delete this.req_headers[headerName];
+    });
+  }
+
+  /**
+   * Get request headers
+   * @returns {object}
+   */
+  getReqHeaders() {
+    return this.req_headers;
+  }
+
+
+  /**
+   * Get response HTTP headers.
+   * @returns {object}
+   */
+  getResHeaders() {
+    const headersStr = this.xhr.getAllResponseHeaders();
+    const headersArr = headersStr.split('\n');
+    const headersObj = {};
+    headersArr.forEach(headerFull => {
+      const splited = headerFull.split(':');
+      const prop = splited[0];
+      if (prop) {
+        const val = splited[1].trim();
+        headersObj[prop] = val;
+      }
+    });
+    return headersObj;
+  }
+
+
   /*** UTILITIES */
   /** Get the current time in milliseconds */
   _getTime() {
@@ -299,15 +376,57 @@ class HTTPClientFetch {
   }
 
   /** Parse the URL and extract components */
+  /**
+   * Parse url.
+   * @param {String} url - http://www.adsuu.com/some/thing.php?x=2&y=3
+   */
   _parseUrl(url) {
+    url = this._correctUrl(url);
     const urlObj = new URL(url);
+    this.url = url;
     this.protocol = urlObj.protocol;
     this.hostname = urlObj.hostname;
-    this.port = urlObj.port || (this.protocol === 'https:' ? 443 : 80);
+    this.port = urlObj.port;
     this.pathname = urlObj.pathname;
     this.queryString = urlObj.search;
 
-    return urlObj.toString();
+    // debug
+    /*
+    console.log('this.url:: ', this.url); // http://localhost:8001/www/products?category=databases
+    console.log('this.protocol:: ', this.protocol); // http:
+    console.log('this.hostname:: ', this.hostname); // localhost
+    console.log('this.port:: ', this.port); // 8001
+    console.log('this.pathname:: ', this.pathname); // /www/products
+    console.log('this.queryString:: ', this.queryString); // ?category=databases
+    */
+
+    return url;
+  }
+
+
+  /**
+   * URL corrections
+   */
+  _correctUrl(url) {
+    if (!url) { throw new Error('URL is not defined'); }
+
+    // 1. trim from left and right
+    url = url.trim();
+
+    // 2. add protocol
+    if (!/^https?:\/\//.test(url)) {
+      url = 'http://' + url;
+    }
+
+    // 3. remove multiple empty spaces and insert %20
+    if (this.opts.encodeURI) {
+      url = encodeURI(url);
+    } else {
+      url = url.replace(/\s+/g, ' ');
+      url = url.replace(/ /g, '%20');
+    }
+
+    return url;
   }
 }
 

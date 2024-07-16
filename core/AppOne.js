@@ -33,27 +33,6 @@ class AppOne {
     return this;
   }
 
-
-  /**
-   * Inject the auth library in the controller and use it as this.$auth in the controller.
-   * @param {Auth} $auth - Auth class instance
-   * @return {App}
-   */
-  auth($auth) {
-    // bindings because of this in Auth:login, logout, getLoggedUserInfo, etc methods, so the methods can be used in HTML, for example: dd-click="$auth.logout()"
-    for (const ctrlName of Object.keys(this.ctrls)) {
-      const $auth = this.ctrls[ctrlName]['$auth'];
-      $auth.login = $auth.login.bind($auth);
-      $auth.logout = $auth.logout.bind($auth);
-      $auth.getLoggedUserInfo = $auth.getLoggedUserInfo.bind($auth);
-      $auth.setLoggedUserInfo = $auth.setLoggedUserInfo.bind($auth);
-      $auth.getJWTtoken = $auth.getJWTtoken.bind($auth);
-    }
-    this.ctrlConstants.$auth = $auth;
-    return this;
-  }
-
-
   /**
    * Set the debug options.
    * @param {object} $debugOpts - debug options object (see conf/$debugOpts.js)

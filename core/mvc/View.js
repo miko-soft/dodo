@@ -355,7 +355,7 @@ class View extends Dd {
   /***** PRIVATES *****/
   /**
    * A) Make dd elements invisible by setting display:none CSS style. After render() this element will be cloned and become visible.
-   * b) Set unique ID in dd-id attribute.
+   * B) Set unique ID in dd-id attribute.
    * @param {string} htmlString - string with html tags
    * @returns {string} - modified HTML string
    */

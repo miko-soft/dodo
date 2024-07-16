@@ -32,9 +32,9 @@ class HTTPClient {
     }
 
     // initial values for timeout, responseType and req_headers
-    this.timeout = this.opts.timeout;
-    this.responseType = this.opts.responseType;
-    this.req_headers = { ...this.opts.headers };
+    this.timeout = this.opts?.timeout ?? 8000;
+    this.responseType = this.opts?.responseType ?? 'text';
+    this.req_headers = this.opts?.headers ? { ...this.opts.headers } : {};
 
     // init the xhr
     this.xhr = new XMLHttpRequest();
@@ -171,7 +171,7 @@ class HTTPClient {
         // format answer
         const ans = { ...answer }; // clone object to prevent overwrite of object properies once promise is resolved
         ans.status = 408; // 408 - timeout
-        ans.statusMessage = `Request aborted due to timeout (${this.opts.timeout} ms) ${url} `;
+        ans.statusMessage = `Request aborted due to timeout (${this.timeout} ms) ${url} `;
         ans.time.res = this._getTime();
         ans.time.duration = this._getTimeDiff(ans.time.req, ans.time.res);
         resolve(ans);
@@ -229,7 +229,7 @@ class HTTPClient {
     let retryCounter = 1;
 
     while (answer.status === 408 && retryCounter <= this.opts.retry) {
-      console.log(`#${retryCounter} retry due to timeout (${this.opts.timeout}) on ${url}`);
+      console.log(`#${retryCounter} retry due to timeout (${this.timeout}) on ${url}`);
       await new Promise(resolve => setTimeout(resolve, this.opts.retryDelay)); // delay before retrial
 
       answer = await this.askOnce(url, method, bodyPayload);
