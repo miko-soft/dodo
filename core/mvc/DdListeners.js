@@ -33,7 +33,7 @@ class DdListeners extends Auxiliary {
 
 
   /**
-   * dd-href  |  dd-href="<url>"
+   * dd-href  |  dd-href="ctrlProp"
    *  Href listeners and changing URLs (browser history states).
    *  NOTICE: The click on dd-href element will destroy current controller i.e. ddUNLISTEN() will be invoked.
    * Examples:
