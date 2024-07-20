@@ -25,7 +25,7 @@ class App extends Router {
 
 
 
-  /*============================== CONTROLLER CONSTANTS ==============================*/
+  /*============================== CONTROLLER & WINDOW CONSTANTS ==============================*/
   /**
    * Set the $fridge property in all controllers.
    * Sometimes it's useful that all controllers have same property with the same value i.e. to share data across all controllers.
@@ -67,6 +67,18 @@ class App extends Router {
       $auth.getJWTtoken = $auth.getJWTtoken.bind($auth);
     }
     this.ctrlConstants.$auth = $auth;
+    return this;
+  }
+
+
+  /**
+   * Set the global window.<appNam>.i18n property, which is used in the View.loadI18n(langCode) method.
+   * The language object $i18n can be loaded from various sources such as databases, files, browser storage, etc
+   * It is not saved in the controller object to keep it as small as possible. The language $i18n object can be large and significantly increase the size of the controller object.
+   * @param {object} $i18n - the language object i.e. object with language translations, for example {de: {common: {USERNAME: 'Nutzername'}, home: {TITLE: 'Startseite', LOGIN: 'Anmeldung'}}}
+   */
+  i18n($i18n) {
+    window[this.$appName].i18n = $i18n;
     return this;
   }
 
@@ -123,39 +135,6 @@ class App extends Router {
     if (typeof $destroyflight !== 'function') { throw new Error(`The $destroyflight "${$destroyflight}" is not a function`); }
     this.ctrlConstants.$destroyflight = $destroyflight;
     return this;
-  }
-
-
-  /**
-   * Set the global, window i18n property.
-   * Language object can be loaded from database, files, browser storage or some other sources.
-   * If input argument "i18n" is undefined the Vite Glob Import https://vitejs.dev/guide/features.html will be used by default.
-   * @param {object} i18n - object with language translations, for example {de: {common: {USERNAME: 'Nutzername'}, home: {TITLE: 'Startseite', LOGIN: 'Anmeldung'}}}
-   */
-  async i18n(i18n) {
-    if (!i18n) {
-      const modules = await import.meta.glob('/i18n/**/*.json');
-
-      i18n = {};
-
-      for (const path in modules) { // path: /i18n/en/home.json
-        const module = await modules[path]();
-        const path_parts = path.split('/');
-        const lang = path_parts[2];
-        const jsonFile = path_parts[3].replace('.json', '');
-
-        if (!i18n[lang]) {
-          i18n[lang] = {};
-          i18n[lang][jsonFile] = module;
-        } else {
-          i18n[lang][jsonFile] = module;
-        }
-
-      }
-
-    }
-
-    window[this.$appName].i18n = i18n;
   }
 
 
