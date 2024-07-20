@@ -72,7 +72,7 @@ class App extends Router {
 
 
   /**
-   * Set the global window.<appNam>.i18n property, which is used in the View.loadI18n(langCode) method.
+   * Set the global window.<appName>.i18n property, which is used in the View.loadI18n(langCode) method.
    * The language object $i18n can be loaded from various sources such as databases, files, browser storage, etc
    * It is not saved in the controller object to keep it as small as possible. The language $i18n object can be large and significantly increase the size of the controller object.
    * @param {object} $i18n - the language object i.e. object with language translations, for example {de: {common: {USERNAME: 'Nutzername'}, home: {TITLE: 'Startseite', LOGIN: 'Anmeldung'}}}
