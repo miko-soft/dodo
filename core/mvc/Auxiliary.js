@@ -444,20 +444,28 @@ class Auxiliary {
   /**
    * Solve value from directive base.
    * @param {string} base - the directive base, for example dd-selected="$model.myProducts --multiple" => base is '$model.myProducts'
-   * @returns {{val:any, prop_solved:string}}
+   * @returns {any} - val
    */
   _solveBase(base) {
     if (!base) { return; } // for example the base in dd-href is empty string
+    base = base.trim().replace(/^this\./, '');
+
     let val = '';
     if (/^[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the controller method and get returned value
       const funcDef = base;
       const { funcName, funcArgs } = this._funcParse(funcDef, null, null);
       try { val = this[funcName](...funcArgs); }
       catch (err) { this._printError(`${err.message}. Check ${funcDef}`); }
+    } else if (/^\$fridge\.[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the $fridge function and get returned value --> $fridge = { func: () => {}}
+      const funcDef = base.replace('$fridge.', '');
+      const { funcName, funcArgs } = this._funcParse(funcDef, null, null);
+      try { val = this.$fridge[funcName](...funcArgs); }
+      catch (err) { this._printError(`${err.message}. Check $fridge.${funcDef}`); }
     } else { // get value from the controller property
-      const prop = base.replace(/^this\./, ''); // this.product -> product
+      const prop = base; // this.product -> product
       val = this._getControllerValue(prop);
     }
+
     return val;
   }
 
@@ -471,9 +479,26 @@ class Auxiliary {
    */
   _solveMustache(txt, obj) {
     const flattenedObj = this._flattenObject(obj);
-    return txt.replace(/{{\s*([^{}\s]+)\s*}}/g, (match, key) => {
-      return flattenedObj[key] !== undefined ? flattenedObj[key] : match;
+    return txt.replace(/{{\s*([^{}\s]+)\s*}}/g, (match, ind) => {
+      return flattenedObj[ind] !== undefined ? flattenedObj[ind] : match;
     });
+  }
+
+
+  /**
+   * Replace double dollar marks with controller variable name.
+   * For example in dd-foreach="$model.companies --company,key" the $$company will be replaced with $model.companies[key]
+   * @param {string} text - text with double dollars $$company
+   * @param {string} base - the base of dd- element attribute, for example $model.companies
+   * @param {string} valName - name of the val variable, for example in --company,key it is company
+   * @param {string} keyValue - the key value of the iteration: 0,1,2,3,...
+   * @returns {string}
+   */
+  _solveDoubledollar(text, base, valName, keyValue) {
+    const replacement = /^this\./.test(base) ? `${base}[${keyValue}]` : `this.${base}[${keyValue}]`;
+    const reg = new RegExp(`\\$\\$${valName}|this\\.\\$\\$${valName}`, 'g');
+    text = text.replace(reg, replacement); // replace $$company or this.$$company with this.companies[0]
+    return text;
   }
 
 

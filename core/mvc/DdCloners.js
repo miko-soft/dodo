@@ -54,7 +54,10 @@ class DdCloners extends DdListeners {
 
       let html = '';
       baseVal.forEach((val, key) => {
-        html += this._solveMustache(outerHTML, { [valName]: val, [keyName]: key }); // solve mustaches in outerHTML -- {{val}}
+        let html_solved = '';
+        html_solved = this._solveMustache(outerHTML, { [valName]: val, [keyName]: key }); // replace mustaches in outerHTML --> {{val}} {{key}} with string
+        html_solved = this._solveDoubledollar(html_solved, base, valName, key); // replace doubledollar in outerHTML -->  $$val with current iteration object
+        html += html_solved;
       });
 
       elem.insertAdjacentHTML('afterend', html);
