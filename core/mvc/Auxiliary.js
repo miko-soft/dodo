@@ -6,7 +6,7 @@ class Auxiliary {
   /***** CONTROLLER *****/
   /**
    * Get the controller property's value. For example controller's property is this.$model.firstName in JS and in HTML dd-text="$model.firstName"
-   * @param {string} prop - controller property name, for example: company.name, this.company.name, $model.car.color, this.$model.car.color, $fridge.color, ...
+   * @param {string} prop - controller property name (without this.), for example: company.name, $model.car.color, $fridge.color, ... etc
    * @returns {any}
    */
   _getControllerValue(prop) {
@@ -448,7 +448,7 @@ class Auxiliary {
    */
   _solveBase(base) {
     if (!base) { return; } // for example the base in dd-href is empty string
-    base = base.trim().replace(/^this\./, '');
+    base = base.replace(/this\./g, '').trim(); // remove this. from base
 
     let val = '';
     if (/^[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the controller method and get returned value
@@ -461,6 +461,9 @@ class Auxiliary {
       const { funcName, funcArgs } = this._funcParse(funcDef, null, null);
       try { val = this.$fridge[funcName](...funcArgs); }
       catch (err) { this._printError(`${err.message}. Check $fridge.${funcDef}`); }
+    } else if (/^\(.+\)$/.test(base)) { // get value from expression ( ... )
+      const expression = base.replace(/^\(/, '').replace(/\)$/, ''); // remove round brackets
+      val = this._solveCondition(expression);
     } else { // get value from the controller property
       const prop = base; // this.product -> product
       val = this._getControllerValue(prop);
@@ -499,6 +502,84 @@ class Auxiliary {
     const reg = new RegExp(`\\$\\$${valName}|this\\.\\$\\$${valName}`, 'g');
     text = text.replace(reg, replacement); // replace $$company or this.$$company with this.companies[0]
     return text;
+  }
+
+
+  /**
+   * Solve expressions. Expressions are closed in round brackets, for example (this.a !== 0).
+   * Expression types:
+   * - negations such as !this.y
+   * - if conditions written as string, for example: 'this.x >= 7' or 'x === this.y' or 'x < y'
+   * @param {string} expression - text within brackets i.e. the condition string, 'this.x < 8'
+   * @returns {boolean}
+   */
+  _solveCondition(expression) {
+    // Regular expression to match different parts of the expression
+    const conditionRegex = /(!?\s*[\._$a-zA-Z0-9]+)\s*(===|==|!==|>=|<=|>|<|&&|\|\|)\s*(!?\s*['".$\w\s-]+|true|false|\d+)/;
+    const singleConditionRegex = /(!?\s*[\._$a-zA-Z0-9]+)/;
+
+    // Function to resolve the value of a variable or literal
+    const resolveValue = (str) => {
+      const isNegation = str.startsWith('!');
+      const valueStr = isNegation ? str.slice(1).trim() : str.trim();
+
+      let value;
+      if (valueStr === 'true' || valueStr === 'false') {
+        value = valueStr === 'true';
+      } else if (/^\d+$/.test(valueStr)) {
+        value = Number(valueStr);
+      } else if (/^['"].*['"]$/.test(valueStr)) {
+        value = valueStr.slice(1, -1);
+      } else {
+        value = this._getControllerValue(valueStr);
+      }
+
+      return isNegation ? !value : value;
+    };
+
+    // Try to match a complex condition with an operator
+    let cond_elems = expression.match(conditionRegex);
+    if (cond_elems) {
+      const a_str = cond_elems[1].trim();
+      const operator = cond_elems[2];
+      const b_str = cond_elems[3].trim();
+
+      // Resolve the values of a and b
+      const a = resolveValue(a_str);
+      const b = resolveValue(b_str);
+
+      // Evaluate the condition based on the operator
+      const evaluateCondition = (a, operator, b) => {
+        switch (operator) {
+          case '===': return a === b;
+          case '==': return a == b;
+          case '>=': return a >= b;
+          case '>': return a > b;
+          case '<=': return a <= b;
+          case '<': return a < b;
+          case '!==': return a !== b;
+          case '!=': return a != b;
+          case '&&': return a && b;
+          case '||': return a || b;
+          default: return false;
+        }
+      };
+
+      // Solve and return the condition
+      const tf = evaluateCondition(a, operator, b);
+      // console.log('_solveCondition::', `${a_str}:${a} ${operator} ${b_str}:${b} => ${tf}`);
+      return tf;
+    } else {
+      // Try to match a simple single negated condition
+      cond_elems = expression.match(singleConditionRegex);
+      if (cond_elems) {
+        const single_str = cond_elems[1].trim();
+        const tf = resolveValue(single_str);
+        return tf;
+      } else {
+        this._printError(`_solveCondition Error: Invalid expression format "${expression}"`);
+      }
+    }
   }
 
 
