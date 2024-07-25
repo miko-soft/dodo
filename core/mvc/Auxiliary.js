@@ -80,6 +80,9 @@ class Auxiliary {
       let attrVal = elem.getAttribute(attrName) || ''; // $model.users --user,key or $model.age < 28 or (5 > 2)
       attrVal = attrVal.trim();
 
+      // check {{...}} and $$
+      if (/{{.+}}/.test(attrVal) || attrVal.includes('$$')) { return false; }
+
       // dd- directives with --forceRender option
       const { base, opts } = this._decomposeAttribute(attrVal);
       if (opts.includes('forceRender')) { return true; }
@@ -454,6 +457,10 @@ class Auxiliary {
     if (/^[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the controller method and get returned value
       const funcDef = base;
       const { funcName, funcArgs } = this._funcParse(funcDef, null, null);
+      if (funcArgs.includes(undefined)) {
+        this._printError(`_solveBase Error: One of the function args in "${base}" is undefined.`);
+        return;
+      }
       try { val = this[funcName](...funcArgs); }
       catch (err) { this._printError(`${err.message}. Check ${funcDef}`); }
     } else if (/^\$fridge\.[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the $fridge function and get returned value --> $fridge = { func: () => {}}
@@ -476,14 +483,16 @@ class Auxiliary {
 
   /**
    * Find {{...}} mustaches (template placeholders) in the text (txt) and replace it with the value from obj object.
+   * For example: dd-each="companies --company.key" --> {{company.name}} , {{key}}
    * @param {string} txt - text with mustache, usually outerHTML, for example: <b>{{age}}</b> or <span>{{animal.name}}</span> or {{$model.car}} ...etc
    * @param {object} obj - { [valName]: val, [keyName]: key } - the object which value will be used to replace the mustache placeholder, for example: txt is {{animal.name}} and obj is {animal: {name: 'dog'}, key: 0} the result is 'dog'
    * @returns {string}
    */
   _solveMustache(txt, obj) {
-    const flattenedObj = this._flattenObject(obj);
-    return txt.replace(/{{\s*([^{}\s]+)\s*}}/g, (match, ind) => {
-      return flattenedObj[ind] !== undefined ? flattenedObj[ind] : match;
+    const flattenedObj = this._flattenObject(obj); // dd-each="companies --company.key" will give flattenedObj::{'company.name': 'Cloud Ltd', 'company.employers': 125, key: 11}
+    return txt.replace(/{{\s*([^{}\s]+)\s*}}/g, (match, objProperty) => {
+      const value = flattenedObj[objProperty];
+      return value !== undefined && value !== null ? value : ''; // on null or undefined return empty string
     });
   }
 
