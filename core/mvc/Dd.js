@@ -248,6 +248,7 @@ class Dd extends DdCloners {
    * dd-disabled="isActive"                         - isActive is the controller property, it can also be model $model.isActive
    * dd-disabled="this.isActive"                    - this. will not cause the error
    * dd-disabled="isDisabled()"                     - controller method which returns boolean
+   * dd-disabled="(!$model.isDisabled)"             - condition
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddDisabled(modelName) {
@@ -529,8 +530,9 @@ class Dd extends DdCloners {
    *  Display element from if group when the controllerProperty or controllerMethod returns a truthy value.
    *  The term "if group" means a group of sibling dd-if, dd-elseif and dd-else elements. Usually a group should be wraped in HTML tag so it is separated from another group, but that's not obligatory.
    * Examples:
-   * dd-if="myBool" ; dd-else
-   * dd-if="result('eq A')" ; dd-elseif="result('eq B')" ; dd-else
+   * dd-if="myBool" ; dd-else   ---> controller property
+   * dd-if="result('if', 'A')" ; dd-elseif="result('elseif', 'B')" ; dd-else  ---> controller method
+   * dd-if="($model.a > 15)"  ---> expression condition
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddIf(modelName) {
@@ -588,7 +590,8 @@ class Dd extends DdCloners {
    * Examples:
    * dd-visible="isActive"                         - isActive is the controller property, it can also be model $model.isActive
    * dd-visible="this.isActive"                    - this. will not cause the error
-   * dd-visible="toggleVisibility()"      - controller method
+   * dd-visible="toggleVisibility()"               - controller method
+   * dd-visible="(x > a)"                          - expression/condition
    * @param {string} modelName - model name, for example in $model.users the model name is 'users'
    */
   ddVisible(modelName) {
