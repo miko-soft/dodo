@@ -469,8 +469,9 @@ class Auxiliary {
       try { val = this.$fridge[funcName](...funcArgs); }
       catch (err) { this._printError(`${err.message}. Check $fridge.${funcDef}`); }
     } else if (/^\(.+\)$/.test(base)) { // get value from expression ( ... )
-      const expression = base.replace(/^\(/, '').replace(/\)$/, ''); // remove round brackets
-      val = this._solveCondition(expression);
+      const expression = base.replace(/^\(/, '').replace(/\)$/, ''); // remove round brackets ()
+      if (/\+|\-|\*|\/|\%/.test(expression)) { val = this._solveMath(expression); }
+      else { val = this._solveCondition(expression); }
     } else { // get value from the controller property
       const prop = base; // this.product -> product
       val = this._getControllerValue(prop);
@@ -592,6 +593,127 @@ class Auxiliary {
   }
 
 
+  /**
+   * Solve mathematical expressions. Expressions are closed in round brackets, for example: ((this.currentPage - 1) * this.itemsPerPage + key + 1).
+   * Expression operators: + - * / %
+   * @param {string} expression - text within round brackets i.e. the math expression
+   * @returns {number}
+   */
+  _solveMath(expression) {
+    const variablesRegex = /[a-zA-Z_$][a-zA-Z0-9_$\.]*/g; // valid JS variable name
+    const expr = expression.replace(variablesRegex, prop => {
+      const val = this._getControllerValue(prop);
+      // console.log('prop::', prop, 'val::', val);
+      if (val === undefined) {
+        this._printError(`_solveMath Error:: The ${prop} has undefined value.`);
+        return NaN;
+      }
+      return val;
+    });
+
+    function tokenize(expression) {
+      const tokens = [];
+      let numberBuffer = '';
+
+      for (const char of expression) {
+        if (/\d/.test(char) || char === '.') {
+          numberBuffer += char;
+        } else if ('+-*/()'.includes(char)) {
+          if (numberBuffer) {
+            tokens.push(parseFloat(numberBuffer));
+            numberBuffer = '';
+          }
+          tokens.push(char);
+        } else if (char.trim() === '') {
+          continue; // Skip whitespace
+        } else {
+          throw new Error('Invalid character in expression');
+        }
+      }
+
+      if (numberBuffer) {
+        tokens.push(parseFloat(numberBuffer));
+      }
+
+      return tokens;
+    }
+
+    function toPostfix(tokens) {
+      const outputQueue = [];
+      const operatorStack = [];
+      const precedence = { '+': 1, '-': 1, '*': 2, '/': 2 };
+      const associativity = { '+': 'L', '-': 'L', '*': 'L', '/': 'L' };
+
+      for (const token of tokens) {
+        if (typeof token === 'number') {
+          outputQueue.push(token);
+        } else if (token in precedence) {
+          while (
+            operatorStack.length &&
+            precedence[operatorStack[operatorStack.length - 1]] >= precedence[token] &&
+            associativity[token] === 'L'
+          ) {
+            outputQueue.push(operatorStack.pop());
+          }
+          operatorStack.push(token);
+        } else if (token === '(') {
+          operatorStack.push(token);
+        } else if (token === ')') {
+          while (operatorStack.length && operatorStack[operatorStack.length - 1] !== '(') {
+            outputQueue.push(operatorStack.pop());
+          }
+          if (operatorStack.length === 0) {
+            throw new Error('Mismatched parentheses');
+          }
+          operatorStack.pop(); // Remove the '('
+        }
+      }
+
+      while (operatorStack.length) {
+        outputQueue.push(operatorStack.pop());
+      }
+
+      return outputQueue;
+    }
+
+    function evaluatePostfix(postfix) {
+      const stack = [];
+
+      for (const token of postfix) {
+        if (typeof token === 'number') {
+          stack.push(token);
+        } else {
+          const b = stack.pop();
+          const a = stack.pop();
+          switch (token) {
+            case '+': stack.push(a + b); break;
+            case '-': stack.push(a - b); break;
+            case '*': stack.push(a * b); break;
+            case '/': stack.push(a / b); break;
+          }
+        }
+      }
+
+      if (stack.length !== 1) {
+        throw new Error('Invalid expression evaluation');
+      }
+
+      return stack[0];
+    }
+
+
+    function solveExpression(expression) {
+      const tokens = tokenize(expression);
+      const postfix = toPostfix(tokens);
+      return evaluatePostfix(postfix);
+    }
+
+
+    const solution = solveExpression(expr);
+    return solution;
+  }
+
+
 
 
   /***** FUNCTIONS *****/
@@ -702,7 +824,7 @@ class Auxiliary {
 
   /**
    * Apply pipe methods on the string.
-   * @param {strin} str - the string value which sjhould be converted by the pipe: functions
+   * @param {string} str - the string which should be modified
    * @param {string} pipeOpt - pipe option, for example: pipe:slice(0,10).replace(/as/, '').trim()
    */
   _pipeExe(str, pipeOpt) {
