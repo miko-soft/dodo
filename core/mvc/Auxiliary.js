@@ -470,8 +470,9 @@ class Auxiliary {
       catch (err) { this._printError(`${err.message}. Check $fridge.${funcDef}`); }
     } else if (/^\(.+\)$/.test(base)) { // get value from expression ( ... )
       const expression = base.replace(/^\(/, '').replace(/\)$/, ''); // remove round brackets ()
-      if (/\+|\-|\*|\/|\%/.test(expression)) { val = this._solveMath(expression); }
-      else { val = this._solveCondition(expression); }
+      if (/\+|\-|\*|\/|\%/.test(expression)) { val = this._solveMath(expression); } // math expression with + - * / %
+      else if (expression.includes(' ? ') && expression.includes(' : ')) { val = this._solveTernary(expression); } // conditional (ternary) operator: this.isActive ? 'YES' : 'NO'
+      else if (/(!==|!=|===|==|>=|<=|&&|\|\||>|<|!)/.test(expression)) { val = this._solveCondition(expression); } // condition with ! != !== == === > >= < <= && ||
     } else { // get value from the controller property
       const prop = base; // this.product -> product
       val = this._getControllerValue(prop);
@@ -715,6 +716,24 @@ class Auxiliary {
 
 
 
+  /**
+   * Solve expressions with ternary operator - ?.
+   * The expression is closed in round brackets, for example: (isActive ? {color: 'green'} : {color: 'red'}).
+   * @param {string} expression - text within round brackets i.e. the ternary condition
+   * @returns {any}
+   */
+  _solveTernary(expression) {
+    const parts = expression.match(/(.*) \? (.*) : (.*)/) ?? [];
+    const condition = parts[1]?.trim();
+    const solution1 = parts[2]?.replace(/^'/, '').replace(/'$/, '').trim();
+    const solution2 = parts[3]?.replace(/^'/, '').replace(/'$/, '').trim();
+    let val = this._solveCondition(condition) ? solution1 : solution2;
+    val = this._stringTypeConvert(val);
+    return val;
+  }
+
+
+
 
   /***** FUNCTIONS *****/
   /**
@@ -935,20 +954,19 @@ class Auxiliary {
    * @returns {string | number | boolean | object}
    */
   _stringTypeConvert(val) {
-    function isJSON(val) {
-      try { JSON.parse(val); }
-      catch (err) { return false; }
-      return true;
-    }
-
     if (!!val && !isNaN(val) && !/\./.test(val)) { // convert string into integer (12)
       val = parseInt(val, 10);
     } else if (!!val && !isNaN(val) && /\./.test(val)) { // convert string into float (12.35)
       val = parseFloat(val);
     } else if (val === 'true' || val === 'false') { // convert string into boolean (true)
       val = JSON.parse(val);
-    } else if (isJSON(val)) {
-      val = JSON.parse(val);
+    } else if (/^\s*({.*}|[.*])\s*$/.test(val)) {
+      const jsonStr = val.replace(/'/g, '"').replace(/(\w+):/g, '"$1":'); // {color: 'red'} -> {"color": "red"}
+      try {
+        val = JSON.parse(jsonStr);
+      } catch (err) {
+        this._printError(`_stringTypeConvert Error: Bad Object or array definition in "${val}"`);
+      }
     }
 
     return val;
