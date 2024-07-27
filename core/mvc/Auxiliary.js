@@ -526,7 +526,7 @@ class Auxiliary {
    */
   _solveCondition(expression) {
     // Regular expression to match different parts of the expression
-    const conditionRegex = /(!?\s*[\._$a-zA-Z0-9]+)\s*(===|==|!==|>=|<=|>|<|&&|\|\|)\s*(!?\s*['".$\w\s-]+|true|false|\d+)/;
+    const conditionRegex = /(!?\s*[\._$a-zA-Z0-9]+)\s*(===|==|!==|>=|<=|>|<|&&|\|\|)\s*(!?\s*['".$\w\s-\[\]]+|true|false|\d+)/;
     const singleConditionRegex = /(!?\s*[\._$a-zA-Z0-9]+)/;
 
     // Function to resolve the value of a variable or literal
