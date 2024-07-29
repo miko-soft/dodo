@@ -473,6 +473,7 @@ class Auxiliary {
       if (/\+|\-|\*|\/|\%/.test(expression)) { val = this._solveMath(expression); } // math expression with + - * / %
       else if (expression.includes(' ? ') && expression.includes(' : ')) { val = this._solveTernary(expression); } // conditional (ternary) operator: this.isActive ? 'YES' : 'NO'
       else if (/(!==|!=|===|==|>=|<=|&&|\|\||>|<|!)/.test(expression)) { val = this._solveCondition(expression); } // condition with ! != !== == === > >= < <= && ||
+      else { val = this._getControllerValue(expression); } // dd-text="($model.companies[0].name)" is same as dd-text="$model.companies[0].name"
     } else { // get value from the controller property
       const prop = base; // this.product -> product
       val = this._getControllerValue(prop);
@@ -519,25 +520,33 @@ class Auxiliary {
   /**
    * Solve expressions. Expressions are closed in round brackets, for example (this.a !== 0).
    * Expression types:
-   * - negations such as !this.y
-   * - if conditions written as string, for example: 'this.x >= 7' or 'x === this.y' or 'x < y'
+   * - double negation such as !!this.isAcive
+   * - negation such as !this.y
+   * - conditions with 3 parts, for example: 'this.x >= 7' or 'x === this.y' or 'x < y'
    * @param {string} expression - text within brackets i.e. the condition string, 'this.x < 8'
    * @returns {boolean}
    */
   _solveCondition(expression) {
     // Regular expression to match different parts of the expression
-    const conditionRegex = /(!?\s*[\._$a-zA-Z0-9]+)\s*(===|==|!==|>=|<=|>|<|&&|\|\|)\s*(!?\s*['".$\w\s-\[\]]+|true|false|\d+)/;
-    const singleConditionRegex = /(!?\s*[\._$a-zA-Z0-9]+)/;
+    // [\w\.\$\[\]_]+  ---> variables like $model.companies[0]._id
+    // ['"\p{L}\p{N}\s]+  ---> any string with UTF-8 chars closed in single or double quote 'Ja sam čćžšđ' . It's also for true or false.
+    // [-\.\d]+   ---> any number integer or float
+    const tripleConditionRegex = /([\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)\s*(===|==|!==|!=|>=|>|<=|<|&&|\|\|)\s*([\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)/u;
+    const singleConditionRegex = /(\!?(\!\!)?[\w\.\$\[\]_]+)/;
 
     // Function to resolve the value of a variable or literal
     const resolveValue = (str) => {
+      const isDoubleNegation = str.startsWith('!!');
       const isNegation = str.startsWith('!');
-      const valueStr = isNegation ? str.slice(1).trim() : str.trim();
+      let valueStr = '';
+      if (isDoubleNegation) { valueStr = str.slice(2).trim(); }
+      else if (isNegation) { valueStr = str.slice(1).trim(); }
+      else { valueStr = str.trim(); }
 
       let value;
       if (valueStr === 'true' || valueStr === 'false') {
         value = valueStr === 'true';
-      } else if (/^\d+$/.test(valueStr)) {
+      } else if (/^\d+/.test(valueStr)) {
         value = Number(valueStr);
       } else if (/^['"].*['"]$/.test(valueStr)) {
         value = valueStr.slice(1, -1);
@@ -545,15 +554,17 @@ class Auxiliary {
         value = this._getControllerValue(valueStr);
       }
 
-      return isNegation ? !value : value;
+      if (isDoubleNegation) { return value; }
+      else if (isNegation) { return !value; }
+      else { return value; }
     };
 
     // Try to match a complex condition with an operator
-    let cond_elems = expression.match(conditionRegex);
-    if (cond_elems) {
-      const a_str = cond_elems[1].trim();
-      const operator = cond_elems[2];
-      const b_str = cond_elems[3].trim();
+    let cond_parts = expression.match(tripleConditionRegex);
+    if (cond_parts) {
+      const a_str = cond_parts[1].trim();
+      const operator = cond_parts[2];
+      const b_str = cond_parts[3].trim();
 
       // Resolve the values of a and b
       const a = resolveValue(a_str);
@@ -564,12 +575,12 @@ class Auxiliary {
         switch (operator) {
           case '===': return a === b;
           case '==': return a == b;
+          case '!==': return a !== b;
+          case '!=': return a != b;
           case '>=': return a >= b;
           case '>': return a > b;
           case '<=': return a <= b;
           case '<': return a < b;
-          case '!==': return a !== b;
-          case '!=': return a != b;
           case '&&': return a && b;
           case '||': return a || b;
           default: return false;
@@ -582,9 +593,9 @@ class Auxiliary {
       return tf;
     } else {
       // Try to match a simple single negated condition
-      cond_elems = expression.match(singleConditionRegex);
-      if (cond_elems) {
-        const single_str = cond_elems[1].trim();
+      cond_parts = expression.match(singleConditionRegex);
+      if (cond_parts) {
+        const single_str = cond_parts[1].trim();
         const tf = resolveValue(single_str);
         return tf;
       } else {
