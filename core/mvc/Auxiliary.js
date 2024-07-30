@@ -465,46 +465,6 @@ class Auxiliary {
 
   /***** SOLVERS *****/
   /**
-   * Solve value from directive base.
-   * @param {string} base - the directive base, for example dd-selected="$model.myProducts --multiple" => base is '$model.myProducts'
-   * @returns {any} - val
-   */
-  _solveBase(base) {
-    if (!base) { return; } // for example the base in dd-href is empty string
-    base = base.replace(/this\./g, '').trim(); // remove this. from base
-
-    let val = '';
-    if (/^[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the controller method and get returned value
-      const funcDef = base;
-      const { funcName, funcArgs } = this._funcParse(funcDef, null, null);
-      if (funcArgs.includes(undefined)) {
-        this._printError(`_solveBase Error: One of the function args in "${base}" is undefined.`);
-        return;
-      }
-      try { val = this[funcName](...funcArgs); }
-      catch (err) { this._printError(`${err.message}. Check ${funcDef}`); }
-    } else if (/^\$fridge\.[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the $fridge function and get returned value --> $fridge = { func: () => {}}
-      const funcDef = base.replace('$fridge.', '');
-      const { funcName, funcArgs } = this._funcParse(funcDef, null, null);
-      try { val = this.$fridge[funcName](...funcArgs); }
-      catch (err) { this._printError(`${err.message}. Check $fridge.${funcDef}`); }
-    } else if (/^\(.+\)$/.test(base)) { // get value from expression ( ... )
-      const expression = base.replace(/^\(/, '').replace(/\)$/, ''); // remove round brackets ()
-      if (/\+|\-|\*|\/|\%/.test(expression)) { val = this._solveMath(expression); } // math expression with + - * / %
-      else if (expression.includes(' ? ') && expression.includes(' : ')) { val = this._solveTernary(expression); } // conditional (ternary) operator: this.isActive ? 'YES' : 'NO'
-      else if (/(!==|!=|===|==|>=|<=|&&|\|\||>|<|!)/.test(expression)) { val = this._solveCondition(expression); } // condition with ! != !== == === > >= < <= && ||
-      else { val = this._getControllerValue(expression); } // dd-text="($model.companies[0].name)" is same as dd-text="$model.companies[0].name"
-    } else { // get value from the controller property
-      const prop = base; // this.product -> product
-      val = this._getControllerValue(prop);
-    }
-
-    return val;
-  }
-
-
-
-  /**
    * Find {{...}} mustaches (template placeholders) in the text (txt) and replace it with the value from obj object.
    * For example: dd-each="companies --company.key" --> {{company.name}} , {{key}}
    * @param {string} txt - text with mustache, usually outerHTML, for example: <b>{{age}}</b> or <span>{{animal.name}}</span> or {{$model.car}} ...etc
@@ -538,99 +498,72 @@ class Auxiliary {
 
 
   /**
-   * Solve expressions. Expressions are closed in round brackets, for example (this.a !== 0).
-   * Expression types:
-   * - double negation such as !!this.isAcive
-   * - negation such as !this.y
-   * - conditions with 3 parts, for example: 'this.x >= 7' or 'x === this.y' or 'x < y'
-   * @param {string} expression - text within brackets i.e. the condition string, 'this.x < 8'
-   * @returns {boolean}
+   * Solve value from directive base.
+   * @param {string} base - the directive base, for example dd-selected="$model.myProducts --multiple" => base is '$model.myProducts'
+   * @returns {any} - val
    */
-  _solveCondition(expression) {
-    // Regular expression to match different parts of the expression
-    // [\w\.\$\[\]_]+  ---> variables like $model.companies[0]._id
-    // ['"\p{L}\p{N}\s]+  ---> any string with UTF-8 chars closed in single or double quote 'Ja sam čćžšđ' . It's also for true or false.
-    // [-\.\d]+   ---> any number integer or float
-    const tripleConditionRegex = /([\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)\s*(===|==|!==|!=|>=|>|<=|<|&&|\|\|)\s*([\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)/u;
-    const singleConditionRegex = /(\!?(\!\!)?[\w\.\$\[\]_]+)/;
+  _solveBase(base) {
+    if (!base) { return; } // for example the base in dd-href is empty string
+    base = base.replace(/this\./g, '').trim(); // remove this. from base
 
-    // Function to resolve the value of a variable or literal
-    const resolveValue = (str) => {
-      const isDoubleNegation = str.startsWith('!!');
-      const isNegation = str.startsWith('!');
-      let valueStr = '';
-      if (isDoubleNegation) { valueStr = str.slice(2).trim(); }
-      else if (isNegation) { valueStr = str.slice(1).trim(); }
-      else { valueStr = str.trim(); }
-
-      let value;
-      if (valueStr === 'true' || valueStr === 'false') {
-        value = valueStr === 'true';
-      } else if (/^\d+/.test(valueStr)) {
-        value = Number(valueStr);
-      } else if (/^['"].*['"]$/.test(valueStr)) {
-        value = valueStr.slice(1, -1);
-      } else {
-        value = this._getControllerValue(valueStr);
+    let val = '';
+    if (/^[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the controller method and get returned value
+      const funcDef = base;
+      const { funcName, funcArgs } = this._funcParse(funcDef, null, null);
+      if (funcArgs.includes(undefined)) {
+        this._printError(`_solveBase Error: One of the function args in "${base}" is undefined.`);
+        return;
       }
-
-      if (isDoubleNegation) { return value; }
-      else if (isNegation) { return !value; }
-      else { return value; }
-    };
-
-    // Try to match a complex condition with an operator
-    let cond_parts = expression.match(tripleConditionRegex);
-    if (cond_parts) {
-      const a_str = cond_parts[1].trim();
-      const operator = cond_parts[2];
-      const b_str = cond_parts[3].trim();
-
-      // Resolve the values of a and b
-      const a = resolveValue(a_str);
-      const b = resolveValue(b_str);
-
-      // Evaluate the condition based on the operator
-      const evaluateCondition = (a, operator, b) => {
-        switch (operator) {
-          case '===': return a === b;
-          case '==': return a == b;
-          case '!==': return a !== b;
-          case '!=': return a != b;
-          case '>=': return a >= b;
-          case '>': return a > b;
-          case '<=': return a <= b;
-          case '<': return a < b;
-          case '&&': return a && b;
-          case '||': return a || b;
-          default: return false;
-        }
-      };
-
-      // Solve and return the condition
-      const tf = evaluateCondition(a, operator, b);
-      // console.log('_solveCondition::', `${a_str}:${a} ${operator} ${b_str}:${b} => ${tf}`);
-      return tf;
-    } else {
-      // Try to match a simple single negated condition
-      cond_parts = expression.match(singleConditionRegex);
-      if (cond_parts) {
-        const single_str = cond_parts[1].trim();
-        const tf = resolveValue(single_str);
-        return tf;
-      } else {
-        this._printError(`_solveCondition Error: Invalid expression format "${expression}"`);
-      }
+      try { val = this[funcName](...funcArgs); }
+      catch (err) { this._printError(`${err.message}. Check ${funcDef}`); }
+    } else if (/^\$fridge\.[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the $fridge function and get returned value --> $fridge = { func: () => {}}
+      const funcDef = base.replace('$fridge.', '');
+      const { funcName, funcArgs } = this._funcParse(funcDef, null, null);
+      try { val = this.$fridge[funcName](...funcArgs); }
+      catch (err) { this._printError(`${err.message}. Check $fridge.${funcDef}`); }
+    } else if (/^\(.+\)$/.test(base)) { // get value from expression ( ... )
+      const expression = base.replace(/^\(/, '').replace(/\)$/, ''); // remove round brackets ()
+      if (expression.includes('\' +') || expression.includes('+ \'')) { val = this._solveConcat(expression); } // string concatenation: $model.name + ' ' + $model.surname
+      else if (/\+|\-|\*|\/|\%/.test(expression)) { val = this._solveMath(expression); } // math expression with + - * / %
+      else if (expression.includes(' ? ') && expression.includes(' : ')) { val = this._solveTernary(expression); } // conditional (ternary) operator: this.isActive ? 'YES' : 'NO'
+      else if (/(!==|!=|===|==|>=|<=|&&|\|\||>|<|!)/.test(expression)) { val = this._solveCondition(expression); } // condition with ! != !== == === > >= < <= && ||
+      else { val = this._getControllerValue(expression); } // dd-text="($model.companies[0].name)" is same as dd-text="$model.companies[0].name"
+    } else { // get value from the controller property
+      const prop = base; // this.product -> product
+      val = this._getControllerValue(prop);
     }
+
+    return val;
   }
 
 
   /**
-   * Solve mathematical expressions. Expressions are closed in round brackets, for example: ((this.currentPage - 1) * this.itemsPerPage + key + 1).
-   * Expression operators: + - * / %
-   * @param {string} expression - text within round brackets i.e. the math expression
-   * @returns {number}
+   * Solve string concatenation expressions like `$model.name + ' ' + $model.surname`.
+   * @param {string} expression - concatenation expression to be evaluated
+   * @returns {string}
    */
+  _solveConcat(expression) {
+    const parts = expression.split(' + ');
+    let val = '';
+    for (let part of parts) {
+      part = part.trim();
+      if (part.includes('\'')) {
+        val += part.replace(/^'/, '').replace(/'$/, '');
+      } else {
+        const ctrlVal = this._getControllerValue(part);
+        val += ctrlVal;
+      }
+    }
+    return val;
+  }
+
+
+  /**
+     * Solve mathematical expressions. Expressions are closed in round brackets, for example: ((this.currentPage - 1) * this.itemsPerPage + key + 1).
+     * Expression operators: + - * / %
+     * @param {string} expression - text within round brackets i.e. the math expression
+     * @returns {number}
+     */
   _solveMath(expression) {
     const variablesRegex = /[a-zA-Z_$][a-zA-Z0-9_$\.]*/g; // valid JS variable name
     const expr = expression.replace(variablesRegex, prop => {
@@ -761,6 +694,94 @@ class Auxiliary {
     let val = this._solveCondition(condition) ? solution1 : solution2;
     val = this._stringTypeConvert(val);
     return val;
+  }
+
+
+  /**
+   * Solve expressions. Expressions are closed in round brackets, for example (this.a !== 0).
+   * Expression types:
+   * - double negation such as !!this.isAcive
+   * - negation such as !this.y
+   * - conditions with 3 parts, for example: 'this.x >= 7' or 'x === this.y' or 'x < y'
+   * @param {string} expression - text within brackets i.e. the condition string, 'this.x < 8'
+   * @returns {boolean}
+   */
+  _solveCondition(expression) {
+    // Regular expression to match different parts of the expression
+    // [\w\.\$\[\]_]+  ---> variables like $model.companies[0]._id
+    // ['"\p{L}\p{N}\s]+  ---> any string with UTF-8 chars closed in single or double quote 'Ja sam čćžšđ' . It's also for true or false.
+    // [-\.\d]+   ---> any number integer or float
+    const tripleConditionRegex = /([\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)\s*(===|==|!==|!=|>=|>|<=|<|&&|\|\|)\s*([\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)/u;
+    const singleConditionRegex = /(\!?(\!\!)?[\w\.\$\[\]_]+)/;
+
+    // Function to resolve the value of a variable or literal
+    const resolveValue = (str) => {
+      const isDoubleNegation = str.startsWith('!!');
+      const isNegation = str.startsWith('!');
+      let valueStr = '';
+      if (isDoubleNegation) { valueStr = str.slice(2).trim(); }
+      else if (isNegation) { valueStr = str.slice(1).trim(); }
+      else { valueStr = str.trim(); }
+
+      let value;
+      if (valueStr === 'true' || valueStr === 'false') {
+        value = valueStr === 'true';
+      } else if (/^\d+/.test(valueStr)) {
+        value = Number(valueStr);
+      } else if (/^['"].*['"]$/.test(valueStr)) {
+        value = valueStr.slice(1, -1);
+      } else {
+        value = this._getControllerValue(valueStr);
+      }
+
+      if (isDoubleNegation) { return value; }
+      else if (isNegation) { return !value; }
+      else { return value; }
+    };
+
+    // Try to match a complex condition with an operator
+    let cond_parts = expression.match(tripleConditionRegex);
+    if (cond_parts) {
+      const a_str = cond_parts[1].trim();
+      const operator = cond_parts[2];
+      const b_str = cond_parts[3].trim();
+
+      // Resolve the values of a and b
+      const a = resolveValue(a_str);
+      const b = resolveValue(b_str);
+
+      // Evaluate the condition based on the operator
+      const evaluateCondition = (a, operator, b) => {
+        switch (operator) {
+          case '===': return a === b;
+          case '==': return a == b;
+          case '!==': return a !== b;
+          case '!=': return a != b;
+          case '>=': return a >= b;
+          case '>': return a > b;
+          case '<=': return a <= b;
+          case '<': return a < b;
+          case '&&': return a && b;
+          case '||': return a || b;
+          default: return false;
+        }
+      };
+
+      // Solve and return the condition
+      const tf = evaluateCondition(a, operator, b);
+      // console.log('_solveCondition::', `${a_str}:${a} ${operator} ${b_str}:${b} => ${tf}`);
+      return tf;
+    } else {
+      // Try to match a simple single negated condition
+      cond_parts = expression.match(singleConditionRegex);
+      if (cond_parts) {
+        const single_str = cond_parts[1].trim();
+        const tf = resolveValue(single_str);
+        return tf;
+      } else {
+        this._printError(`_solveCondition Error: Invalid expression format "${expression}"`);
+      }
+    }
   }
 
 
