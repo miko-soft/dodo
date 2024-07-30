@@ -6,7 +6,7 @@ class Auxiliary {
   /***** CONTROLLER *****/
   /**
    * Get the controller property's value. For example controller's property is this.$model.firstName in JS and in HTML dd-text="$model.firstName"
-   * @param {string} prop - controller property name (without this.), for example: company.name, $model.car.color, $fridge.color, ... etc
+   * @param {string} prop - controller property name (without this.), for example: company.name, $model.car.color, $fridge.color, companies[0].name ... etc
    * @returns {any}
    */
   _getControllerValue(prop) {
@@ -37,23 +37,43 @@ class Auxiliary {
 
 
   /**
-   * Set the controller property's value.
-   * For example controller's property is this.product.name
-   * @param {string} prop - controller property name, for example: $model.product.name
+   * Set the controller property's value. For example controller's property is this.product.name
+   * @param {string} prop - controller property name ( without this. ), for example: companies, companies[0], companies[0].note, product.name, $model.product.name, $model.company.product.name
    * @param {any} val - controller property value
    */
   _setControllerValue(prop, val) {
     try {
-      const propParts = prop.split('.');
+      const propParts = prop.match(/[^\[\].]+|\[\d+\]/g);
       let obj = this;
+
       for (let i = 0; i < propParts.length - 1; i++) {
-        const part = propParts[i];
-        if (!(part in obj)) { // If any part is not found, create an empty object
-          obj[part] = {};
+        let part = propParts[i];
+
+        // Check if part is array index
+        if (part.startsWith('[') && part.endsWith(']')) {
+          part = parseInt(part.slice(1, -1));
         }
+
+        // If part is not found, create an empty object or array
+        if (!(part in obj)) {
+          if (typeof propParts[i + 1] === 'string' && propParts[i + 1].startsWith('[')) {
+            obj[part] = [];
+          } else {
+            obj[part] = {};
+          }
+        }
+
         obj = obj[part];
       }
-      obj[propParts[propParts.length - 1]] = val;
+
+      let lastPart = propParts[propParts.length - 1];
+
+      // Check if lastPart is array index
+      if (lastPart.startsWith('[') && lastPart.endsWith(']')) {
+        lastPart = parseInt(lastPart.slice(1, -1));
+      }
+
+      obj[lastPart] = val;
     } catch (err) {
       console.error(`_setControllerValue (${prop})`, err);
     }

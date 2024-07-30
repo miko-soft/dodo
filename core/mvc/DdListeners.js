@@ -161,7 +161,7 @@ class DdListeners extends Auxiliary {
       const handler = async event => {
         const val = this._getElementValue(elem, convertType);
         this._setControllerValue(prop, val);
-        this._debug('ddModel', `Executed ddModel listener --> ${base} = ${val}`, 'orangered');
+        this._debug('ddModel', `Executed ddModel listener --> ${base} = ${val} - convertType: ${convertType}`, 'orangered');
       };
 
       const eventName = 'input';
