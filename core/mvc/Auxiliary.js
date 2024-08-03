@@ -666,33 +666,54 @@ class Auxiliary {
       return stack[0];
     }
 
-
     function solveExpression(expression) {
       const tokens = tokenize(expression);
       const postfix = toPostfix(tokens);
       return evaluatePostfix(postfix);
     }
 
-
     const solution = solveExpression(expr);
     return solution;
   }
 
 
-
   /**
    * Solve expressions with ternary operator - ?.
-   * The expression is closed in round brackets, for example: (isActive ? {color: 'green'} : {color: 'red'}).
+   * The expression is closed in round brackets.
+   * Examples:
+   * (isActive ? {color: 'green'} : {color: 'red'})
+   * (isActive ? someColor : 'red')   - someColor is controller property
    * @param {string} expression - text within round brackets i.e. the ternary condition
    * @returns {any}
    */
   _solveTernary(expression) {
     const parts = expression.match(/(.*) \? (.*) : (.*)/) ?? [];
-    const condition = parts[1]?.trim();
-    const solution1 = parts[2]?.replace(/^'/, '').replace(/'$/, '').trim();
-    const solution2 = parts[3]?.replace(/^'/, '').replace(/'$/, '').trim();
+    if (!parts[1] || !parts[2] || !parts[3]) { this._printError(`Bad ternary expression. Check "${expression}"`); return; }
+    const part1 = parts[1].trim();
+    const part2 = parts[2].trim();
+    const part3 = parts[3].trim();
+
+    const condition = part1;
+
+    let solution1 = '';
+    if (/^'.*'$/.test(part2) || /^{.*}$/.test(part2) || /^[.*]$/.test(part2)) {
+      solution1 = part2.replace(/^'/, '').replace(/'$/, '').trim();
+    } else {
+      const prop = part2.replace('this.', '');
+      solution1 = this._getControllerValue(prop);
+    }
+
+    let solution2 = '';
+    if (/^'.*'$/.test(part3) || /^{.*}$/.test(part2) || /^[.*]$/.test(part2)) {
+      solution2 = part3.replace(/^'/, '').replace(/'$/, '').trim();
+    } else {
+      const prop = part3.replace('this.', '');
+      solution2 = this._getControllerValue(prop);
+    }
+
     let val = this._solveCondition(condition) ? solution1 : solution2;
     val = this._stringTypeConvert(val);
+
     return val;
   }
 
