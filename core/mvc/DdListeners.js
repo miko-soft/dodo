@@ -137,7 +137,10 @@ class DdListeners extends Auxiliary {
 
       // solve the controller property name and get the controller property value
       let prop = base.replace(/^this\./, '');
-      if (!!prop && !prop.includes('$model')) { prop = '$model.' + prop; }
+      if (!!prop && !prop.includes('$model')) {
+        prop = '$model.' + prop;
+        this._printWarn(`The $model is placed as prefix in dd-model="${attrVal}"`);
+      }
 
       const convertType = opts[0] === 'convertType';
 

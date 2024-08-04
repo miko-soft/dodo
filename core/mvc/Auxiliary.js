@@ -1044,6 +1044,10 @@ class Auxiliary {
       val = parseFloat(val);
     } else if (val === 'true' || val === 'false') { // convert string into boolean (true)
       val = JSON.parse(val);
+    } else if (val === 'undefined') { // convert string into undefined
+      val = undefined;
+    } else if (val === 'null') { // convert string into null
+      val = null;
     } else if (isJSON(val)) { // convert JSON string {"a": "Lorem ipsum"} into object
       val = toObject(val);
     } else if (/^\s*({.*}|[.*])\s*$/.test(val)) { // convert object or array notation {a: 'Lorem ipsum'} or ['str', 88] into object
