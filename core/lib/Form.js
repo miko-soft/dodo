@@ -8,7 +8,7 @@ class Form extends Auxiliary {
   constructor(formName) {
     super();
     this.formName = formName;
-    this.debugOptions = {
+    this.$debugOpts = {
       setControl: false,
       setControls: false,
       getControl: false,
