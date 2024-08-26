@@ -180,9 +180,11 @@ class App extends Router {
 
         /* route middlewares */
         const navigMdw = navig.navigMdw.bind(navig, ctrl);
+        const preflight = this.$preflight;
         const controllerMdw = ctrl.controllerMdw.bind(ctrl);
+        const postflight = this.$postflight;
 
-        this.notfound(navigMdw, controllerMdw);
+        this.notfound(navigMdw, ...preflight, controllerMdw, ...postflight);
 
 
       } else if (cmd === 'do') {
