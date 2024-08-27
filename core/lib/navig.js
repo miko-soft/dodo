@@ -185,14 +185,18 @@ class Navig {
    * @param {string} url - absolute URL path, /customer/product/25?limit=25
    * @param {any} state - the state data. Fetch it with event.detail
    * @param {string} title
+   * @param {boolean} toReplace - replace the current state (If true, the browser's Back button will return the user to the previously opened page.)
    */
-  goblind(url, state, title) {
+  goblind(url, state, title, toReplace = true) {
     if (!url) { throw new Error('The argument "url" is not defined'); }
     if (!state) { state = {}; }
     if (!title) { title = ''; }
     state = { ...state, url };
-    window.history.pushState(state, title, url); // change URL in the browser address bar
+    toReplace ?
+      window.history.replaceState(null, '', url) :
+      window.history.pushState(state, title, url);
   }
+
 
   /**
    * Go forward like forward button is clicked.
