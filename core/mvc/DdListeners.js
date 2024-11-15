@@ -139,7 +139,7 @@ class DdListeners extends Auxiliary {
       let prop = base.replace(/^this\./, '');
       if (!!prop && !prop.includes('$model')) {
         prop = '$model.' + prop;
-        this._printWarn(`The $model is placed as prefix in dd-model="${attrVal}"`);
+        this._printWarn(`The $model is not used as a prefix in dd-model="${attrVal}"`);
       }
 
       const convertType = opts[0] === 'convertType';
