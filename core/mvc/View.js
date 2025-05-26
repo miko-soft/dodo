@@ -48,7 +48,7 @@ class View extends Dd {
       htmlstr = !!elem ? elem.outerHTML : '';
     }
 
-    // make dd elements invisible by setting display:none
+    // make dd elements invisible by setting dd-...-hide attribute i.e. display:none !important
     htmlstr = this._hide_ddElements(htmlstr);
 
     // load content in the element
@@ -67,6 +67,30 @@ class View extends Dd {
       elem.insertAdjacentHTML('beforeend', htmlstr);
       elem.lastElementChild.setAttribute('dd-view-clone', viewName);
     }
+  }
+
+  /**
+   * Load the view marked with the dd-selfview attribute. This process hides all elements with with dd-... attributes.
+   * Mostly used in AppOne applications.
+   * This method should be used in the controller's __loader() hook.
+   * @returns {void}
+   */
+  loadSelfview() {
+    const attrName = 'dd-selfview';
+
+    // get a HTML element with dd-view attribute
+    const elem = document.querySelector(`[${attrName}]`);
+    this._debug('loadSelfview', `--------- loadSelfview dd-selfview ---------`, '#8B0892', '#EDA1F1');
+    if (!elem) { throw new Error(`Element dd-selfview not found.`); }
+
+    // Get HTML content
+    let htmlstr = elem.innerHTML;
+    this._debug('loadSelfview', `--htmlstr: ${htmlstr.length}`, '#8B0892');
+
+    // make dd elements invisible by setting dd-...-hide attribute i.e. display:none !important
+    htmlstr = this._hide_ddElements(htmlstr);
+
+    elem.innerHTML = htmlstr;
   }
 
 
