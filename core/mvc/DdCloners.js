@@ -13,15 +13,15 @@ class DdCloners extends DdListeners {
 
 
   /**
- * dd-each="controllerProperty --val,key" | dd-each="controllerMethod() --val,key"
- *  Generate multiple HTML elements based on an array stored in a controller property.
- *  Nested dd-each elements are not recommended !
- * Examples:
- * dd-each="myArr --val,key" or dd-each="this.myArr --val,key"
- * dd-each="$model.myArr --val,key" or dd-each="this.$model.myArr --val,key"
- * dd-each="genSomeArray() --val,key"
- * @param {string} modelName - model name, for example in $model.users the model name is 'users'
- */
+   * dd-each="controllerProperty --val,key" | dd-each="controllerMethod() --val,key"
+   *  Generate multiple HTML elements based on an array stored in a controller property.
+   *  Nested dd-each elements are not recommended !
+   * Examples:
+   * dd-each="myArr --val,key" or dd-each="this.myArr --val,key"
+   * dd-each="$model.myArr --val,key" or dd-each="this.$model.myArr --val,key"
+   * dd-each="genSomeArray() --val,key"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
   ddEach(modelName) {
     this._debug('ddEach', `--------- ddEach (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
 

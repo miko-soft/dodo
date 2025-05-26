@@ -51,7 +51,7 @@ class Form extends Auxiliary {
       } else if (elem.type === 'checkbox') { // CHECKBOX
         elem.checked = false;
         elem.removeAttribute('checked');
-        if (typeof val !== 'boolean' && val && val.includes(elem.value)) {
+        if (typeof val !== 'boolean' && val?.includes(elem.value)) {
           elem.checked = true;
           elem.setAttribute('checked', '');
         } else if (typeof val === 'boolean') {
