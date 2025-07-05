@@ -82,6 +82,7 @@ class Auth {
       return apiResp;
 
     } else {
+      this.jwtToken = '';
       this.loggedUser = null;
       this.cookie.removeAll();
       let errMsg = 'Bad Login';
@@ -100,8 +101,9 @@ class Auth {
    * @returns {void}
    */
   async logout(ms = 600) {
+    this.jwtToken = '';
+    this.loggedUser = null;
     this.cookie.removeAll(); // delete all cookies
-    this.loggedUser = null; // remove class property
     const afterLogoutURL = this._correctURL(this.authOpts.afterLogout, null);
     if (!!afterLogoutURL) { await util.sleep(ms); navig.goto(afterLogoutURL); } // change URL
   }
