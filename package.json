@@ -1,6 +1,6 @@
 {
   "name": "@mikosoft/dodo",
-  "version": "0.9.8",
+  "version": "0.9.9",
   "title": "DoDo",
   "description": "The DoDo is an easy to learn JavaScript framework which helps developers to build reactive, single page applications. It can be used for mobile applications, browser extensions, electron desktop apps, ...etc.",
   "author": "Mikodanic Sasa <smikodanic@gmail.com>",
