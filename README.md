@@ -1,7 +1,7 @@
 # DoDo
 > The DoDo is easy to learn JavaScript framework which helps developers to build reactive, single page applications.
 
-It can be used for mobile applications, browser extensions, electron desktop apps, ...etc.
+It can be used for web development, browser extensions, electron desktop apps, mobile applications, ...etc.
 
 The Dodo Framework is not based on UI components like Angular 2+, Vue and React but on Model-View-Controller what makes Dodo more simple and flexible.
 The inspiration was found in Angular 1, so Dodo conception is similar to it.

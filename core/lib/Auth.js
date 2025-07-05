@@ -1,6 +1,7 @@
 import navig from './navig.js';
 import Cookie from './Cookie.js';
 import HTTPClient from './HTTPClient.js';
+import util from './util.js';
 
 
 
@@ -48,8 +49,8 @@ class Auth {
     };
     this.httpClient = new HTTPClient(opts);
 
-    this.jwtToken; // JWT Token string: 'JWT ...'
-    this.loggedUser = this.getLoggedUserInfo(); // the user object: {first_name, last_name, username, ...}
+    this.jwtToken = ''; // JWT Token string: 'JWT ...'
+    this.loggedUser = this.getLoggedUserInfo() || {}; // the user object: {first_name, last_name, username, ...}
   }
 
 
@@ -59,9 +60,10 @@ class Auth {
   /**
    * Send login request to the API.
    * @param {object} creds - credentials object send as body to the API, for example: {username, password}
+   * @param {number} ms - time delay to redirect to afterGoodLogin URL
    * @returns {Promise<object>}
    */
-  async login(creds) {
+  async login(creds, ms = 600) {
     const url = this.authOpts.apiLogin;
     const answer = await this.httpClient.askJSON(url, 'POST', creds);
     const apiResp = answer.res.content || [];
@@ -75,7 +77,7 @@ class Auth {
 
       // redirect to URL
       const afterGoodLoginURL = this._correctURL(this.authOpts.afterGoodLogin, apiResp.loggedUser);
-      if (!!afterGoodLoginURL) { navig.goto(afterGoodLoginURL); }
+      if (!!afterGoodLoginURL) { await util.sleep(ms); navig.goto(afterGoodLoginURL); }
 
       return apiResp;
 
@@ -94,15 +96,14 @@ class Auth {
 
   /**
    * Logout. Remove login cookie, loggedUser and change the URL.
-   * @param {number} ms - time period to redirect to afterLogoutURL
+   * @param {number} ms - time delay to redirect to afterLogoutURL
    * @returns {void}
    */
-  async logout(ms) {
+  async logout(ms = 600) {
     this.cookie.removeAll(); // delete all cookies
-    this.loggedUser = undefined; // remove class property
-    await new Promise(r => setTimeout(r, ms));
+    this.loggedUser = null; // remove class property
     const afterLogoutURL = this._correctURL(this.authOpts.afterLogout, null);
-    if (!!afterLogoutURL) { navig.goto(afterLogoutURL); } // change URL
+    if (!!afterLogoutURL) { await util.sleep(ms); navig.goto(afterLogoutURL); } // change URL
   }
 
 
@@ -142,14 +143,14 @@ class Auth {
 
   /******* ROUTER MIDDLEWARE METHODS (authGuards option in the route definition) ******/
   /**
-   * Check if user is logged and if yes do auto login e.g. redirect to afterGoodLogin URL.
+   * Check if the user is already logged in, and if so, perform an automatic login by redirecting to the afterGoodLogin URL.
    * @returns {boolean}
    */
   autoLogin() {
     const loggedUser = this.getLoggedUserInfo(); // get loggedUser info after successful username:password login
 
     // redirect to URL
-    if (!!loggedUser && !!loggedUser.username) {
+    if (!!loggedUser?.username) {
       const afterGoodLoginURL = this._correctURL(this.authOpts.afterGoodLogin, loggedUser);
       if (!!afterGoodLoginURL) { navig.goto(afterGoodLoginURL); }
       throw new Error(`AuthWarn:: Autologin to ${afterGoodLoginURL} is triggered.`);
@@ -158,12 +159,12 @@ class Auth {
 
 
   /**
-   * Check if user is logged and if not redirect to afterBadLogin URL.
+   * Check if the user is not logged in, and if so, redirect them to the afterBadLogin URL.
    * @returns {boolean}
    */
   isLogged() {
     const loggedUser = this.getLoggedUserInfo(); // get loggedUser info after successful username:password login
-    const isAlreadyLogged = !!loggedUser && !!loggedUser.username;
+    const isAlreadyLogged = !!loggedUser?.username;
 
     // redirect to afterBadLogin URL
     if (!isAlreadyLogged) {
@@ -175,9 +176,9 @@ class Auth {
 
 
   /**
-   * Check if user has required role: admin, customer... which corresponds to the URL.
-   * For example role "admin" must have URL starts with /admin/...
-   * If not redirect to /login page.
+   * Check if the user has the required role (e.g., admin, customer) that corresponds to the accessed URL.
+   * For example, a user with the admin role must access URLs that start with /admin/.
+   * If the user’s role does not match the URL pattern, redirect them to the /login page.
    * @returns {boolean}
    */
   hasRole() {
@@ -187,8 +188,8 @@ class Auth {
     const currentUrl = window.location.pathname + window.location.search; // browser address bar URL: /admin/product/23
 
     let urlHasRole = false;
-    if (!!loggedUser && !!loggedUser.role) {
-      urlHasRole = currentUrl.indexOf(loggedUser.role) !== -1;
+    if (!!loggedUser?.role) {
+      urlHasRole = currentUrl.includes(loggedUser.role);
     }
 
     if (!urlHasRole) {
@@ -209,11 +210,10 @@ class Auth {
    * @returns
    */
   _correctURL(url, loggedUser) {
-    let url_corrected;
-    if (!!loggedUser && !!loggedUser.role) {
-      url_corrected = !!url ? url.replace('{loggedUserRole}', loggedUser.role) : '';
-    } else {
-      url_corrected = !!url ? url : '';
+    if (!url || typeof url !== 'string') { return ''; }
+    let url_corrected = url;
+    if (!!loggedUser?.role && url.includes('{loggedUserRole}')) {
+      url_corrected = url.replace('{loggedUserRole}', loggedUser.role);
     }
     return url_corrected;
   }
