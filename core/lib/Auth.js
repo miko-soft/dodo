@@ -50,7 +50,7 @@ class Auth {
     this.httpClient = new HTTPClient(opts);
 
     this.jwtToken = ''; // JWT Token string: 'JWT ...'
-    this.loggedUser = this.getLoggedUserInfo() || {}; // the user object: {first_name, last_name, username, ...}
+    this.loggedUser = this.getLoggedUserInfo(); // the user object: {first_name, last_name, username, ...}
   }
 
 
@@ -111,7 +111,7 @@ class Auth {
 
   /**
    * Get logged user info from the object property (faster) or from the cookie 'auth_loggedUser' (slower)
-   * @returns {object} - {first_name, last_name, ...}
+   * @returns {object|null|undefined} - {first_name, last_name, ...}
    */
   getLoggedUserInfo() {
     const loggedUser = this.loggedUser || this.cookie.getObject('auth_loggedUser');
@@ -148,8 +148,9 @@ class Auth {
    * Check if the user is already logged in, and if so, perform an automatic login by redirecting to the afterGoodLogin URL.
    * @returns {boolean}
    */
-  autoLogin() {
+  async autoLogin() {
     const loggedUser = this.getLoggedUserInfo(); // get loggedUser info after successful username:password login
+    await util.sleep(40);
 
     // redirect to URL
     if (!!loggedUser?.username) {
@@ -164,11 +165,12 @@ class Auth {
    * Check if the user is not logged in, and if so, redirect them to the afterBadLogin URL.
    * @returns {boolean}
    */
-  isLogged() {
+  async isLogged() {
     const loggedUser = this.getLoggedUserInfo(); // get loggedUser info after successful username:password login
-    const isAlreadyLogged = !!loggedUser?.username;
+    await util.sleep(40);
 
     // redirect to afterBadLogin URL
+    const isAlreadyLogged = !!loggedUser;
     if (!isAlreadyLogged) {
       const afterBadLoginURL = this._correctURL(this.authOpts.afterBadLogin, loggedUser);
       if (!!afterBadLoginURL) { navig.goto(afterBadLoginURL); }
@@ -183,8 +185,9 @@ class Auth {
    * If the user’s role does not match the URL pattern, redirect them to the /login page.
    * @returns {boolean}
    */
-  hasRole() {
+  async hasRole() {
     const loggedUser = this.getLoggedUserInfo(); // get loggedUser info after successful username:password login
+    await util.sleep(40);
 
     // get current URL and check if user's role (admin, customer) is contained in it
     const currentUrl = window.location.pathname + window.location.search; // browser address bar URL: /admin/product/23
