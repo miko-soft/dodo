@@ -123,7 +123,7 @@ class View extends Dd {
   /**
    * Create <script> tags at the end of body and execute it.
    * @param {string} url - JS script URL, https://code.jquery.com/jquery-3.7.0.min.js
-   * @param {object} attrOpts - attribute options {isModule:boolean, isDefer:boolean, isLazy:boolean}
+   * @param {object} attrOpts - attribute options {isModule:boolean, isDefer:boolean, isLazy:boolean, ddLazyjs:'--after__loader'|'--after__rend'|'--after__postrend'}
    */
   loadJS(url, attrOpts = {}) {
     // remove the SCRIPT if already exists
@@ -131,12 +131,11 @@ class View extends Dd {
 
     // add the SCRIPT tag
     const script = document.createElement('script');
-    script.type = 'text/javascript';
     script.src = url;
 
     if (attrOpts.isModule) { script.setAttribute('type', 'module'); }
     if (attrOpts.isDefer) { script.defer = true; }
-    if (attrOpts.isLazy) { script.setAttribute('dd-lazyjs', ''); }
+    if (attrOpts.isLazy) { script.setAttribute('dd-lazyjs', attrOpts.ddLazyjs); }
 
     document.body.appendChild(script);
   }
@@ -173,28 +172,31 @@ class View extends Dd {
 
 
   /**
-   * Parse the "dd-lazyjs" attribute after __loader() or after __rend() controller hook.
+   * Parse the "dd-lazyjs" attribute after __loader() or after __rend() or after __postrend() controller hook.
    * Reload all SCRIPT elements with dd-lazyjs attribute. Remove all SCRIPT tags with the dd-lazyjs attributes and immediatelly reload them.
    * Examples:
-   * <script src="..." dd-lazyjs>   -- default is --after_loader
-   * <script src="..." dd-lazyjs="">   -- default is --after_loader
    * <script src="..." dd-lazyjs="--after__loader">
    * <script src="..." dd-lazyjs="--after__rend">
+   * <script src="..." dd-lazyjs="--after__postrend">
    *
-   * @param {string} afterOption - --after__loader , --after__rend
+   * @param {string} afterOption - after__loader, after__rend or after__postrend
   */
-  ddLazyjs(afterOption) {
+  async ddLazyjs(afterOption) {
     const attrName = 'dd-lazyjs';
     const elems = this._listElements(attrName);
 
+
     for (const elem of elems) {
-      const attrVal = elem.getAttribute(attrName);
+      const attrVal = elem.getAttribute(attrName); // --after__loader , --after__rend or --after__postrend
       const { opts } = this._decomposeAttribute(attrVal);
 
-      let afterOption_fromAttribute = opts[0];
-      if (!afterOption_fromAttribute) { afterOption_fromAttribute = 'after__loader'; }
+      const afterOption_fromAttribute = opts[0]; // after__loader, after__rend or after__postrend    // get after option from the attribute: dd-lazyjs="--after__rend"
+      if (afterOption_fromAttribute !== 'after__loader' && afterOption_fromAttribute !== 'after__rend' && afterOption_fromAttribute !== 'after__postrend') {
+        this._printWarn(`The option should be --after__loader , --after__rend or --after__postrend . Used dd-lazyjs="${attrVal}"`);
+        return;
+      }
+      if (afterOption_fromAttribute !== afterOption) { return; } // skip if not matching
 
-      if (afterOption_fromAttribute !== afterOption) { return; }
 
       this._debug('ddLazyjs', `--------- ddLazyjs (${afterOption}) ------`, 'navy', '#B6ECFF');
 
@@ -202,14 +204,15 @@ class View extends Dd {
       const isModule = elem.getAttribute('type') === 'module';
       const isDefer = elem.hasAttribute('defer');
       const isLazy = elem.hasAttribute('dd-lazyjs');
-      const attrOpts = { isModule, isDefer, isLazy };
+      const attrOpts = { isModule, isDefer, isLazy, ddLazyjs: `--${afterOption_fromAttribute}` };
 
-      this.unloadJS(url);
+      await new Promise(r => setTimeout(r, 50)); // small delay to ensure proper loading order
+
+      // this.unloadJS(url); // already contained in loadJS()
       this.loadJS(url, attrOpts);
 
       this._debug('ddLazyjs', `src="${url}" | attrOpts: ${JSON.stringify(attrOpts)}`, 'navy');
     }
-
   }
 
 

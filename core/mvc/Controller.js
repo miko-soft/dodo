@@ -39,6 +39,7 @@ class Controller extends Model {
     this.ddLazyjs('after__rend'); // render dd-lazyjs
 
     try { await this.__postrend(trx); } catch (err) { console.error(err); }
+    this.ddLazyjs('after__postrend'); // render dd-lazyjs
   }
 
 
