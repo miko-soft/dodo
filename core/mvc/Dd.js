@@ -232,8 +232,19 @@ class Dd extends DdCloners {
 
       this._elemShow(elem, attrName);
 
-      if (val === undefined || val === null) { continue; } // don't render elements with undefined controller's value
-      this._setElementValue(elem, val); // set value attribute and DOM property
+      // don't render elements with undefined/null controller's value
+      if (val === undefined || val === null) {
+        this._printWarn(`dd-value="${attrVal}" -> The value is undefined or null.`);
+        continue;
+      }
+
+      if (elem.type === 'file') {
+        /*Browsers only allow setting file inputs to empty strings to prevent malicious scripts from accessing users' file system paths.*/
+        if (val === '') { this._setElementValue(elem, ''); }
+        // if val is not null/undefined/empty string do nothing
+      } else {
+        this._setElementValue(elem, val);
+      }
     }
 
     this._debug('ddValue', '--------- ddValue (end) ------', 'navy', '#B6ECFF');

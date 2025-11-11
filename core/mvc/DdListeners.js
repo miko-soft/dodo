@@ -154,6 +154,10 @@ class DdListeners extends Auxiliary {
       } else if (elem.type === 'select-multiple') {
         this._setElementValue(elem, val_ctrl);
         this._setElementSelected_multiple(elem, val_ctrl);
+      } else if (elem.type === 'file') {
+        /*Browsers only allow setting file inputs to empty strings to prevent malicious scripts from accessing users' file system paths.*/
+        if (val_ctrl === null || val_ctrl === undefined || val_ctrl === '') { this._setElementValue(elem, ''); }
+        // if val is not null/undefined/empty string do nothing
       } else {
         this._setElementValue(elem, val_ctrl);
       }
