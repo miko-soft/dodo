@@ -116,6 +116,7 @@ class Controller extends Model {
     this.ddClass(modelName);
     this.ddStyle(modelName);
     this.ddSrc(modelName);
+    this.ddLabel(modelName);
     this.ddAttr(modelName);
     // switchers
     this.ddIf(modelName);

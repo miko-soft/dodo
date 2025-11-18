@@ -496,6 +496,38 @@ class Dd extends DdCloners {
   }
 
 
+  /**
+   * dd-label="controllerProperty" | dd-src="controllerMethod()"
+   *  Set the element label attribute.
+   * Examples:
+   * dd-label="$model.label"
+   * dd-label="setlabel('some label')"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddLabel(modelName) {
+    this._debug('ddLabel', `--------- ddLabel (start)  -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-label';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddLabel', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const val = this._solveBase(base);
+      this._debug('ddLabel', `dd-src="${attrVal}" :: ${base} = ${val}`, 'navy');
+
+      if (val === undefined) { continue; }
+      const src = val;
+      elem.label = src;
+
+      this._elemShow(elem, attrName);
+    }
+
+    this._debug('ddLabel', '--------- ddLabel (end) ------', 'navy', '#B6ECFF');
+  }
+
+
 
   /**
    * dd-attr="controllerProperty [--attributeName]" | dd-attr="controllerMethod() [--attributeName]"
