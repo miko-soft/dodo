@@ -381,9 +381,16 @@ class Dd extends DdCloners {
 
 
   /**
-   * dd-class="controllerProperty [--replace]" | dd-class="controllerMethod() [--replace]"
+   * dd-class="controllerProperty [--add | --remove | --toggle | --replace]" |
+   * dd-class="controllerMethod() [--add | --remove | --toggle | --replace]" |
+   * dd-class="(expression) [--add | --remove | --toggle | --replace]"
    *  Sets the "class" attribute with the controller property value.
    *  The controller property value should be an array of strings, for example: ['red-bold', 'centered-text']
+   * Options:
+   * --add      --> add new classes to existing classes (default)
+   * --remove   --> remove defined classes
+   * --toggle   --> toggle defined classes
+   * --replace  --> replace existing classes with new classes
    * Examples:
    * dd-class="myKlass"             - add new classes to existing classes
    * dd-class="myKlass --replace"   - replace existing classes with new classes
@@ -409,10 +416,33 @@ class Dd extends DdCloners {
       if (val === undefined) { continue; }
       if (!Array.isArray(val)) { this._printWarn(`dd-class="${attrVal}" -> The value is not array.`); continue; }
 
-      if (act === 'replace') { elem.removeAttribute('class'); }
-      for (const v of val) {
-        elem.classList.add(v);
+      if (act === 'add') {
+        for (const v of val) {
+          elem.classList.add(v);
+        }
+      } else if (act === 'remove') {
+        // remove defined classes
+        for (const v of val) {
+          elem.classList.remove(v);
+        }
+      } else if (act === 'toggle') {
+        // toggle defined classes
+        for (const v of val) {
+          elem.classList.toggle(v);
+        }
+      } else if (act === 'replace') {
+        // replace existing classes with new classes
+        elem.removeAttribute('class'); // or elem.classname='';
+        for (const v of val) {
+          elem.classList.add(v);
+        }
+      } else {
+        // add new classes to existing classes
+        for (const v of val) {
+          elem.classList.add(v);
+        }
       }
+
     }
 
     this._debug('ddClass', '--------- ddClass (end) ------', 'navy', '#B6ECFF');

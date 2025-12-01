@@ -281,6 +281,36 @@ class View extends Dd {
   }
 
 
+  /**
+   * Add, remove or toggle CSS classes on elements matched by the CSS selector.
+   * @param {string} cssSelector - CSS selector of the element
+   * @param {string} classNames - array of class names to add, remove or toggle
+   * @param {string} operation - 'add' | 'remove' | 'toggle'
+   * @param {string} unique - if true only the first matched element will be processed
+   */
+  classCSS(cssSelector, classNames = [], operation = 'add', unique = true) {
+    const elems = unique ? [document.querySelector(cssSelector)] : document.querySelectorAll(cssSelector);
+
+    // check if elems found
+    if (elems.length === 0 || (elems.length === 1 && elems[0] === null)) {
+      this._printWarn(`No elements found for the CSS selector: "${cssSelector}"`);
+      return;
+    }
+
+    for (const elem of elems) {
+      for (const className of classNames) {
+        if (operation === 'add') {
+          elem.classList.add(className);
+        } else if (operation === 'remove') {
+          elem.classList.remove(className);
+        } else if (operation === 'toggle') {
+          elem.classList.toggle(className);
+        }
+      }
+    }
+  }
+
+
 
 
   /*************** HEAD SETTERS *************/
