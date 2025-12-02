@@ -413,33 +413,33 @@ class Dd extends DdCloners {
 
       this._elemShow(elem, attrName);
 
-      if (val === undefined) { continue; }
-      if (!Array.isArray(val)) { this._printWarn(`dd-class="${attrVal}" -> The value is not array.`); continue; }
+      // check if value is array
+      if (!Array.isArray(val)) { this._printWarn(`dd-class="${attrVal}" -> The value is not array. It is ${val}.`); continue; }
 
       if (act === 'add') {
         for (const v of val) {
-          elem.classList.add(v);
+          !!v && elem.classList.add(v);
         }
       } else if (act === 'remove') {
         // remove defined classes
         for (const v of val) {
-          elem.classList.remove(v);
+          !!v && elem.classList.remove(v);
         }
       } else if (act === 'toggle') {
         // toggle defined classes
         for (const v of val) {
-          elem.classList.toggle(v);
+          !!v && elem.classList.toggle(v);
         }
       } else if (act === 'replace') {
         // replace existing classes with new classes
         elem.removeAttribute('class'); // or elem.classname='';
         for (const v of val) {
-          elem.classList.add(v);
+          !!v && elem.classList.add(v);
         }
       } else {
-        // add new classes to existing classes
+        // add new classes to existing classes (default when no option is defined)
         for (const v of val) {
-          elem.classList.add(v);
+          !!v && elem.classList.add(v);
         }
       }
 

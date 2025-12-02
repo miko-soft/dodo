@@ -523,10 +523,10 @@ class Auxiliary {
       catch (err) { this._printError(`${err.message}. Check $fridge.${funcDef}`); }
     } else if (/^\(.+\)$/.test(base)) { // get value from expression ( ... )
       const expression = base.replace(/^\(/, '').replace(/\)$/, ''); // remove round brackets ()
-      if (expression.includes('\' +') || expression.includes('+ \'')) { val = this._solveConcat(expression); } // string concatenation: $model.name + ' ' + $model.surname
-      else if (/\+|\-|\*|\/|\%/.test(expression)) { val = this._solveMath(expression); } // math expression with + - * / %
-      else if (expression.includes(' ? ') && expression.includes(' : ')) { val = this._solveTernary(expression); } // conditional (ternary) operator: this.isActive ? 'YES' : 'NO'
+      if (expression.includes(' ? ') && expression.includes(' : ')) { val = this._solveTernary(expression); } // conditional (ternary) operator: this.isActive ? 'YES' : 'NO'
       else if (/(!==|!=|===|==|>=|<=|&&|\|\||>|<|!)/.test(expression)) { val = this._solveCondition(expression); } // condition with ! != !== == === > >= < <= && ||
+      else if (/\+|\-|\*|\/|\%/.test(expression)) { val = this._solveMath(expression); } // math expression with + - * / %
+      else if (expression.includes('\' +') || expression.includes('+ \'')) { val = this._solveConcat(expression); } // string concatenation: $model.name + ' ' + $model.surname
       else { val = this._getControllerValue(expression); } // dd-text="($model.companies[0].name)" is same as dd-text="$model.companies[0].name"
     } else { // get value from the controller property
       const prop = base; // this.product -> product
@@ -681,39 +681,41 @@ class Auxiliary {
    * Solve expressions with ternary operator - ?.
    * The expression is closed in round brackets.
    * Examples:
+   * (isActive ? 'YES' : 'NO')
    * (isActive ? {color: 'green'} : {color: 'red'})
-   * (isActive ? someColor : 'red')   - someColor is controller property
+   * (isActive ? ['text-red'] : [])
+   * (isActive ? someColor : 'red')   - someColor is controller property i.e. this.someColor
    * @param {string} expression - text within round brackets i.e. the ternary condition
    * @returns {any}
    */
   _solveTernary(expression) {
     const parts = expression.match(/(.*) \? (.*) : (.*)/) ?? [];
     if (!parts[1] || !parts[2] || !parts[3]) { this._printError(`Bad ternary expression. Check "${expression}"`); return; }
-    const part1 = parts[1].trim();
+    const part1 = parts[1].trim(); // isActive
     const part2 = parts[2].trim();
     const part3 = parts[3].trim();
 
+    const getSolution = (part) => {
+      let solution = '';
+      if (/^'.*'$/.test(part) || /^{.*}$/.test(part) || /^\[.*\]$/.test(part) || part === null || part === 'undefined' || part === 'null' || part === 'true' || part === 'false' || !isNaN(part)) { // string, object, array, null, undefined, boolean, or number literal
+        solution = this._stringTypeConvert(part);
+      } else {
+        const prop = part.replace('this.', '');
+        solution = this._getControllerValue(prop); // get value from controller property
+      }
+      return solution;
+    };
+
+    // solve part1
     const condition = part1;
 
-    let solution1 = '';
-    if (/^'.*'$/.test(part2) || /^{.*}$/.test(part2) || /^[.*]$/.test(part2)) {
-      solution1 = part2.replace(/^'/, '').replace(/'$/, '').trim();
-    } else {
-      const prop = part2.replace('this.', '');
-      solution1 = this._getControllerValue(prop);
-    }
+    // solve part2
+    const solution1 = getSolution(part2);
 
-    let solution2 = '';
-    if (/^'.*'$/.test(part3) || /^{.*}$/.test(part2) || /^[.*]$/.test(part2)) {
-      solution2 = part3.replace(/^'/, '').replace(/'$/, '').trim();
-    } else {
-      const prop = part3.replace('this.', '');
-      solution2 = this._getControllerValue(prop);
-    }
+    // solve part3
+    const solution2 = getSolution(part3);
 
-    let val = this._solveCondition(condition) ? solution1 : solution2;
-    val = this._stringTypeConvert(val);
-
+    const val = this._solveCondition(condition) ? solution1 : solution2;
     return val;
   }
 
@@ -1038,19 +1040,19 @@ class Auxiliary {
       catch (err) { this._printError(`_stringTypeConvert Error: Bad Object or array definition in "${val}"`); }
     };
 
-    if (!!val && !isNaN(val) && !/\./.test(val)) { // convert string into integer (12)
-      val = parseInt(val, 10);
-    } else if (!!val && !isNaN(val) && /\./.test(val)) { // convert string into float (12.35)
-      val = parseFloat(val);
-    } else if (val === 'true' || val === 'false') { // convert string into boolean (true)
-      val = JSON.parse(val);
-    } else if (val === 'undefined') { // convert string into undefined
+    if (val === 'undefined') { // convert string into undefined
       val = undefined;
     } else if (val === 'null') { // convert string into null
       val = null;
+    } else if (val === 'true' || val === 'false') { // convert string into boolean (true/false)
+      val = JSON.parse(val);
+    } else if (!isNaN(val) && val !== '' && !/\./.test(val)) { // convert string into integer (12)
+      val = parseInt(val, 10);
+    } else if (!isNaN(val) && val !== '' && /\./.test(val)) { // convert string into float (12.35)
+      val = parseFloat(val);
     } else if (isJSON(val)) { // convert JSON string {"a": "Lorem ipsum"} into object
       val = toObject(val);
-    } else if (/^\s*({.*}|[.*])\s*$/.test(val)) { // convert object or array notation {a: 'Lorem ipsum'} or ['str', 88] into object
+    } else if (/^\s*({.*}|\[.*\])\s*$/.test(val)) { // convert object or array notation {a: 'Lorem ipsum'} or ['str', 88] into object
       const jsonStr = val.replace(/'/g, '"').replace(/(\w+):/g, '"$1":'); // {color: 'red'} -> {"color": "red"}
       val = toObject(jsonStr);
     }
