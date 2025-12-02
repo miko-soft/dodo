@@ -153,7 +153,7 @@ class Auth {
     await util.sleep(40);
 
     // redirect to URL
-    if (!!loggedUser?.username) {
+    if (loggedUser && typeof loggedUser === 'object' && Object.keys(loggedUser).length > 0) {
       const afterGoodLoginURL = this._correctURL(this.authOpts.afterGoodLogin, loggedUser);
       if (!!afterGoodLoginURL) { navig.goto(afterGoodLoginURL); }
       throw new Error(`AuthWarn:: Autologin to ${afterGoodLoginURL} is triggered.`);
