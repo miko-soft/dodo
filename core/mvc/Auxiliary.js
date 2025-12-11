@@ -695,9 +695,11 @@ class Auxiliary {
     const part2 = parts[2].trim();
     const part3 = parts[3].trim();
 
+    // function to get solution from part2 or part3
     const getSolution = (part) => {
       let solution = '';
       if (/^'.*'$/.test(part) || /^{.*}$/.test(part) || /^\[.*\]$/.test(part) || part === null || part === 'undefined' || part === 'null' || part === 'true' || part === 'false' || !isNaN(part)) { // string, object, array, null, undefined, boolean, or number literal
+        part = part.replace(/^['"]|['"]$/g, '').trim(); // remove surrounding quotes if any
         solution = this._stringTypeConvert(part);
       } else {
         const prop = part.replace('this.', '');
