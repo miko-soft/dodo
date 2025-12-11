@@ -66,9 +66,9 @@ class Auth {
   async login(creds, ms = 600) {
     const url = this.authOpts.apiLogin;
     const answer = await this.httpClient.askJSON(url, 'POST', creds);
-    const apiResp = answer.res.content || [];
+    const apiResp = answer.res.content; // {success:false, errDoc: {}} or {success:true, message:string, jwtToken:'JWT ...', loggedUser:object}
 
-    if (answer.status === 200) {
+    if (apiResp.success) {
       this.jwtToken = apiResp.jwtToken;
       this.loggedUser = apiResp.loggedUser;
 
@@ -78,20 +78,9 @@ class Auth {
       // redirect to URL
       const afterGoodLoginURL = this._correctURL(this.authOpts.afterGoodLogin, apiResp.loggedUser);
       if (!!afterGoodLoginURL) { await util.sleep(ms); navig.goto(afterGoodLoginURL); }
-
-      return apiResp;
-
-    } else {
-      this.jwtToken = '';
-      this.loggedUser = null;
-      this.cookie.removeAll();
-      let errMsg = 'Bad Login';
-      for (const [key, val] of Object.entries(apiResp)) {
-        if (/msg|message/.test(key)) { errMsg = val; }
-      }
-      throw new Error(errMsg);
     }
 
+    return apiResp;
   }
 
 
