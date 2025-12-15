@@ -68,7 +68,7 @@ class Auth {
     const answer = await this.httpClient.askJSON(url, 'POST', creds);
     const apiResp = answer.res.content; // {success:false, errDoc: {}} or {success:true, message:string, jwtToken:'JWT ...', loggedUser:object}
 
-    if (apiResp.success) {
+    if (apiResp?.success) {
       this.jwtToken = apiResp.jwtToken;
       this.loggedUser = apiResp.loggedUser;
 
