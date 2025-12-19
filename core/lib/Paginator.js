@@ -2,7 +2,7 @@ class Paginator {
 
   /**
    * @param {number} linksSize - the number of links which will be shown
-   * @param {string[]} currentPageClasses - the CSS classes which marks the active page, usually it's <li class="active">
+   * @param {string[] || object} currentPageClasses - the CSS classes which marks the active page, usually it's <li class="active">
    */
   constructor(linksSize, currentPageClasses) {
     this.linksSize = +linksSize || 5;
@@ -45,7 +45,8 @@ class Paginator {
     let i; // link number
     const pageLinks = [];
     for (i = istart; i <= iend; i++) {
-      const c = i === currentPage ? this.currentPageClasses : []; // current (active) page CSS classes
+      const empty = Array.isArray(this.currentPageClasses) ? [] : {};
+      const c = i === currentPage ? this.currentPageClasses : empty; // current (active) page CSS classes
       const obj = { i, c };
       pageLinks.push(obj);
     }

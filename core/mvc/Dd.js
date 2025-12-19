@@ -391,6 +391,7 @@ class Dd extends DdCloners {
    * --remove   --> remove defined classes
    * --toggle   --> toggle defined classes
    * --replace  --> replace existing classes with new classes
+   * --arrange  --> arrange multiple options, for example: {add: [], remove: [], toggle: [], replace: []}
    * Examples:
    * dd-class="myKlass"             - add new classes to existing classes
    * dd-class="myKlass --replace"   - replace existing classes with new classes
@@ -408,41 +409,87 @@ class Dd extends DdCloners {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
       const val = this._solveBase(base);
-      const act = opts && opts[0] ? opts[0] : '';
+      const act = opts && opts[0] ? opts[0] : 'add'; // Default to 'add'
       this._debug('ddClass', `dd-class="${attrVal}" :: ${base} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
 
       this._elemShow(elem, attrName);
 
-      // check if value is array
-      if (!Array.isArray(val)) { this._printWarn(`dd-class="${attrVal}" -> The value is not array. It is ${val}.`); continue; }
+      /* checks */
+      if (val === undefined || val === null) {
+        this._printWarn(`dd-class="${attrVal}" -> The value is undefined or null.`);
+        continue;
+      }
 
-      if (act === 'add') {
-        for (const v of val) {
-          !!v && elem.classList.add(v);
-        }
-      } else if (act === 'remove') {
-        // remove defined classes
-        for (const v of val) {
-          !!v && elem.classList.remove(v);
-        }
-      } else if (act === 'toggle') {
-        // toggle defined classes
-        for (const v of val) {
-          !!v && elem.classList.toggle(v);
-        }
-      } else if (act === 'replace') {
-        // replace existing classes with new classes
-        elem.removeAttribute('class'); // or elem.classname='';
-        for (const v of val) {
-          !!v && elem.classList.add(v);
-        }
-      } else {
-        // add new classes to existing classes (default when no option is defined)
-        for (const v of val) {
-          !!v && elem.classList.add(v);
+      if (act !== 'arrange' && !Array.isArray(val)) {
+        this._printWarn(`dd-class="${attrVal}" -> The value must be an array for "${act}" action. Received: ${JSON.stringify(val)}.`);
+        continue;
+      }
+
+      if (act === 'arrange' && (typeof val !== 'object' || Array.isArray(val))) {
+        this._printWarn(`dd-class="${attrVal}" -> The value must be an object for "--arrange" option. Received: ${JSON.stringify(val)}.`);
+        continue;
+      }
+
+
+      /**
+        * Helper method to update classes on an element.
+        * @param {HTMLElement} elem - The target element.
+        * @param {Array} classes - The list of classes to update.
+        * @param {string} action - The action to perform ('add', 'remove', 'toggle').
+        */
+      function _updateClasses(elem, classes, action) {
+        for (const cls of classes) {
+          if (!cls) continue;
+          if (action === 'add') elem.classList.add(cls);
+          if (action === 'remove') elem.classList.remove(cls);
+          if (action === 'toggle') elem.classList.toggle(cls);
         }
       }
 
+      /**
+        * Handle the "--arrange" option for class management.
+        * @param {HTMLElement} elem - The target element.
+        * @param {Object} val - The object containing class operations, for example: {add: [], remove: [], toggle: [], replace: []}.
+        */
+      function _handleArrangeOption(elem, val) {
+        // Apply operations in the same order as properties are defined in `val`
+        for (const [action, classes] of Object.entries(val)) {
+          if (!Array.isArray(classes)) continue;
+
+          if (action === 'replace') {
+            elem.className = ''; // Clear all classes
+            _updateClasses(elem, classes, 'add');
+            continue;
+          }
+
+          if (action === 'add' || action === 'remove' || action === 'toggle') {
+            _updateClasses(elem, classes, action);
+          }
+        }
+      }
+
+      // Handle class operations
+      switch (act) {
+        case 'add':
+          _updateClasses(elem, val, 'add');
+          break;
+        case 'remove':
+          _updateClasses(elem, val, 'remove');
+          break;
+        case 'toggle':
+          _updateClasses(elem, val, 'toggle');
+          break;
+        case 'replace':
+          elem.className = ''; // Clear all classes
+          _updateClasses(elem, val, 'add');
+          break;
+        case 'arrange':
+          _handleArrangeOption(elem, val);
+          break;
+        default:
+          _updateClasses(elem, val, 'add'); // Default to 'add'
+          break;
+      }
     }
 
     this._debug('ddClass', '--------- ddClass (end) ------', 'navy', '#B6ECFF');
