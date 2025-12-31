@@ -516,18 +516,21 @@ class Auxiliary {
       }
       try { val = this[funcName](...funcArgs); }
       catch (err) { this._printError(`${err.message}. Check ${funcDef}`); }
+
     } else if (/^\$fridge\.[a-zA-Z0-9_$]+\(.*\)$/.test(base)) { // execute the $fridge function and get returned value --> $fridge = { func: () => {}}
       const funcDef = base.replace('$fridge.', '');
       const { funcName, funcArgs } = this._funcParse(funcDef, null, null);
       try { val = this.$fridge[funcName](...funcArgs); }
       catch (err) { this._printError(`${err.message}. Check $fridge.${funcDef}`); }
+
     } else if (/^\(.+\)$/.test(base)) { // get value from expression ( ... )
       const expression = base.replace(/^\(/, '').replace(/\)$/, ''); // remove round brackets ()
       if (expression.includes(' ? ') && expression.includes(' : ')) { val = this._solveTernary(expression); } // conditional (ternary) operator: this.isActive ? 'YES' : 'NO'
       else if (/(!==|!=|===|==|>=|<=|&&|\|\||>|<|!)/.test(expression)) { val = this._solveCondition(expression); } // condition with ! != !== == === > >= < <= && ||
+      else if (expression.includes('+') && (expression.includes("'") || expression.includes('"'))) { val = this._solveConcat(expression); } // string concatenation: $model.name + ' ' + $model.surname
       else if (/\+|\-|\*|\/|\%/.test(expression)) { val = this._solveMath(expression); } // math expression with + - * / %
-      else if (expression.includes('\' +') || expression.includes('+ \'')) { val = this._solveConcat(expression); } // string concatenation: $model.name + ' ' + $model.surname
       else { val = this._getControllerValue(expression); } // dd-text="($model.companies[0].name)" is same as dd-text="$model.companies[0].name"
+
     } else { // get value from the controller property
       const prop = base; // this.product -> product
       val = this._getControllerValue(prop);
