@@ -160,7 +160,7 @@ class HTTPClientFetch {
 
     while (answer && /^3\d{2}/.test(answer.status) && redirectCounter <= this.opts.maxRedirects) {
       const url_new = new URL(url, answer.res.headers.location);
-      console.log(`#${redirectCounter} redirection ${answer.status} from ${this.url} to ${url_new}`);
+      console.log(`#${redirectCounter} redirection ${answer.status} from ${url} to ${url_new}`);
 
       answer = await this.askOnce(url_new, method, bodyPayload);
       answers.push(answer);

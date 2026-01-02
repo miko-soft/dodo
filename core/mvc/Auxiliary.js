@@ -885,10 +885,12 @@ class Auxiliary {
         let func = this;
         let bindObj;
         for (const prop of propSplitted) {
+          if (func === null || func === undefined) { throw new Error(`"${funcName}" - property "${prop}" is undefined or null`); }
           func = func[prop];
-          if (typeof func === 'object') { bindObj = func; }
+          if (typeof func === 'object' && func !== null) { bindObj = func; }
         }
-        func = func.bind(bindObj); // bind the function to corresponding object, for example: $auth.logout() bind to $auth
+        if (typeof func !== 'function') { throw new Error(`"${funcName}" is not a function`); }
+        func = func.bind(bindObj); // bind the function to corresponding object, for example: $auth.logout() bind to $auth so that 'this' keyword works inside the function
 
         result = await func(...funcArgs);
 

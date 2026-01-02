@@ -57,16 +57,22 @@ class App extends Router {
    * @return {App}
    */
   auth($auth) {
-    // bindings because of this in Auth:login, logout, getLoggedUserInfo, etc methods, so the methods can be used in HTML, for example: dd-click="$auth.logout()"
-    for (const ctrlName of Object.keys(this.ctrls)) {
-      const $auth = this.ctrls[ctrlName]['$auth'];
-      $auth.login = $auth.login.bind($auth);
-      $auth.logout = $auth.logout.bind($auth);
-      $auth.getLoggedUserInfo = $auth.getLoggedUserInfo.bind($auth);
-      $auth.setLoggedUserInfo = $auth.setLoggedUserInfo.bind($auth);
-      $auth.getJWTtoken = $auth.getJWTtoken.bind($auth);
-    }
+    // Bind methods on the $auth instance so they can be used in HTML, for example: dd-click="$auth.logout()"
+    // Methods need to be bound to preserve 'this' context when called from HTML templates
+    $auth.login = $auth.login.bind($auth);
+    $auth.logout = $auth.logout.bind($auth);
+    $auth.getLoggedUserInfo = $auth.getLoggedUserInfo.bind($auth);
+    $auth.setLoggedUserInfo = $auth.setLoggedUserInfo.bind($auth);
+    $auth.getJWTtoken = $auth.getJWTtoken.bind($auth);
+
+    // Set in ctrlConstants so new controllers will get it via _saveController()
     this.ctrlConstants.$auth = $auth;
+
+    // Update existing controllers if any (in case auth() is called after routes())
+    for (const ctrlName of Object.keys(this.ctrls)) {
+      this.ctrls[ctrlName].$auth = $auth;
+    }
+
     return this;
   }
 
