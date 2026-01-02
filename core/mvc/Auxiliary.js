@@ -936,8 +936,8 @@ class Auxiliary {
 
     try {
       for (const func of pipeFuncs) {
-        const match = func.match(/(\w+)\((.*)\)/);
-        if (match) {
+        const match = func.match(/(\w+)\((.*)\)/); // null if no match or array if matched
+        if (match !== null) {
           const [_, methodName, args] = match;
           const methodArgs = args.split(',').map(arg => {
             arg = arg.trim();
@@ -968,7 +968,7 @@ class Auxiliary {
       return str;
 
     } catch (err) {
-      this._printError('_pipeExe:: Error in pipe execution', err);
+      this._printError(`_pipeExe:: Error in pipe execution: ${err.message}`);
       return '';
     }
   }
