@@ -372,7 +372,37 @@ class HTTPClient {
    */
   object2formdata(formObj) {
     const formData = new FormData();
-    for (const [key, val] of Object.entries(formObj)) { formData.set(key, val); }
+    for (const [key, val] of Object.entries(formObj)) {
+      // Skip null and undefined
+      if (val === null || val === undefined) {
+        continue;
+      }
+
+      // Handle FileList - iterate and append each File
+      if (val instanceof FileList) {
+        for (let i = 0; i < val.length; i++) {
+          formData.append(key, val[i]);
+        }
+      }
+      // Handle Arrays - append each item separately
+      else if (Array.isArray(val)) {
+        for (let i = 0; i < val.length; i++) {
+          formData.append(key, val[i]);
+        }
+      }
+      // Handle Date - convert to ISO string
+      else if (val instanceof Date) {
+        formData.set(key, val.toISOString());
+      }
+      // Handle plain objects - convert to JSON string
+      else if (typeof val === 'object' && val.constructor === Object) {
+        formData.set(key, JSON.stringify(val));
+      }
+      // Handle File, Blob, string, number, boolean - use directly
+      else {
+        formData.set(key, val);
+      }
+    }
     return formData;
   }
 
