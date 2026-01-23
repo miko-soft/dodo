@@ -273,10 +273,18 @@ class HTTPClient {
 
     // convert content string to object
     if (!!answer.res.content) {
-      try {
-        answer.res.content = JSON.parse(answer.res.content);
-      } catch (err) {
-        throw new Error('Response content is not valid JSON.');
+      if (typeof answer.res.content === 'string') {
+        // Only try to parse if it looks like JSON (starts with { or [)
+        const trimmed = answer.res.content.trim();
+        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+          try {
+            answer.res.content = JSON.parse(answer.res.content);
+          } catch (err) {
+            throw new Error('Response content is not valid JSON.');
+          }
+        } else {
+          throw new Error('Response content is not valid JSON.');
+        }
       }
     }
 
@@ -340,12 +348,17 @@ class HTTPClient {
     const answer = await this.askOnce(url, 'POST', formData);
 
     // convert content string to object
-    if (!!answer.res.content) {
-      try {
-        answer.res.content = JSON.parse(answer.res.content);
-      } catch (err) {
-        console.log('WARNING: Response content is not JSON.');
+    if (!!answer.res.content && typeof answer.res.content === 'string') {
+      // Only try to parse if it looks like JSON (starts with { or [)
+      const trimmed = answer.res.content.trim();
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try {
+          answer.res.content = JSON.parse(answer.res.content);
+        } catch (err) {
+          console.log('WARNING: Response content is not JSON.');
+        }
       }
+      // If it's a string but doesn't look like JSON, leave it as is
     }
 
     return answer;
