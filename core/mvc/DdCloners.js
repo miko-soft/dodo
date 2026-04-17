@@ -51,12 +51,16 @@ class DdCloners extends DdListeners {
       this._delDdRender(clonedElem, 'disabled');
 
       const outerHTML = clonedElem.outerHTML;
+      const uid = elem.getAttribute('dd-id');
 
       let html = '';
       baseVal.forEach((val, key) => {
         let html_solved = '';
         html_solved = this._solveMustache(outerHTML, { [valName]: val, [keyName]: key }); // replace mustaches in outerHTML --> {{val}} {{key}} with string
         html_solved = this._solveDoubledollar(html_solved, base, valName, key); // replace doubledollar in outerHTML -->  $$val with current iteration object
+        html_solved = this._solveEach2(html_solved, base, valName, key); // resolve dd-each2 attribute bases to absolute controller paths
+        html_solved = this._resolveUids(html_solved); // fresh dd-id per iteration so inner dd-each2 clones don't collide across rows
+        html_solved = html_solved.replace(/^(<[^>]+?)dd-id="[^"]*"/, `$1dd-id="${uid}"`); // restore root clone's dd-id so _clone_remove can find it on re-render
         html += html_solved;
       });
 
@@ -66,6 +70,77 @@ class DdCloners extends DdListeners {
 
   }
 
+
+
+  /**
+   * dd-each2="outerVal.subArrayProp --val,key"
+   *  Iterate a sub-array that is a property of the current outer dd-each item.
+   *  Must be called after ddEach(). dd-each2 attribute bases are resolved to absolute controller paths by ddEach before this runs.
+   * Example: dd-each2="user.companies --company,key"
+   * @param {string} modelName - model name of the outer dd-each, for example 'users'
+   */
+  ddEach2(modelName) {
+    this._debug('ddEach2', `--------- ddEach2 (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-each2';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddEach2', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const baseVal = this._solveBase(base);
+      if (!baseVal) { this._printError(`The ${base} has undefined value in dd-each2="${attrVal}"`); continue; }
+      if (!Array.isArray(baseVal)) { this._printError(`The ${base} value in dd-each2="${attrVal}" is not an array.`); continue; }
+      this.$debugOpts?.ddEach2 && console.log(`\nddEach2:: attrVal:: ${attrVal} , base:: ${base} -->`, baseVal);
+
+      const [valName, keyName] = opts.length ? opts[0].split(',').map(v => v.trim()) : [];
+      if (!this._isValidVariableName(valName)) { this._printError(`dd-each2="${attrVal}" has invalid valName:${valName}`); continue; }
+      if (!this._isValidVariableName(keyName)) { this._printError(`dd-each2="${attrVal}" has invalid keyName:${keyName}`); continue; }
+
+      this._clone_remove(elem, attrName);
+      this._setDdRender(elem, 'disabled');
+      const clonedElem = this._clone_define(elem, attrName, attrVal);
+      this._elemShow(clonedElem, attrName);
+      this._setDdRender(clonedElem, 'enabled');
+      this._delDdRender(clonedElem, 'disabled');
+
+      const outerHTML = clonedElem.outerHTML;
+
+      let html = '';
+      baseVal.forEach((val, key) => {
+        let html_solved = '';
+        html_solved = this._solveMustache(outerHTML, { [valName]: val, [keyName]: key });
+        html_solved = this._solveDoubledollar(html_solved, base, valName, key);
+        html += html_solved;
+      });
+
+      elem.insertAdjacentHTML('afterend', html);
+    }
+
+    this._debug('ddEach2', '--------- ddEach2 (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+  /**
+   * Resolve dd-each2 attribute bases from outer-loop-alias form to absolute controller paths.
+   * Called inside ddEach's forEach so ddEach2 can later resolve them via _solveBase.
+   * Example: "user.companies --company,key" with outerBase="$model.users", outerValName="user", outerKey=0
+   *       → "this.$model.users[0].companies --company,key"
+   */
+  _solveEach2(html, outerBase, outerValName, outerKey) {
+    const absBase = /^this\./.test(outerBase)
+      ? `${outerBase}[${outerKey}]`
+      : `this.${outerBase}[${outerKey}]`;
+    return html.replace(/dd-each2="([^"]+)"/g, (_match, attrVal) => {
+      const dashIdx = attrVal.indexOf(' --');
+      const base = dashIdx >= 0 ? attrVal.slice(0, dashIdx).trim() : attrVal.trim();
+      const opts = dashIdx >= 0 ? attrVal.slice(dashIdx) : '';
+      const reg = new RegExp(`^(this\\.)?${outerValName}\\.`);
+      const newBase = base.replace(reg, `${absBase}.`);
+      return `dd-each2="${newBase}${opts}"`;
+    });
+  }
 
 
   /**

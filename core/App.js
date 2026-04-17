@@ -290,6 +290,7 @@ class App extends Router {
 
       /* cloner directives */
       'dd-each',
+      'dd-each2',
       'dd-repeat'
     ];
     const directives_hide = directives.map(directive => `[${directive}-hide]`);

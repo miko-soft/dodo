@@ -475,7 +475,7 @@ class Auxiliary {
     const flattenedObj = this._flattenObject(obj); // dd-each="companies --company.key" will give flattenedObj::{'company.name': 'Cloud Ltd', 'company.employers': 125, key: 11}
     return txt.replace(/{{\s*([^{}\s]+)\s*}}/g, (match, objProperty) => {
       const value = flattenedObj[objProperty];
-      return value !== undefined && value !== null ? value : ''; // on null or undefined return empty string
+      return value !== undefined && value !== null ? value : match; // preserve unknown mustaches for inner loops (e.g. dd-each2)
     });
   }
 
@@ -999,6 +999,18 @@ class Auxiliary {
   _uid(elem) {
     const uid = this._uid_generate();
     elem.setAttribute('dd-id', uid);
+  }
+
+  /**
+   * Replace every dd-id value in an HTML string with a fresh unique ID.
+   * Needed when ddEach clones a template for multiple iterations — inner dd-each2
+   * elements would otherwise share the same dd-id across rows, causing _clone_remove
+   * to delete sibling-row clones.
+   * @param {string} html
+   * @returns {string}
+   */
+  _resolveUids(html) {
+    return html.replace(/dd-id="[^"]*"/g, () => `dd-id="${this._uid_generate()}"`);
   }
 
 

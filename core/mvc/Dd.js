@@ -33,6 +33,7 @@ class Dd extends DdCloners {
       ],
       cloner_directives: [
         'dd-each',
+        'dd-each2',
         'dd-repeat'
       ]
     };
