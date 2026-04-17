@@ -282,6 +282,31 @@ class View extends Dd {
 
 
   /**
+   * Remove all <link rel="stylesheet"> tags from <head>.
+   * Useful during route transitions to clean up all dynamically loaded stylesheets at once.
+   */
+  unloadAllCSS() {
+    const elems = document.head.querySelectorAll('link[rel="stylesheet"]') || [];
+    for (const elem of elems) {
+      if (!!elem) { elem.remove(); }
+    }
+  }
+
+
+  /**
+   * Set a CSS custom property (variable) on :root or a specific element.
+   * @param {string} varName - CSS variable name, e.g. '--primary-color'
+   * @param {string} value - value to set, e.g. '#3498db'
+   * @param {string} scope - CSS selector of the scoped element; defaults to ':root'
+   */
+  setCSSVar(varName, value, scope = ':root') {
+    const elem = document.querySelector(scope);
+    if (!elem) { throw new Error(`Element not found for scope: "${scope}"`); }
+    elem.style.setProperty(varName, value);
+  }
+
+
+  /**
    * Add, remove or toggle CSS classes on elements matched by the CSS selector.
    * @param {string} cssSelector - CSS selector of the element
    * @param {string} classNames - array of class names to add, remove or toggle
@@ -353,9 +378,84 @@ class View extends Dd {
   }
 
 
+  /**
+   * Set the favicon by removing all existing favicon tags and adding a new <link rel="icon">.
+   * Removes: rel="icon", rel="shortcut icon", rel="apple-touch-icon", rel="apple-touch-icon-precomposed".
+   * @param {string} url - favicon URL, e.g. '/public/img/favicon.png'
+   */
+  setFavicon(url) {
+    const selectors = ['link[rel="icon"]', 'link[rel="shortcut icon"]', 'link[rel="apple-touch-icon"]', 'link[rel="apple-touch-icon-precomposed"]'];
+    for (const sel of selectors) {
+      document.head.querySelectorAll(sel).forEach(el => el.remove());
+    }
+    const link = document.createElement('link');
+    link.setAttribute('rel', 'icon');
+    link.setAttribute('href', url);
+    document.head.appendChild(link);
+  }
+
+
+  /**
+   * Add or update a <meta> tag in <head>. Supports both name= and property= attributes (e.g. Open Graph).
+   * @param {string} nameOrProperty - meta name or property, e.g. 'robots' or 'og:image'
+   * @param {string} content - meta content value
+   */
+  setMetaTag(nameOrProperty, content) {
+    let elem = document.head.querySelector(`meta[name="${nameOrProperty}"]`) ||
+               document.head.querySelector(`meta[property="${nameOrProperty}"]`);
+    if (!elem) {
+      elem = document.createElement('meta');
+      const attr = nameOrProperty.includes(':') ? 'property' : 'name';
+      elem.setAttribute(attr, nameOrProperty);
+      document.head.appendChild(elem);
+    }
+    elem.setAttribute('content', content);
+  }
+
+
+  /**
+   * Remove a <meta> tag from <head> by name or property.
+   * @param {string} nameOrProperty - meta name or property, e.g. 'robots' or 'og:image'
+   */
+  removeMetaTag(nameOrProperty) {
+    const elem = document.head.querySelector(`meta[name="${nameOrProperty}"]`) ||
+                 document.head.querySelector(`meta[property="${nameOrProperty}"]`);
+    if (!!elem) { elem.remove(); }
+  }
+
+
 
 
   /***** MISC *****/
+  /**
+   * Scroll the window or a scrollable container to the element matched by cssSelector.
+   * @param {string} cssSelector - CSS selector of the target element
+   * @param {object} opts - ScrollIntoViewOptions, e.g. { behavior: 'smooth', block: 'start' }
+   */
+  scrollTo(cssSelector, opts = { behavior: 'smooth', block: 'start' }) {
+    const elem = document.querySelector(cssSelector);
+    if (!elem) { this._printWarn(`scrollTo: element not found for selector "${cssSelector}"`); return; }
+    elem.scrollIntoView(opts);
+  }
+
+
+  /**
+   * Add a <link rel="preload"> resource hint to <head> for performance optimisation.
+   * @param {string} url - resource URL, e.g. '/fonts/app.woff2'
+   * @param {string} type - resource type: 'font' | 'image' | 'style' | 'script' | 'fetch' | ...
+   */
+  preloadLink(url, type) {
+    const existing = document.head.querySelector(`link[rel="preload"][href="${url}"]`);
+    if (existing) { return; }
+    const link = document.createElement('link');
+    link.setAttribute('rel', 'preload');
+    link.setAttribute('href', url);
+    link.setAttribute('as', type);
+    if (type === 'font') { link.setAttribute('crossorigin', 'anonymous'); }
+    document.head.appendChild(link);
+  }
+
+
   /**
    * Fetch HTML, CSS or JS content by sending a HTTP request to the server.
    * @param {string} contentUrl - URL: http://localhost:4400/views/pages/home/main.html
