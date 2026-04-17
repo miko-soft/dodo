@@ -57,7 +57,7 @@ class View extends Dd {
 
     } else if (dest === 'sibling') {
       elem.insertAdjacentHTML('afterend', htmlstr);
-      elem.nextSibling.setAttribute('dd-view-clone', viewName);
+      elem.nextElementSibling.setAttribute('dd-view-clone', viewName);
 
     } else if (dest === 'prepend') {
       elem.insertAdjacentHTML('afterbegin', htmlstr);

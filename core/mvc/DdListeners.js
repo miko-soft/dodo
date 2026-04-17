@@ -174,7 +174,7 @@ class DdListeners extends Auxiliary {
       const eventName = 'input';
       elem.addEventListener(eventName, handler);
       this.$dd.listeners.push({ attrName, elem, handler, eventName });
-      this._debug('ddModel', `pushed::  tag: ${elem.localName} | dd-set="${attrVal}" | ctrl="${this.constructor.name}" | ddListeners: ${this.$dd.listeners.length}`, 'orange');
+      this._debug('ddModel', `pushed::  tag: ${elem.localName} | dd-model="${attrVal}" | ctrl="${this.constructor.name}" | ddListeners: ${this.$dd.listeners.length}`, 'orange');
     }
   }
 

@@ -554,7 +554,7 @@ class Auxiliary {
         val += part.replace(/^'/, '').replace(/'$/, '');
       } else {
         const ctrlVal = this._getControllerValue(part);
-        val += ctrlVal;
+        val += ctrlVal ?? '';
       }
     }
     return val;

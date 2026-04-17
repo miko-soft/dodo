@@ -51,7 +51,7 @@ class Form extends Auxiliary {
       } else if (elem.type === 'checkbox') { // CHECKBOX
         elem.checked = false;
         elem.removeAttribute('checked');
-        if (typeof val !== 'boolean' && val?.includes(elem.value)) {
+        if (typeof val !== 'boolean' && Array.isArray(val) && val.includes(elem.value)) {
           elem.checked = true;
           elem.setAttribute('checked', '');
         } else if (typeof val === 'boolean') {
@@ -221,7 +221,7 @@ class Form extends Auxiliary {
    */
   getAllControls(convertType = true) {
     let elems = document.querySelectorAll(`[dd-form="${this.formName}"] input,[dd-form="${this.formName}"] select,[dd-form="${this.formName}"] textarea`);
-    if (!elems) { return; }
+    if (!elems.length) { return; }
     elems = Array.from(elems);
     const keys = elems
       .map(elem => elem.getAttribute('name'))
@@ -287,7 +287,7 @@ class Form extends Auxiliary {
    */
   delAllControls() {
     let elems = document.querySelectorAll(`[dd-form="${this.formName}"] input,[dd-form="${this.formName}"] select,[dd-form="${this.formName}"] textarea`);
-    if (!elems) { return; }
+    if (!elems.length) { return; }
     elems = Array.from(elems);
     const keys = elems
       .map(elem => elem.getAttribute('name'))

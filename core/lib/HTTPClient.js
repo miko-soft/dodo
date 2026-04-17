@@ -215,7 +215,7 @@ class HTTPClient {
 
     while (!!answer && /^3\d{2}/.test(answer.status) && redirectCounter <= this.opts.maxRedirects) { // 300, 301, 302, ...
 
-      const url_new = new URL(url, answer.res.headers.location); // redirected URL is in 'location' header
+      const url_new = new URL(answer.res.headers.location, url); // redirected URL is in 'location' header
       console.log(`#${redirectCounter} redirection ${answer.status} from ${this.url} to ${url_new}`);
 
       answer = await this.askOnce(url_new, method, bodyPayload); // repeat request with new url
@@ -489,7 +489,7 @@ class HTTPClient {
       const splited = headerFull.split(':');
       const prop = splited[0];
       if (prop) {
-        const val = splited[1].trim();
+        const val = splited[1] != null ? splited[1].trim() : '';
         headersObj[prop] = val;
       }
     });

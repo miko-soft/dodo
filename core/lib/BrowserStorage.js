@@ -23,7 +23,7 @@ class BrowserStorage {
    * @param {any} value - storage value
    */
   put(name, value) {
-    if (value === undefined || value === null || value === NaN) { throw new Error(`ERR BrowserStorage::put() - The "${name}" value is undefined, null or NaN`); }
+    if (value === undefined || value === null || Number.isNaN(value)) { throw new Error(`ERR BrowserStorage::put() - The "${name}" value is undefined, null or NaN`); }
     this.storage.setItem(name, value);
   }
 

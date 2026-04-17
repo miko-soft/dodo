@@ -65,7 +65,7 @@ class AppOne {
    * @param {class} Ctrl - controller class
    */
   controller(Ctrl) {
-    if (!Ctrl) { throw new Error(`Controller "${Ctrl.name}" is not defined or not injected in the App.`); }
+    if (!Ctrl) { throw new Error(`Controller is not defined or not injected in the App.`); }
 
     const ctrl = new Ctrl(this);
     const controllerMdw = ctrl.controllerMdw.bind(ctrl);

@@ -206,9 +206,9 @@ class Router {
       return true;
     }
 
-    if (!!value && !isNaN(value) && value.indexOf('.') === -1) { // convert string into integer (12)
+    if (!!value && typeof value === 'string' && !isNaN(value) && value.indexOf('.') === -1) { // convert string into integer (12)
       value = parseInt(value, 10);
-    } else if (!!value && !isNaN(value) && value.indexOf('.') !== -1) { // convert string into float (12.35)
+    } else if (!!value && typeof value === 'string' && !isNaN(value) && value.indexOf('.') !== -1) { // convert string into float (12.35)
       value = parseFloat(value);
     } else if (value === 'true' || value === 'false') { // convert string into boolean (true)
       value = JSON.parse(value);
@@ -230,12 +230,13 @@ class Router {
     const queryArr = queryString.split('&');
     const queryObject = {};
 
-    let eqParts, property, value;
+    let property, value;
     queryArr.forEach(elem => {
-      eqParts = elem.split('='); // equotion parts
-      property = eqParts[0];
-      value = eqParts[1];
+      const eqIdx = elem.indexOf('=');
+      property = eqIdx !== -1 ? elem.slice(0, eqIdx) : elem;
+      value = eqIdx !== -1 ? elem.slice(eqIdx + 1) : undefined;
 
+      if (!property) { return; } // skip empty keys (e.g. leading & or &&)
       value = this._stringTypeConvert(value); // t y p e   c o n v e r s i o n
 
       queryObject[property] = value;

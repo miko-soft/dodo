@@ -159,7 +159,7 @@ class HTTPClientFetch {
     let redirectCounter = 1;
 
     while (answer && /^3\d{2}/.test(answer.status) && redirectCounter <= this.opts.maxRedirects) {
-      const url_new = new URL(url, answer.res.headers.location);
+      const url_new = new URL(answer.res.headers.location, url);
       console.log(`#${redirectCounter} redirection ${answer.status} from ${url} to ${url_new}`);
 
       answer = await this.askOnce(url_new, method, bodyPayload);
@@ -356,7 +356,7 @@ class HTTPClientFetch {
       const splited = headerFull.split(':');
       const prop = splited[0];
       if (prop) {
-        const val = splited[1].trim();
+        const val = splited[1] != null ? splited[1].trim() : '';
         headersObj[prop] = val;
       }
     });
