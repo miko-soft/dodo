@@ -70,7 +70,8 @@ class View extends Dd {
   }
 
   /**
-   * Load the view marked with the dd-selfview attribute. This process hides all elements with with dd-... attributes.
+   * Load the view marked with the dd-selfview attribute.
+   * Initially this directive hides all elements with dd-... attributes within the dd-selfview element.
    * Mostly used in AppOne applications.
    * This method should be used in the controller's __loader() hook.
    * @returns {void}
@@ -402,7 +403,7 @@ class View extends Dd {
    */
   setMetaTag(nameOrProperty, content) {
     let elem = document.head.querySelector(`meta[name="${nameOrProperty}"]`) ||
-               document.head.querySelector(`meta[property="${nameOrProperty}"]`);
+      document.head.querySelector(`meta[property="${nameOrProperty}"]`);
     if (!elem) {
       elem = document.createElement('meta');
       const attr = nameOrProperty.includes(':') ? 'property' : 'name';
@@ -419,7 +420,7 @@ class View extends Dd {
    */
   removeMetaTag(nameOrProperty) {
     const elem = document.head.querySelector(`meta[name="${nameOrProperty}"]`) ||
-                 document.head.querySelector(`meta[property="${nameOrProperty}"]`);
+      document.head.querySelector(`meta[property="${nameOrProperty}"]`);
     if (!!elem) { elem.remove(); }
   }
 

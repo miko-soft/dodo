@@ -29,11 +29,20 @@ class Dd extends DdCloners {
         'dd-class',
         'dd-style',
         'dd-src',
+        'dd-label',
         'dd-attr',
+        'dd-readonly',
+        'dd-required',
+        'dd-placeholder',
+        'dd-title',
+        'dd-data',
+        'dd-min',
+        'dd-max',
       ],
       cloner_directives: [
         'dd-each',
         'dd-each2',
+        'dd-entries',
         'dd-repeat'
       ]
     };
@@ -642,6 +651,226 @@ class Dd extends DdCloners {
     this._debug('ddAttr', '--------- ddAttr (end) ------', 'navy', '#B6ECFF');
   }
 
+
+  /**
+   * dd-readonly="controllerProperty" | dd-readonly="controllerMethod()"
+   *  Toggle the readonly attribute on the HTML element.
+   * Examples:
+   * dd-readonly="isReadonly"
+   * dd-readonly="$model.formLocked"
+   * dd-readonly="(!$model.isEditable)"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddReadonly(modelName) {
+    this._debug('ddReadonly', `--------- ddReadonly (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-readonly';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddReadonly', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base } = this._decomposeAttribute(attrVal);
+      const val = this._solveBase(base);
+      this._debug('ddReadonly', `dd-readonly="${attrVal}" :: ${base} = ${val}`, 'navy');
+
+      elem.readOnly = !!val;
+
+      this._elemShow(elem, attrName);
+    }
+
+    this._debug('ddReadonly', '--------- ddReadonly (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+  /**
+   * dd-required="controllerProperty" | dd-required="controllerMethod()"
+   *  Toggle the required attribute on the HTML element.
+   * Examples:
+   * dd-required="isRequired"
+   * dd-required="$model.fieldRequired"
+   * dd-required="(!!$model.requireAll)"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddRequired(modelName) {
+    this._debug('ddRequired', `--------- ddRequired (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-required';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddRequired', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base } = this._decomposeAttribute(attrVal);
+      const val = this._solveBase(base);
+      this._debug('ddRequired', `dd-required="${attrVal}" :: ${base} = ${val}`, 'navy');
+
+      elem.required = !!val;
+
+      this._elemShow(elem, attrName);
+    }
+
+    this._debug('ddRequired', '--------- ddRequired (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+  /**
+   * dd-placeholder="controllerProperty" | dd-placeholder="controllerMethod()"
+   *  Set the placeholder attribute on an input or textarea element.
+   * Examples:
+   * dd-placeholder="$model.inputHint"
+   * dd-placeholder="getPlaceholder()"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddPlaceholder(modelName) {
+    this._debug('ddPlaceholder', `--------- ddPlaceholder (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-placeholder';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddPlaceholder', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base } = this._decomposeAttribute(attrVal);
+      const val = this._solveBase(base);
+      this._debug('ddPlaceholder', `dd-placeholder="${attrVal}" :: ${base} = ${val}`, 'navy');
+
+      if (val === undefined || val === null) { this._elemShow(elem, attrName); continue; }
+      elem.setAttribute('placeholder', val);
+
+      this._elemShow(elem, attrName);
+    }
+
+    this._debug('ddPlaceholder', '--------- ddPlaceholder (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+  /**
+   * dd-title="controllerProperty" | dd-title="controllerMethod()"
+   *  Set the title (tooltip) attribute on any HTML element.
+   * Examples:
+   * dd-title="$model.tooltipText"
+   * dd-title="getTooltip()"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddTitle(modelName) {
+    this._debug('ddTitle', `--------- ddTitle (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-title';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddTitle', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base } = this._decomposeAttribute(attrVal);
+      const val = this._solveBase(base);
+      this._debug('ddTitle', `dd-title="${attrVal}" :: ${base} = ${val}`, 'navy');
+
+      if (val === undefined || val === null) { this._elemShow(elem, attrName); continue; }
+      elem.setAttribute('title', val);
+
+      this._elemShow(elem, attrName);
+    }
+
+    this._debug('ddTitle', '--------- ddTitle (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+  /**
+   * dd-data="controllerProperty --<dataName>" | dd-data="controllerMethod() --<dataName>"
+   *  Sets a data-* attribute with the controller property value.
+   *  The option suffix is the data attribute name WITHOUT the "data-" prefix.
+   * Examples:
+   * dd-data="$model.productId --product-id"   --> sets data-product-id
+   * dd-data="$model.userId --user-id"         --> sets data-user-id
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddData(modelName) {
+    this._debug('ddData', `--------- ddData (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-data';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddData', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const val = this._solveBase(base);
+      const dataSuffix = opts[0] || '';
+      this._debug('ddData', `dd-data="${attrVal}" :: ${base} = ${val} | dataSuffix:: ${dataSuffix}`, 'navy');
+
+      this._elemShow(elem, attrName);
+
+      if (val === undefined || val === null) { continue; }
+      if (!dataSuffix) { this._printWarn(`dd-data="${attrVal}" -> The data attribute name is not defined in option (e.g. --product-id).`); continue; }
+
+      elem.setAttribute('data-' + dataSuffix, val);
+    }
+
+    this._debug('ddData', '--------- ddData (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+  /**
+   * dd-min="controllerProperty" | dd-min="controllerMethod()"
+   *  Set the min attribute on input[type=number], input[type=range] or input[type=date].
+   * Examples:
+   * dd-min="$model.limits.min"
+   * dd-min="getMin()"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddMin(modelName) {
+    this._debug('ddMin', `--------- ddMin (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-min';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddMin', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base } = this._decomposeAttribute(attrVal);
+      const val = this._solveBase(base);
+      this._debug('ddMin', `dd-min="${attrVal}" :: ${base} = ${val}`, 'navy');
+
+      if (val === undefined || val === null) { this._elemShow(elem, attrName); continue; }
+      elem.setAttribute('min', val);
+
+      this._elemShow(elem, attrName);
+    }
+
+    this._debug('ddMin', '--------- ddMin (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+  /**
+   * dd-max="controllerProperty" | dd-max="controllerMethod()"
+   *  Set the max attribute on input[type=number], input[type=range] or input[type=date].
+   * Examples:
+   * dd-max="$model.limits.max"
+   * dd-max="getMax()"
+   * @param {string} modelName - model name, for example in $model.users the model name is 'users'
+   */
+  ddMax(modelName) {
+    this._debug('ddMax', `--------- ddMax (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-max';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddMax', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base } = this._decomposeAttribute(attrVal);
+      const val = this._solveBase(base);
+      this._debug('ddMax', `dd-max="${attrVal}" :: ${base} = ${val}`, 'navy');
+
+      if (val === undefined || val === null) { this._elemShow(elem, attrName); continue; }
+      elem.setAttribute('max', val);
+
+      this._elemShow(elem, attrName);
+    }
+
+    this._debug('ddMax', '--------- ddMax (end) ------', 'navy', '#B6ECFF');
+  }
 
 
 
