@@ -71,7 +71,6 @@ class DdCloners extends DdListeners {
   }
 
 
-
   /**
    * dd-each2="outerVal.subArrayProp --val,key"
    *  Iterate a sub-array that is a property of the current outer dd-each item.
@@ -119,6 +118,62 @@ class DdCloners extends DdListeners {
     }
 
     this._debug('ddEach2', '--------- ddEach2 (end) ------', 'navy', '#B6ECFF');
+  }
+
+
+  /**
+   * dd-entries="controllerProperty --key,val" | dd-entries="controllerMethod() --key,val"
+   *  Generate multiple HTML elements by iterating Object.entries() of a plain object stored in a controller property.
+   *  Use dd-each for arrays; use dd-entries for plain objects.
+   * Examples:
+   * dd-entries="myObj --key,val" or dd-entries="this.myObj --key,val"
+   * dd-entries="$model.config --key,val"
+   * dd-entries="getMetadata() --key,val"
+   * @param {string} modelName - model name, for example in $model.config the model name is 'config'
+   */
+  ddEntries(modelName) {
+    this._debug('ddEntries', `--------- ddEntries (start) -modelName:${modelName} ------`, 'navy', '#B6ECFF');
+
+    const attrName = 'dd-entries';
+    const elems = this._listElements(attrName, modelName);
+    this._debug('ddEntries', `found elements:: ${elems.length}`, 'navy');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const baseVal = this._solveBase(base);
+      if (!baseVal) { this._printError(`The ${base} has undefined value in dd-entries="${attrVal}"`); continue; }
+      if (Array.isArray(baseVal) || typeof baseVal !== 'object') { this._printError(`The ${base} value in dd-entries="${attrVal}" is not a plain object. Use dd-each for arrays.`); continue; }
+      this.$debugOpts?.ddEntries && console.log(`\nddEntries:: attrVal:: ${attrVal} , base:: ${base} -->`, baseVal);
+
+      const [keyName, valName] = opts.length ? opts[0].split(',').map(v => v.trim()) : [];
+      if (!this._isValidVariableName(keyName)) { this._printError(`dd-entries="${attrVal}" has invalid keyName:${keyName}`); continue; }
+      if (!this._isValidVariableName(valName)) { this._printError(`dd-entries="${attrVal}" has invalid valName:${valName}`); continue; }
+
+      this._clone_remove(elem, attrName);
+      this._setDdRender(elem, 'disabled');
+      const clonedElem = this._clone_define(elem, attrName, attrVal);
+      this._elemShow(clonedElem, attrName);
+      this._setDdRender(clonedElem, 'enabled');
+      this._delDdRender(clonedElem, 'disabled');
+
+      const outerHTML = clonedElem.outerHTML;
+      const uid = elem.getAttribute('dd-id');
+
+      let html = '';
+      Object.entries(baseVal).forEach(([key, val], idx) => {
+        const valStr = (typeof val === 'object' && val !== null) ? this._val2str(val) : val;
+        let html_solved = this._solveMustache(outerHTML, { [keyName]: key, [valName]: valStr });
+        html_solved = this._solveDoubledollar(html_solved, base, valName, idx);
+        html_solved = this._resolveUids(html_solved);
+        html_solved = html_solved.replace(/^(<[^>]+?)dd-id="[^"]*"/, `$1dd-id="${uid}"`);
+        html += html_solved;
+      });
+
+      elem.insertAdjacentHTML('afterend', html);
+    }
+
+    this._debug('ddEntries', '--------- ddEntries (end) ------', 'navy', '#B6ECFF');
   }
 
 

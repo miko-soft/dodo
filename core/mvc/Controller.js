@@ -102,6 +102,7 @@ class Controller extends Model {
     /* DdCloners.js */
     this.ddEach(modelName);
     this.ddEach2(modelName);
+    this.ddEntries(modelName);
     this.ddRepeat(modelName);
 
     /* Dd.js */
@@ -119,6 +120,13 @@ class Controller extends Model {
     this.ddSrc(modelName);
     this.ddLabel(modelName);
     this.ddAttr(modelName);
+    this.ddReadonly(modelName);
+    this.ddRequired(modelName);
+    this.ddPlaceholder(modelName);
+    this.ddTitle(modelName);
+    this.ddData(modelName);
+    this.ddMin(modelName);
+    this.ddMax(modelName);
     // switchers
     this.ddIf(modelName);
     this.ddVisible(modelName);
