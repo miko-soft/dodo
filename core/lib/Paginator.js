@@ -19,10 +19,11 @@ class Paginator {
    */
   page(currentPage, itemsTotal, itemsPerPage) {
     currentPage = +currentPage; // convert to number
+    if (!itemsPerPage || itemsPerPage <= 0) { throw new Error('itemsPerPage must be a positive number'); }
     const pagesTotal = Math.ceil(itemsTotal / itemsPerPage); // define total number of pages
 
     // define pagination numbers that will be shown from start to end
-    const half = Math.ceil(this.linksSize / 2);
+    const half = Math.floor(this.linksSize / 2);
     let istart;
     let iend;
     if (pagesTotal >= this.linksSize) {

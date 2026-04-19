@@ -51,7 +51,7 @@ class Form extends Auxiliary {
       } else if (elem.type === 'checkbox') { // CHECKBOX
         elem.checked = false;
         elem.removeAttribute('checked');
-        if (typeof val !== 'boolean' && Array.isArray(val) && val.includes(elem.value)) {
+        if (Array.isArray(val) && val.includes(elem.value)) {
           elem.checked = true;
           elem.setAttribute('checked', '');
         } else if (typeof val === 'boolean') {
@@ -97,7 +97,7 @@ class Form extends Auxiliary {
         if (typeof val === 'object') { val = JSON.stringify(val, null, 2); }
         elem.value = val;
 
-      } else { // ALL OTHER: select-one
+      } else { // ALL OTHER: date, email, tel, range, color, etc.
         elem.value = val;
         elem.setAttribute('value', val);
       }
@@ -250,7 +250,7 @@ class Form extends Auxiliary {
         elem.removeAttribute('checked');
 
       } else if (elem.type === 'select-one' || elem.type === 'select-multiple') {
-        const options = elem; // all options
+        const options = elem.options; // all options
         for (const option of options) {
           option.selected = false;
           option.removeAttribute('selected');

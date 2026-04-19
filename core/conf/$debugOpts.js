@@ -11,7 +11,7 @@ const $debugOpts = {
   // View.js
   loadView: false,
   loadSelfview: false,
-  unloadView: false,
+  emptyView: false,
   ddLazyjs: false,
 
   // Dd.js
@@ -30,11 +30,19 @@ const $debugOpts = {
   ddSrc: false,
   ddLabel: false,
   ddAttr: false,
+  ddReadonly: false,
+  ddRequired: false,
+  ddPlaceholder: false,
+  ddTitle: false,
+  ddData: false,
+  ddMin: false,
+  ddMax: false,
 
   // DdCloners.js
   ddEach: false,
+  ddEach2: false,
+  ddEntries: false,
   ddRepeat: false,
-  ddMustache: false,
 
   // DdListeners.js
   ddUNLISTEN: false,
@@ -45,7 +53,10 @@ const $debugOpts = {
   ddEnter: false,
   ddKeyup: false,
   ddChange: false,
-  ddEvt: false
+  ddEvt: false,
+  ddOutclick: false,
+  ddIntersect: false,
+  ddSwipe: false
 };
 
 export { $debugOpts };
