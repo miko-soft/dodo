@@ -292,7 +292,20 @@ class App extends Router {
       'dd-each',
       'dd-each2',
       'dd-entries',
-      'dd-repeat'
+      'dd-repeat',
+
+      /* listener directives */
+      'dd-href',
+      'dd-set',
+      'dd-model',
+      'dd-click',
+      'dd-enter',
+      'dd-keyup',
+      'dd-change',
+      'dd-evt',
+      'dd-outclick',   // click outside element (dropdowns, modals, tooltips)
+      'dd-intersect',  // IntersectionObserver — viewport entry (lazy load, scroll animations)
+      'dd-swipe',      // touch swipe direction (carousels, side drawers)
     ];
     const directives_hide = directives.map(directive => `[${directive}-hide]`);
     const cssSelectors = directives_hide.join(',');

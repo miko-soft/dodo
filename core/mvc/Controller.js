@@ -147,6 +147,9 @@ class Controller extends Model {
     this.ddKeyup();
     this.ddChange();
     this.ddEvt();
+    this.ddOutclick();   // fires when user clicks outside the element (dropdowns, modals, tooltips)
+    this.ddIntersect();  // fires when element enters viewport via IntersectionObserver (lazy load, scroll animations)
+    this.ddSwipe();      // fires on touch swipe with optional direction filter (carousels, side drawers)
 
     this._debug('render', `--------- render (end) -- ctrl: ${this.constructor.name} ------`, 'green', '#D9FC9B');
   }

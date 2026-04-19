@@ -27,6 +27,11 @@ class DdListeners extends Auxiliary {
     }
 
     this.$dd.listeners = [];
+
+    // disconnect IntersectionObservers registered by ddIntersect()
+    for (const obs of (this.$dd.observers || [])) { obs.disconnect(); }
+    this.$dd.observers = [];
+
     this._debug('ddUNLISTEN', '------- ddUNLISTEN (end) -------', 'orange', '#FFD8B6');
   }
 
@@ -359,6 +364,175 @@ class DdListeners extends Auxiliary {
 
   }
 
+
+
+
+
+  /**
+   * dd-outclick="<controllerMethod | expression> [--preventDefault]"
+   *  Execute a controller method when the user clicks OUTSIDE the element.
+   *
+   *  WHEN TO USE:
+   *  Use whenever a UI element must close or react when focus moves away via a click
+   *  elsewhere — dropdown menus, autocomplete lists, tooltip popups, modal dialogs,
+   *  colour pickers, context menus. Without this directive you would have to manually
+   *  attach a document-level listener and remember to remove it on route change.
+   *
+   * Examples:
+   *  <div dd-outclick="closeDropdown()">...</div>
+   *  <div dd-outclick="hideTooltip() --preventDefault">...</div>
+   *
+   * Note: the listener is attached to `document`, not to the element itself.
+   *       The $dd.listeners entry stores elem: document so ddUNLISTEN() cleans it up correctly.
+   */
+  ddOutclick() {
+    this._debug('ddOutclick', '--------- ddOutclick ------', 'orange', '#F4EA9E');
+
+    const attrName = 'dd-outclick';
+    const elems = this._listElements(attrName, '');
+    this._debug('ddOutclick', `found elements:: ${elems.length}`, 'orange');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const tf = opts.includes('preventDefault');
+
+      const handler = async event => {
+        if (elem.contains(event.target)) { return; } // click was inside — ignore
+        if (tf) { event.preventDefault(); }
+        await this._funcsExe(base, elem, event);
+        this._debug('ddOutclick', `Executed ddOutclick listener --> ${base} | preventDefault: ${tf}`, 'orangered');
+      };
+
+      const eventName = 'click';
+      document.addEventListener(eventName, handler);
+      // store with elem: document so ddUNLISTEN removes from document, not the element
+      this.$dd.listeners.push({ attrName, elem: document, handler, eventName });
+      this._debug('ddOutclick', `pushed::  tag: ${elem.localName} | dd-outclick="${attrVal}" | ctrl="${this.constructor.name}" | ddListeners: ${this.$dd.listeners.length}`, 'orange');
+    }
+  }
+
+
+
+  /**
+   * dd-intersect="<controllerMethod | expression> [--once] [--threshold:0.5]"
+   *  Execute a controller method when the element enters (or leaves) the browser viewport,
+   *  powered by the native IntersectionObserver API — no scroll event polling needed.
+   *
+   *  WHEN TO USE:
+   *  Any feature driven by viewport visibility: lazy-loading images or data as the user
+   *  scrolls down, triggering CSS entrance animations or counters the first time a section
+   *  appears, infinite-scroll "load more" sentinels, and analytics impression tracking.
+   *
+   * Options:
+   *  --once          disconnect the observer after the first intersection (fire-once)
+   *  --threshold:N   visibility ratio (0–1) required to trigger; default is 0 (any pixel)
+   *
+   * Examples:
+   *  <img dd-intersect="loadImage() --once">
+   *  <section dd-intersect="animateCounter() --threshold:0.5">...</section>
+   *  <div dd-intersect="loadNextPage()">sentinel</div>
+   *
+   * Note: observers are stored in $dd.observers and disconnected by ddUNLISTEN() on route change.
+   */
+  ddIntersect() {
+    this._debug('ddIntersect', '--------- ddIntersect ------', 'orange', '#F4EA9E');
+
+    const attrName = 'dd-intersect';
+    const elems = this._listElements(attrName, '');
+    this._debug('ddIntersect', `found elements:: ${elems.length}`, 'orange');
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const once = opts.includes('once');
+      const thresholdOpt = opts.find(o => o.startsWith('threshold:'));
+      const threshold = thresholdOpt ? parseFloat(thresholdOpt.split(':')[1]) : 0;
+
+      const observer = new IntersectionObserver(async entries => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) { continue; }
+          await this._funcsExe(base, elem, entry);
+          this._debug('ddIntersect', `Executed ddIntersect listener --> ${base} | once: ${once} | threshold: ${threshold}`, 'orangered');
+          if (once) { observer.disconnect(); }
+        }
+      }, { threshold });
+
+      observer.observe(elem);
+      this.$dd.observers.push(observer);
+      this._debug('ddIntersect', `pushed observer::  tag: ${elem.localName} | dd-intersect="${attrVal}" | ctrl="${this.constructor.name}" | observers: ${this.$dd.observers.length}`, 'orange');
+    }
+  }
+
+
+
+  /**
+   * dd-swipe="<controllerMethod | expression> [--left|--right|--up|--down]"
+   *  Detect a touch swipe gesture on the element and execute a controller method.
+   *  Direction is determined by comparing touchstart and touchend coordinates.
+   *  Omitting the direction option fires the handler for any swipe.
+   *
+   *  WHEN TO USE:
+   *  Mobile-first or touch-capable UIs where navigation happens via swiping —
+   *  image carousels/sliders, side-drawer navigation, swipe-to-delete list items,
+   *  pull-to-refresh, and onboarding wizard step transitions. ddEvt can attach
+   *  touchstart/touchend individually but cannot compute directional delta or filter
+   *  by direction in a single declarative attribute — ddSwipe packages all of that.
+   *
+   * Examples:
+   *  <div class="carousel" dd-swipe="nextSlide() --left">...</div>
+   *  <div class="carousel" dd-swipe="prevSlide() --right">...</div>
+   *  <body dd-swipe="openDrawer() --right"></body>
+   *  <div dd-swipe="onAnySwipe()">...</div>
+   *
+   * Note: both touchstart and touchend listeners are registered and tracked in $dd.listeners
+   *       so ddUNLISTEN() removes them correctly on route change.
+   */
+  ddSwipe() {
+    this._debug('ddSwipe', '--------- ddSwipe ------', 'orange', '#F4EA9E');
+
+    const attrName = 'dd-swipe';
+    const elems = this._listElements(attrName, '');
+    this._debug('ddSwipe', `found elements:: ${elems.length}`, 'orange');
+
+    const starts = new WeakMap(); // stores {x, y} per element across touchstart→touchend
+
+    for (const elem of elems) {
+      const attrVal = elem.getAttribute(attrName);
+      const { base, opts } = this._decomposeAttribute(attrVal);
+      const direction = opts[0] || ''; // 'left' | 'right' | 'up' | 'down' | '' (any)
+
+      const startHandler = event => {
+        const t = event.touches[0];
+        starts.set(elem, { x: t.clientX, y: t.clientY });
+      };
+
+      const endHandler = async event => {
+        const start = starts.get(elem);
+        if (!start) { return; }
+        const t = event.changedTouches[0];
+        const dx = t.clientX - start.x;
+        const dy = t.clientY - start.y;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        const detected = absDx > absDy
+          ? (dx > 0 ? 'right' : 'left')
+          : (dy > 0 ? 'down' : 'up');
+
+        if (direction && detected !== direction) { return; } // wrong direction — skip
+
+        await this._funcsExe(base, elem, event);
+        this._debug('ddSwipe', `Executed ddSwipe listener --> ${base} | detected: ${detected} | expected: ${direction || 'any'}`, 'orangered');
+      };
+
+      elem.addEventListener('touchstart', startHandler, { passive: true });
+      elem.addEventListener('touchend', endHandler);
+      this.$dd.listeners.push({ attrName, elem, handler: startHandler, eventName: 'touchstart' });
+      this.$dd.listeners.push({ attrName, elem, handler: endHandler, eventName: 'touchend' });
+      this._debug('ddSwipe', `pushed::  tag: ${elem.localName} | dd-swipe="${attrVal}" | direction: ${direction || 'any'} | ctrl="${this.constructor.name}" | ddListeners: ${this.$dd.listeners.length}`, 'orange');
+    }
+  }
 
 
 }

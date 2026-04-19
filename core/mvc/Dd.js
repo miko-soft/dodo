@@ -12,6 +12,7 @@ class Dd extends DdCloners {
 
     this.$dd = {
       listeners: [], // collector of the dd- listeners  [{attrName, elem, handler, eventName}]
+      observers: [], // collector of IntersectionObserver instances registered by ddIntersect()
       noncloner_directives: [
         'dd-setinitial',
         'dd-elem',
@@ -44,6 +45,21 @@ class Dd extends DdCloners {
         'dd-each2',
         'dd-entries',
         'dd-repeat'
+      ],
+      listener_directives: [
+        // standard event bindings
+        'dd-href',
+        'dd-set',
+        'dd-model',
+        'dd-click',
+        'dd-enter',
+        'dd-keyup',
+        'dd-change',
+        'dd-evt',
+        // advanced listeners (document-level / Observer-based / touch)
+        'dd-outclick',   // fires when user clicks outside the element (dropdowns, modals)
+        'dd-intersect',  // fires when element enters the viewport (lazy load, animations)
+        'dd-swipe',      // fires on touch swipe with optional direction filter (carousels, drawers)
       ]
     };
 
