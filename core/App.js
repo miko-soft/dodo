@@ -130,6 +130,12 @@ class App extends Router {
   }
 
 
+  ssr() {
+    this.$ssr = true;
+    return this;
+  }
+
+
   /**
    * Define destroyflight function which will be executed when controller is destroyed i.e. when route is changed.
    * It will be executed on every controller.
@@ -142,7 +148,6 @@ class App extends Router {
     this.ctrlConstants.$destroyflight = $destroyflight;
     return this;
   }
-
 
 
   /*============================== ROUTES ==============================*/
@@ -234,6 +239,11 @@ class App extends Router {
 
       let trx = { uri, pevent };
       trx = await this.exe(trx).catch(err => console.error(err));
+
+      if (this.$ssr) {
+        this.$ssr = false;
+        window.dispatchEvent(new Event('ssr-ready'));
+      }
 
       if (trx && this.$debugOpts?.exeRoute) {
         console.log(' --------- exeRoute trx::', trx);

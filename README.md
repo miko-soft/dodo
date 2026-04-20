@@ -1,310 +1,351 @@
 # DoDo Framework
 
-> An easy-to-learn JavaScript framework for building reactive single-page applications
+> A lightweight JavaScript framework for building reactive single-page applications — no build tools, no TypeScript, no complexity.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.9.22-blue.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](package.json)
 
-DoDo is a modern, lightweight JavaScript framework that helps developers build reactive single-page applications. Unlike component-based frameworks like Angular 2+, Vue, and React, DoDo uses a Model-View-Controller (MVC) architecture, making it simpler and more flexible. Inspired by Angular 1, DoDo provides an intuitive approach to building dynamic web applications.
-
----
-
-## ✨ Features
-
-- **🚀 Blazing Fast** - Optimized for performance with minimal overhead
-- **📦 Zero Dependencies** - Lightweight framework with no external dependencies
-- **🎯 Simple & Intuitive** - MVC architecture makes it easy to learn and use
-- **⚡ Modern ES6+** - Built with modern JavaScript (ES Modules)
-- **🔄 Reactive** - Automatic DOM updates when data changes
-- **🛠️ Built-in Libraries** - Authentication, HTTP client, form handling, and more
-- **🌐 Universal** - Works in browsers, browser extensions, Electron, and Cordova apps
-- **📝 No TypeScript Required** - Pure JavaScript, no compilation step needed
+DoDo is a modern frontend framework built on the **MVC pattern** (Model-View-Controller). If you've used Angular 1 or similar frameworks, you'll feel right at home. Unlike React, Vue, or Angular 2+, DoDo does **not** use components — instead, a single **Controller** manages the whole page.
 
 ---
 
-## 🎯 Use Cases
+## Why DoDo?
 
-DoDo is perfect for building:
-
-- **Single Page Applications (SPAs)** - Dynamic, AJAX-powered web apps
-- **Browser Extensions** - Lightweight extensions with reactive UI
-- **Desktop Applications** - Electron-based desktop apps
-- **Mobile Applications** - Cordova/PhoneGap mobile apps
-- **Progressive Web Apps (PWAs)** - Modern web applications
+- **No build step** — write plain ES6+ JavaScript, open in the browser, done
+- **No TypeScript required** — just JavaScript
+- **No dependencies** — zero external packages
+- **Familiar MVC pattern** — easy to reason about and test
+- **Reactive `$model`** — change a property, the HTML updates automatically
+- **Built-in utilities** — HTTP client, auth, forms, cookies, storage, events
 
 ---
 
-## 📦 Installation
+## Installation
 
 ```bash
 npm install --save @mikosoft/dodo
 ```
 
----
-
-## 🚀 Quick Start
-
-### Create a New Project
-
-The easiest way to start a new DoDo project is using the project generator:
+Or scaffold a full project instantly:
 
 ```bash
 npm init dodo
 ```
 
-This command will set up a boilerplate project with all the necessary structure.
+---
 
-### Basic Example
+## How It Works — The Big Picture
+
+DoDo apps follow a simple flow:
+
+```
+URL changes  →  Router matches route  →  Controller runs  →  View renders
+```
+
+1. The **App** listens for URL changes.
+2. When a URL matches a route, DoDo runs the corresponding **Controller**.
+3. The Controller loads HTML views, sets data on `$model`, and calls `render()`.
+4. DoDo processes all `dd-*` directives in the HTML and updates the DOM.
+
+---
+
+## Quick Start
+
+### 1. Entry point — `app.js`
 
 ```javascript
-import { App, corelib } from '@mikosoft/dodo';
+import { App } from '@mikosoft/dodo';
+import { $auth, $httpClient, $debugOpts } from './conf/index.js';
 
-// Configuration
-import { $debugOpts, $auth, $httpClient } from './app/conf/index.js';
-
-// Controllers
 import HomeCtrl from './controllers/HomeCtrl.js';
-import QuickstartCtrl from './controllers/QuickstartCtrl.js';
+import AboutCtrl from './controllers/AboutCtrl.js';
 import NotfoundCtrl from './controllers/NotfoundCtrl.js';
 
-// Define routes
 const $routes = [
-  ['when', '/', HomeCtrl],
-  ['when', '/quickstart', QuickstartCtrl],
-  ['notfound', NotfoundCtrl]
+  ['when', '/',       HomeCtrl],
+  ['when', '/about',  AboutCtrl],
+  ['notfound',        NotfoundCtrl]
 ];
 
-// Initialize and configure the app
-const app = new App('myApplication');
+const app = new App('myApp');
 app
   .auth($auth)
   .httpClient($httpClient)
   .debug($debugOpts);
 
-// Set up routes and start listening
 app
   .routes($routes)
-  .listen();
+  .listen();          // start listening for URL changes
 ```
 
----
+### 2. Controller — `HomeCtrl.js`
 
-## 📚 Core Libraries
+```javascript
+import { Controller } from '@mikosoft/dodo';
 
-DoDo includes a comprehensive set of built-in libraries for common tasks:
+class HomeCtrl extends Controller {
 
-### 🔐 Auth
-Authentication and authorization with JWT token support, route guards, and user session management.
+  // 1. Load HTML views from files
+  async __loader(trx) {
+    await this.loadView('#main', '/views/home.html');
+  }
 
-**Features:**
-- JWT token handling
-- Cookie-based authentication
-- Route protection (guards)
-- Auto-login functionality
-- Role-based access control
+  // 2. Set initial data
+  async __init(trx) {
+    this.$model.title = 'Welcome to DoDo!';
+    this.$model.users = [];
+  }
 
-### 🌐 HTTPClient
-HTTP client library for making API requests with support for:
-- GET, POST, PUT, DELETE, PATCH methods
-- Request/response interceptors
-- Automatic retries on timeout
-- Redirect handling
-- Custom headers and options
+  // 3. Render dd-* directives in the HTML
+  async __rend(trx) {
+    await this.render();
+  }
 
-### 📋 Form
-Helper library for working with HTML forms:
-- Form control value management
-- Validation support
-- Type conversion
-- Multiple input types (text, checkbox, radio, file, etc.)
+  // 4. Run code after the page is rendered (attach plugins, fetch data, etc.)
+  async __postrend(trx) {
+    const resp = await this.$httpClient.get('/api/users');
+    this.$model.users = resp.data;
+    await this.render('users'); // re-render only the 'users' part
+  }
 
-### 🍪 Cookie & BrowserStorage
-Utilities for managing browser storage:
-- **Cookie** - Cookie management with expiration, secure flags, and domain options
-- **BrowserStorage** - LocalStorage and SessionStorage wrappers
+}
 
-### 📄 Paginator
-Pagination library for handling paginated data display.
+export default HomeCtrl;
+```
 
-### 🛠️ Util
-Miscellaneous utility functions for common operations.
-
----
-
-## 🏗️ Architecture
-
-### MVC Pattern
-
-DoDo follows the Model-View-Controller architecture:
-
-- **Model** - Data layer with reactive properties
-- **View** - Presentation layer with declarative directives
-- **Controller** - Logic layer that connects Model and View
-
-### Directives
-
-DoDo uses declarative HTML directives for data binding:
+### 3. View — `home.html`
 
 ```html
-<!-- Text binding -->
-<div dd-text="$model.userName"></div>
+<h1 dd-text="$model.title"></h1>
 
-<!-- Event handling -->
-<button dd-click="logout()">Logout</button>
-
-<!-- Conditional rendering -->
-<div dd-if="isLoggedIn">Welcome!</div>
-
-<!-- Loops -->
 <ul>
   <li dd-each="users" dd-text="$model.name"></li>
 </ul>
 
-<!-- Two-way binding -->
-<input dd-model="$model.email" type="email">
+<a dd-href="/about">Go to About</a>
 ```
 
-### Controller Lifecycle
-
-Controllers have lifecycle hooks:
-
-- `__loader(trx)` - Load views and resources
-- `__init(trx)` - Initialize controller properties
-- `__rend(trx)` - Render the view
-- `__postrend(trx)` - Execute after rendering
-- `__destroy()` - Cleanup when controller is destroyed
+That's it. When `$model.users` is set, calling `render('users')` updates only the `dd-each="users"` part of the page.
 
 ---
 
-## 📖 Documentation
+## App vs AppOne
 
-For comprehensive documentation, tutorials, and examples, visit:
+| | `App` | `AppOne` |
+|---|---|---|
+| Routing | Yes — multiple routes/pages | No — single page only |
+| Use case | SPAs, web panels | Browser extensions, simple tools |
 
-**[http://dodo.mikosoft.info](http://dodo.mikosoft.info)**
+```javascript
+// Multi-page app with routing
+import { App } from '@mikosoft/dodo';
+const app = new App('myApp');
+app.routes($routes).listen();
+
+// Single page, no routing needed
+import { AppOne } from '@mikosoft/dodo';
+const app = new AppOne('myApp');
+app.controller(MyCtrl);
+```
 
 ---
 
-## 🔧 API Overview
+## Controller Lifecycle
 
-### App Class
+Every controller runs its hooks in this order:
 
-The main application class for Single Page Applications.
-
-```javascript
-const app = new App('appName');
-
-// Configuration methods
-app.auth($auth)              // Set authentication
-app.httpClient($httpClient)  // Set HTTP client
-app.debug($debugOpts)        // Set debug options
-app.fridge($fridge)          // Set shared data container
-app.i18n($i18n)              // Set internationalization
-
-// Route configuration
-app.routes($routes).listen() // Define routes and start
+```
+__loader()  →  __init()  →  __rend()  →  __postrend()
 ```
 
-### AppOne Class
+| Hook | Purpose |
+|---|---|
+| `__loader(trx)` | Load HTML views/partials into the DOM |
+| `__init(trx)` | Set initial values on `$model` |
+| `__rend(trx)` | Call `render()` to process all `dd-*` directives |
+| `__postrend(trx)` | Run code after rendering (fetch data, init plugins) |
+| `__destroy()` | Cleanup listeners when navigating away |
 
-For single-page applications (no routing):
-
-```javascript
-const app = new AppOne('appName');
-app.controller(MyController);
-```
-
-### Controller Class
-
-Base class for controllers:
+The `trx` object carries route information:
 
 ```javascript
-class MyController extends Controller {
-  async __loader(trx) {
-    // Load views
-  }
-  
-  async __init(trx) {
-    // Initialize
-    this.$model.userName = 'John';
-  }
-  
-  async __rend(trx) {
-    // Render
-    await this.render();
-  }
+async __loader(trx) {
+  console.log(trx.uri);          // '/users/42'
+  console.log(trx.params);       // { id: '42' }
+  console.log(trx.query);        // { sort: 'asc' }
 }
 ```
 
 ---
 
-## 🎨 Directives Reference
+## Directives Reference
+
+Directives are special `dd-*` HTML attributes that DoDo processes during `render()`.
 
 ### Data Binding
-- `dd-text` - Text content binding
-- `dd-html` - HTML content binding
-- `dd-value` - Input value binding
-- `dd-model` - Two-way data binding
 
-### Event Handlers
-- `dd-click` - Click events
-- `dd-change` - Change events
-- `dd-keyup` - Keyup events
-- `dd-enter` - Enter key events
+| Directive | Description | Example |
+|---|---|---|
+| `dd-text` | Sets text content | `<p dd-text="$model.name"></p>` |
+| `dd-html` | Sets inner HTML | `<div dd-html="$model.richContent"></div>` |
+| `dd-model` | Two-way binding (input ↔ `$model`) | `<input dd-model="$model.email">` |
+| `dd-value` | Sets the `value` attribute | `<input dd-value="$model.count">` |
+| `dd-set` | One-way: input → `$model`, no re-render | `<input dd-set="$model.search">` |
+| `dd-label` | Sets label text | `<label dd-label="$model.fieldName"></label>` |
+| `dd-placeholder` | Sets placeholder text | `<input dd-placeholder="$model.hint">` |
+| `dd-title` | Sets title attribute | `<span dd-title="$model.tooltip"></span>` |
+| `dd-data` | Sets data-* attributes | `<div dd-data="id::$model.userId"></div>` |
 
 ### Conditionals
-- `dd-if` - Conditional rendering
-- `dd-elseif` - Else-if condition
-- `dd-else` - Else condition
-- `dd-visible` - Visibility toggle
+
+| Directive | Description | Example |
+|---|---|---|
+| `dd-if` | Show element if truthy | `<div dd-if="$model.isAdmin">...</div>` |
+| `dd-elseif` | Else-if branch | `<div dd-elseif="$model.isMod">...</div>` |
+| `dd-else` | Else branch | `<div dd-else>...</div>` |
+| `dd-visible` | Toggle CSS `display` (element stays in DOM) | `<div dd-visible="$model.show">...</div>` |
 
 ### Loops
-- `dd-each` - Array iteration
-- `dd-repeat` - Repeated rendering
+
+| Directive | Description | Example |
+|---|---|---|
+| `dd-each` | Iterate an array | `<li dd-each="users" dd-text="$model.name"></li>` |
+| `dd-each2` | Iterate a sub-array inside a `dd-each` row | nested lists |
+| `dd-entries` | Iterate an object's key/value pairs | `<li dd-entries="settings"></li>` |
+| `dd-repeat` | Repeat element N times | `<div dd-repeat="5">★</div>` |
 
 ### Attributes
-- `dd-class` - Dynamic CSS classes
-- `dd-style` - Dynamic styles
-- `dd-disabled` - Disable elements
-- `dd-checked` - Checkbox/radio state
-- `dd-selected` - Select option state
-- `dd-src` - Image source
-- `dd-attr` - Dynamic attributes
 
-### Navigation
-- `dd-href` - Client-side navigation
+| Directive | Description |
+|---|---|
+| `dd-class` | Add/remove CSS classes dynamically |
+| `dd-style` | Set inline styles |
+| `dd-disabled` | Disable form elements |
+| `dd-readonly` | Set readonly attribute |
+| `dd-required` | Set required attribute |
+| `dd-checked` | Checkbox / radio checked state |
+| `dd-selected` | Select option selected state |
+| `dd-src` | Image or media `src` attribute |
+| `dd-attr` | Any attribute dynamically |
+| `dd-min` / `dd-max` | Input min/max attributes |
+
+### Events
+
+| Directive | Description | Example |
+|---|---|---|
+| `dd-click` | Click event | `<button dd-click="save()">Save</button>` |
+| `dd-change` | Change event | `<select dd-change="onSelect()">` |
+| `dd-keyup` | Keyup event (optional key filter `--13`) | `<input dd-keyup="search()">` |
+| `dd-enter` | Enter key shortcut | `<input dd-enter="submit()">` |
+| `dd-evt` | Any DOM event via `--<eventName>` | `<div dd-evt--mouseover="onHover()">` |
+| `dd-outclick` | Fires when clicking **outside** the element | dropdowns, modals |
+| `dd-intersect` | Fires when element enters the viewport | lazy loading, animations |
+| `dd-swipe` | Fires on touch swipe (optional direction filter) | carousels, drawers |
+
+### Navigation & DOM
+
+| Directive | Description | Example |
+|---|---|---|
+| `dd-href` | Client-side navigation (no page reload) | `<a dd-href="/about">About</a>` |
+| `dd-elem` | Expose DOM element as `this.$elem.<name>` | `<canvas dd-elem="chart"></canvas>` |
+| `dd-setinitial` | Read element value into `$model` on load | `<input dd-setinitial="$model.lang">` |
 
 ---
 
-## 🤝 Contributing
+## Built-in Libraries
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+All libraries are available from `corelib`:
+
+```javascript
+import { corelib } from '@mikosoft/dodo';
+const { Auth, HTTPClient, HTTPClientFetch, Form, Cookie, BrowserStorage, Paginator, eventEmitter, navig, util } = corelib;
+```
+
+### Auth
+JWT-based authentication with cookie support, route guards, auto-login, and role-based access control. Inject it into the app via `app.auth($auth)` — then use `this.$auth` inside any controller.
+
+### HTTPClient / HTTPClientFetch
+Two HTTP clients (XMLHttpRequest and Fetch API). Support GET, POST, PUT, DELETE, PATCH, request/response interceptors, automatic retries, and custom headers. Inject via `app.httpClient($httpClient)`.
+
+### Form
+Reads and writes HTML form values to/from `$model`. Handles text, checkbox, radio, select, and file inputs with optional validation and type conversion.
+
+### Cookie & BrowserStorage
+- **Cookie** — get/set/delete cookies with expiry, secure, and domain options
+- **BrowserStorage** — simple wrappers around `localStorage` and `sessionStorage`
+
+### Paginator
+Handles paginated data: calculates page ranges, total pages, and navigation state.
+
+### EventEmitter
+Pub/sub event bus for decoupled communication between controllers:
+```javascript
+eventEmitter.emit('user:loggedIn', userData);
+eventEmitter.on('user:loggedIn', (data) => { ... });
+```
+
+### Navig
+Programmatic navigation and URL utilities:
+```javascript
+navig.goto('/dashboard');
+navig.getCurrentURI(); // '/dashboard?tab=stats'
+```
+
+### Util
+General-purpose helpers for type checking, object cloning, string manipulation, and more.
 
 ---
 
-## 📄 License
+## App Configuration
 
-Copyright (c) [MikoSoft](http://mikosoft.info)
+```javascript
+const app = new App('myApp');
 
-Licensed under the [MIT License](./LICENSE)
+app.auth($auth)              // inject Auth instance → available as this.$auth in controllers
+app.httpClient($httpClient)  // inject HTTP client → available as this.$httpClient
+app.debug($debugOpts)        // control which debug messages appear in the console
+app.fridge($fridge)          // shared data object that persists across route changes → this.$fridge
+app.i18n($i18n)              // translations object → used by View.loadI18n(langCode)
+app.preflight([fn1, fn2])    // functions that run before every controller's __loader()
+app.postflight([fn1, fn2])   // functions that run after every controller's __postrend()
+app.destroyflight(fn)        // function that runs when any controller is destroyed (route change)
+app.ssr()                    // enable SSR mode — dispatches 'ssr-ready' window event after first route renders
+```
+
+### Route definitions
+
+```javascript
+const $routes = [
+  ['when',     '/users/:id',  UserCtrl,     { authGuards: ['isLogged'] }],
+  ['when',     '/login',      LoginCtrl],
+  ['redirect', '/home',       '/'],         // redirect /home → /
+  ['do',       [logFn]],                    // run on every route change
+  ['notfound', NotfoundCtrl]
+];
+```
 
 ---
 
-## 🔗 Links
+## Supported Environments
 
-- **Homepage:** [http://dodo.mikosoft.info](http://dodo.mikosoft.info)
+- Standard browsers (Chrome, Firefox, Safari, Edge)
+- Browser extensions
+- Electron desktop apps
+- Cordova / PhoneGap mobile apps
+- Progressive Web Apps (PWAs)
+
+---
+
+## Documentation
+
+Full documentation, tutorials, and live examples:
+
+**[http://dodo.mikosoft.info](http://dodo.mikosoft.info)**
+
+---
+
+## Links
+
 - **GitHub:** [https://github.com/miko-soft/dodo](https://github.com/miko-soft/dodo)
-- **Author:** Mikodanic Sasa <smikodanic@gmail.com>
-
----
-
-## 💡 Why DoDo?
-
-DoDo is designed for developers who want:
-- **Simplicity** - No complex build tools or configuration
-- **Flexibility** - MVC architecture gives you control
-- **Performance** - Lightweight and fast
-- **Productivity** - Built-in libraries for common tasks
-- **Modern JavaScript** - Uses ES6+ features without transpilation complexity
-
-If you're looking for a framework that's easy to learn, powerful, and doesn't require TypeScript or complex build configurations, DoDo might be the perfect choice for your next project.
-
+- **Author:** Mikodanic Sasa — smikodanic@gmail.com
+- **License:** [MIT](./LICENSE)
