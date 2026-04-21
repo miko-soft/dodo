@@ -473,9 +473,12 @@ class Auxiliary {
    */
   _solveMustache(txt, obj) {
     const flattenedObj = this._flattenObject(obj); // dd-each="companies --company.key" will give flattenedObj::{'company.name': 'Cloud Ltd', 'company.employers': 125, key: 11}
+    const topLevelKeys = Object.keys(obj);
     return txt.replace(/{{\s*([^{}\s]+)\s*}}/g, (match, objProperty) => {
+      const rootKey = objProperty.split('.')[0];
+      if (!topLevelKeys.includes(rootKey)) { return match; } // preserve unknown mustaches for inner loops (e.g. dd-each2)
       const value = flattenedObj[objProperty];
-      return value !== undefined && value !== null ? value : match; // preserve unknown mustaches for inner loops (e.g. dd-each2)
+      return value !== undefined && value !== null ? value : '';
     });
   }
 
