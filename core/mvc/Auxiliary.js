@@ -478,7 +478,11 @@ class Auxiliary {
       const rootKey = objProperty.split('.')[0];
       if (!topLevelKeys.includes(rootKey)) { return match; } // preserve unknown mustaches for inner loops (e.g. dd-each2)
       const value = flattenedObj[objProperty];
-      return value !== undefined && value !== null ? value : '';
+      if (value === undefined || value === null) { return ''; }
+      if (typeof value === 'symbol') { return ''; }
+      if (Number.isNaN(value)) { return ''; }
+      if (Array.isArray(value) || (typeof value === 'object')) { return JSON.stringify(value); }
+      return value;
     });
   }
 
