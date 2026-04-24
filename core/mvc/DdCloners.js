@@ -42,6 +42,11 @@ class DdCloners extends DdListeners {
       if (!this._isValidVariableName(valName)) { this._printError(`dd-each="${attrVal}" has invalid valName:${valName}`); continue; }
       if (!this._isValidVariableName(keyName)) { this._printError(`dd-each="${attrVal}" has invalid keyName:${keyName}`); continue; }
 
+      // parse --selected:N opt: index of the clone that should have the selected attribute
+      const selectedOpt = opts.slice(1).find(o => /^selected:\d+$/.test(o.trim()));
+      const selectedIdx = selectedOpt ? parseInt(selectedOpt.split(':')[1]) : -1;
+      if (selectedIdx >= baseVal.length) { this._printWarn(`dd-each="${attrVal}" --selected:${selectedIdx} is out of bounds, max allowed is --selected:${baseVal.length - 1}`); }
+
       // clone original elem
       this._clone_remove(elem, attrName); // remove cloned elements generated in previous execution of the ddEach() function
       this._setDdRender(elem, 'disabled'); // set dd-render-disabled option to element and it's children dd- elements because only cloned elements (dd-...-clone) should be rendered, for example don't render dd-class in dd-each but dd-class in dd-each-clone
@@ -61,6 +66,7 @@ class DdCloners extends DdListeners {
         html_solved = this._solveEach2(html_solved, base, valName, key); // resolve dd-each2 attribute bases to absolute controller paths
         html_solved = this._resolveUids(html_solved); // fresh dd-id per iteration so inner dd-each2 clones don't collide across rows
         html_solved = html_solved.replace(/^(<[^>]+?)dd-id="[^"]*"/, `$1dd-id="${uid}"`); // restore root clone's dd-id so _clone_remove can find it on re-render
+        if (key === selectedIdx) { html_solved = html_solved.replace(/^(<[^>]*)>/, '$1 selected>'); }
         html += html_solved;
       });
 
@@ -97,6 +103,10 @@ class DdCloners extends DdListeners {
       if (!this._isValidVariableName(valName)) { this._printError(`dd-each2="${attrVal}" has invalid valName:${valName}`); continue; }
       if (!this._isValidVariableName(keyName)) { this._printError(`dd-each2="${attrVal}" has invalid keyName:${keyName}`); continue; }
 
+      const selectedOpt2 = opts.slice(1).find(o => /^selected:\d+$/.test(o.trim()));
+      const selectedIdx2 = selectedOpt2 ? parseInt(selectedOpt2.split(':')[1]) : -1;
+      if (selectedIdx2 >= baseVal.length) { this._printWarn(`dd-each2="${attrVal}" --selected:${selectedIdx2} is out of bounds, max allowed is --selected:${baseVal.length - 1}`); }
+
       this._clone_remove(elem, attrName);
       this._setDdRender(elem, 'disabled');
       const clonedElem = this._clone_define(elem, attrName, attrVal);
@@ -111,6 +121,7 @@ class DdCloners extends DdListeners {
         let html_solved = '';
         html_solved = this._solveMustache(outerHTML, { [valName]: val, [keyName]: key });
         html_solved = this._solveDoubledollar(html_solved, base, valName, key);
+        if (key === selectedIdx2) { html_solved = html_solved.replace(/^(<[^>]*)>/, '$1 selected>'); }
         html += html_solved;
       });
 

@@ -129,6 +129,7 @@ class Auxiliary {
    */
   _elemShow(elem, directive) {
     elem.removeAttribute(`${directive}-hide`);
+    elem.removeAttribute('hidden');
   }
 
 
@@ -139,6 +140,7 @@ class Auxiliary {
    */
   _elemHide(elem, directive) {
     elem.setAttribute(`${directive}-hide`, '');
+    if (elem.tagName === 'OPTION') { elem.setAttribute('hidden', ''); }
   }
 
 
