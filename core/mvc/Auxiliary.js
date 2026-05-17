@@ -1,3 +1,5 @@
+import stringTypeConvert from '../lib/stringTypeConvert.js';
+
 /**
  * Auxilary methods.
  */
@@ -1052,40 +1054,11 @@ class Auxiliary {
 
 
   /**
-   * Convert string to correct data type. Usually convert element.value (string) in integer, float, boolean or JSON.
    * @param {string} val
-   * @returns {string | number | boolean | object}
+   * @returns {string | number | boolean | object | undefined | null}
    */
   _stringTypeConvert(val) {
-    const isJSON = val => {
-      try { JSON.parse(val); }
-      catch (err) { return false; }
-      return true;
-    };
-
-    const toObject = val => {
-      try { return JSON.parse(val); }
-      catch (err) { this._printError(`_stringTypeConvert Error: Bad Object or array definition in "${val}"`); }
-    };
-
-    if (val === 'undefined') { // convert string into undefined
-      val = undefined;
-    } else if (val === 'null') { // convert string into null
-      val = null;
-    } else if (val === 'true' || val === 'false') { // convert string into boolean (true/false)
-      val = JSON.parse(val);
-    } else if (!isNaN(val) && val !== '' && !/\./.test(val)) { // convert string into integer (12)
-      val = parseInt(val, 10);
-    } else if (!isNaN(val) && val !== '' && /\./.test(val)) { // convert string into float (12.35)
-      val = parseFloat(val);
-    } else if (isJSON(val)) { // convert JSON string {"a": "Lorem ipsum"} into object
-      val = toObject(val);
-    } else if (/^\s*({.*}|\[.*\])\s*$/.test(val)) { // convert object or array notation {a: 'Lorem ipsum'} or ['str', 88] into object
-      const jsonStr = val.replace(/'/g, '"').replace(/(\w+):/g, '"$1":'); // {color: 'red'} -> {"color": "red"}
-      val = toObject(jsonStr);
-    }
-
-    return val;
+    return stringTypeConvert(val, msg => this._printError(msg));
   }
 
 

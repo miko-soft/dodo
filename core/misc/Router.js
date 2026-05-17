@@ -23,6 +23,7 @@
  * b) This code is simillar to general purpose "regoch-router" - https://github.com/smikodanic/regoch-router
  */
 
+import stringTypeConvert from '../lib/stringTypeConvert.js';
 
 
 class Router {
@@ -195,33 +196,6 @@ class Router {
 
 
   /**
-   * Convert string into integer, float or boolean.
-   * @param {string} value
-   * @returns {string | number | boolean | object}
-   */
-  _stringTypeConvert(value) {
-    function isJSON(str) {
-      try { JSON.parse(str); }
-      catch (err) { return false; }
-      return true;
-    }
-
-    if (!!value && typeof value === 'string' && !isNaN(value) && value.indexOf('.') === -1) { // convert string into integer (12)
-      value = parseInt(value, 10);
-    } else if (!!value && typeof value === 'string' && !isNaN(value) && value.indexOf('.') !== -1) { // convert string into float (12.35)
-      value = parseFloat(value);
-    } else if (value === 'true' || value === 'false') { // convert string into boolean (true)
-      value = JSON.parse(value);
-    } else if (isJSON(value)) {
-      value = JSON.parse(value);
-    }
-
-    return value;
-  }
-
-
-
-  /**
    * Create query object from query string.
    * @param  {string} queryString - x=abc&y=123&z=true
    * @return {object}             - {x: 'abc', y: 123, z: true}
@@ -237,7 +211,7 @@ class Router {
       value = eqIdx !== -1 ? elem.slice(eqIdx + 1) : undefined;
 
       if (!property) { return; } // skip empty keys (e.g. leading & or &&)
-      value = this._stringTypeConvert(value); // t y p e   c o n v e r s i o n
+      value = stringTypeConvert(value); // t y p e   c o n v e r s i o n
 
       queryObject[property] = value;
     });
@@ -300,7 +274,7 @@ class Router {
         const property = routePart.replace(/^\:/, ''); // remove :
 
         let value = uriParts[index];
-        value = this._stringTypeConvert(value); // t y p e   c o n v e r s i o n
+        value = stringTypeConvert(value); // t y p e   c o n v e r s i o n
 
         params[property] = value;
       }

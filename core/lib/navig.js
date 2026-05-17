@@ -229,6 +229,45 @@ class Navig {
   }
 
 
+
+  /************ URL METHODS ************/
+  /**
+   * Get the current URL.
+   * @returns {string}
+   */
+  getCurrentURL() {
+    return window.location.href;
+  }
+
+
+  /**
+   * Set search parameters in the URL.
+   * @param {string} url - full URL, for example http://localhost:8001/customer/product/25 or path-only /customer/product/25
+   * @param {object} queryObject - the query object {key: value, key2: value2, ...}
+   * @param {string} [pathname] - optional path to replace the URL pathname, for example /customer/product/25
+   * @returns {string} - the URL with search parameters
+   */
+  defineURL(url, queryObject = {}, pathname = '') {
+    if (!url) { throw new TypeError('The argument "url" is not defined'); }
+    const urlObj = new URL(url, window.location.href);
+
+    // set pathname
+    if (pathname) {
+      urlObj.pathname = pathname.startsWith('/') ? pathname : `/${pathname}`;
+    }
+
+    // set search parameters
+    for (const key in queryObject) {
+      if (queryObject.hasOwnProperty(key)) {
+        urlObj.searchParams.set(key, queryObject[key]);
+      }
+    }
+
+    // return the URL with pathname and search parameters
+    return urlObj.toString();
+  }
+
+
 }
 
 

@@ -4,6 +4,8 @@ interface BrowserStorageOpts {
 }
  */
 
+import stringTypeConvert from './stringTypeConvert.js';
+
 class BrowserStorage {
 
   /**
@@ -97,7 +99,7 @@ class BrowserStorage {
       if (!prop) { continue; }
 
       val = val.trim();
-      if (convertType) { val = this._stringTypeConvert(val); }
+      if (convertType) { val = stringTypeConvert(val); }
 
       allStorages_object[prop] = val;
     }
@@ -130,32 +132,6 @@ class BrowserStorage {
   exists(name) {
     const value = this.storage.getItem(name);
     return !!value;
-  }
-
-
-  /**
-   * Convert string to correct data type.
-   * @param {string} val
-   * @returns {string | number | boolean | object}
-   */
-  _stringTypeConvert(val) {
-    function isJSON(val) {
-      try { JSON.parse(val); }
-      catch (err) { return false; }
-      return true;
-    }
-
-    if (!!val && !isNaN(val) && !/\./.test(val)) { // convert string into integer (12)
-      val = parseInt(val, 10);
-    } else if (!!val && !isNaN(val) && /\./.test(val)) { // convert string into float (12.35)
-      val = parseFloat(val);
-    } else if (val === 'true' || val === 'false') { // convert string into boolean (true)
-      val = JSON.parse(val);
-    } else if (isJSON(val)) {
-      val = JSON.parse(val);
-    }
-
-    return val;
   }
 
 }
