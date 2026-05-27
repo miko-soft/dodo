@@ -132,10 +132,10 @@ class Cookie {
 
   /**
    * Get all cookies in object format: {key1: val1, key2: val2, ...}
-   * @param {boolean} convertType - to convert the value types (val1, val2) or not (default is true)
+   * @param {boolean} convertType - to convert the value types (val1, val2) or not (default is false)
    * @return {object}
    */
-  getObjectAll(convertType = true) {
+  getObjectAll(convertType = false) {
     const allCookies_string = document.cookie; // 'cook1=jedan1; cook2=dva2;'
     const allCookies_arr = allCookies_string.split(';').filter(c => !!c);
 

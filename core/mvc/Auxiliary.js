@@ -277,10 +277,10 @@ class Auxiliary {
    * Get the HTML form element value. Make correction according to the element type & value type.
    * Element types: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
    * @param {HTMLElement} elem - HTML form element
-   * @param {boolean} convertType - default true
+   * @param {boolean} convertType - default false
    * @returns {any} val - single value or array for checkbox and select-multiple
    */
-  _getElementValue(elem, convertType = true) {
+  _getElementValue(elem, convertType = false) {
     // pickup all elements with same name="something", for example checkboxes
     let val;
 

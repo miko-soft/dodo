@@ -133,10 +133,10 @@ class Form extends Auxiliary {
   /**
    * Get the form control value.
    * @param {string} key - the value of the "name" HTML attribute, for example in name="pets" the key is 'pets'
-   * @param {boolean} convertType - convert data type, for example "5" -> 5 , default is true
+   * @param {boolean} convertType - convert data type, for example "5" -> 5 , default is false
    * @returns {string|number}
    */
-  getControl(key, convertType = true) {
+  getControl(key, convertType = false) {
     this._debug('getControl', '--------- getControl ------', 'green', '#A1F8DC');
     const elems = document.querySelectorAll(`[dd-form="${this.formName}"] [name="${key}"]`);
     if (!elems.length) { console.error(`Form "${this.formName}" doesn't have name="${key}" control.`); }
@@ -194,10 +194,10 @@ class Form extends Auxiliary {
   /**
    * Get the form control values and return corresponding object
    * @param {string[]} keys - the value of the "name" HTML attribute
-   * @param {boolean} convertType - default true
+   * @param {boolean} convertType - default false
    * @returns {object}
    */
-  getControls(keys, convertType = true) {
+  getControls(keys, convertType = false) {
     if (!keys) { console.error('getControlsErr: Argument "keys" is not defined.'); return; }
     if (!Array.isArray(keys)) { console.error('getControlsErr: Argument "keys" should be an array.'); return; }
     this._debug('getControls', '--------- getControls ------', 'green', '#A1F8DC');
@@ -216,10 +216,10 @@ class Form extends Auxiliary {
 
   /**
    * Get all form control values and return corresponding object
-   * @param {boolean} convertType - default true
+   * @param {boolean} convertType - default false
    * @returns {object}
    */
-  getAllControls(convertType = true) {
+  getAllControls(convertType = false) {
     let elems = document.querySelectorAll(`[dd-form="${this.formName}"] input,[dd-form="${this.formName}"] select,[dd-form="${this.formName}"] textarea`);
     if (!elems.length) { return; }
     elems = Array.from(elems);

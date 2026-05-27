@@ -89,10 +89,10 @@ class BrowserStorage {
 
   /**
    * Get all storage values in object format: {key1: val1, key2: val2, ...}
-   * @param {boolean} convertType - to convert the value types (val1, val2) or not (default is true)
+   * @param {boolean} convertType - to convert the value types (val1, val2) or not (default is false)
    * @return {object}
    */
-  getObjectAll(convertType = true) {
+  getObjectAll(convertType = false) {
     const allStorages_object = {};
     for (let [prop, val] of Object.entries(this.storage)) {
       prop = prop.trim();
