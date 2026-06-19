@@ -17,13 +17,39 @@ class Model extends View {
    * Proxy the this.$model object.
    */
   proxifyModel() {
+    const createNestedProxy = (obj, topLevelModelName) => {
+      return new Proxy(obj, {
+        set: (target, prop, value) => {
+          this.$debugOpts?.model && console.log(`DEBUG: Model set triggered (nested). this.$model.${topLevelModelName}.${String(prop)} = `, value, ' | __initFinished:', this.__initFinished);
+          const tf = Reflect.set(target, prop, value);
+          this.__initFinished && this.render(topLevelModelName);
+          eventEmitter.emit('model-change', { modelName: topLevelModelName, modelValue: this.$model[topLevelModelName] });
+          return tf;
+        },
+        get: (target, prop) => {
+          const val = Reflect.get(target, prop);
+          if (val !== null && typeof val === 'object' && typeof prop === 'string') {
+            return createNestedProxy(val, topLevelModelName);
+          }
+          return val;
+        }
+      });
+    };
+
     const trapHandler = {
       set: (obj, modelName, modelValue) => {
-        this.$debugOpts?.model && console.log(`DEBUG: Model set trigered. this.$model.${modelName} = `, modelValue, ' | __initFinished:', this.__initFinished);
+        this.$debugOpts?.model && console.log(`DEBUG: Model set triggered. this.$model.${modelName} = `, modelValue, ' | __initFinished:', this.__initFinished);
         const tf = Reflect.set(obj, modelName, modelValue); // set obj.modelName = modelValue i.e. this.$model.modelName = modelValue
         this.__initFinished && this.render(modelName); // prevent $model rendering in __init()
         eventEmitter.emit('model-change', { modelName, modelValue });
         return tf;
+      },
+      get: (obj, modelName) => {
+        const val = Reflect.get(obj, modelName);
+        if (val !== null && typeof val === 'object' && typeof modelName === 'string') {
+          return createNestedProxy(val, modelName);
+        }
+        return val;
       }
     };
     this.$model = new Proxy(this.$model, trapHandler);
