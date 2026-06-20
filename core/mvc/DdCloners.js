@@ -78,10 +78,10 @@ class DdCloners extends DdListeners {
 
 
   /**
-   * dd-each2="outerVal.subArrayProp --val,key"
+   * dd-each2="$$outerVal.subArrayProp --val,key"
    *  Iterate a sub-array that is a property of the current outer dd-each item.
    *  Must be called after ddEach(). dd-each2 attribute bases are resolved to absolute controller paths by ddEach before this runs.
-   * Example: dd-each2="user.companies --company,key"
+   * Example: dd-each2="$$user.companies --company,key"
    * @param {string} modelName - model name of the outer dd-each, for example 'users'
    */
   ddEach2(modelName) {
@@ -191,8 +191,9 @@ class DdCloners extends DdListeners {
   /**
    * Resolve dd-each2 attribute bases from outer-loop-alias form to absolute controller paths.
    * Called inside ddEach's forEach so ddEach2 can later resolve them via _solveBase.
-   * Example: "user.companies --company,key" with outerBase="$model.users", outerValName="user", outerKey=0
+   * Example: "$$user.companies --company,key" with outerBase="$model.users", outerValName="user", outerKey=0
    *       → "this.$model.users[0].companies --company,key"
+   * Use $$outerValName prefix convention (e.g. $$user.companies), not bare alias (user.companies).
    */
   _solveEach2(html, outerBase, outerValName, outerKey) {
     const absBase = /^this\./.test(outerBase)
@@ -202,8 +203,12 @@ class DdCloners extends DdListeners {
       const dashIdx = attrVal.indexOf(' --');
       const base = dashIdx >= 0 ? attrVal.slice(0, dashIdx).trim() : attrVal.trim();
       const opts = dashIdx >= 0 ? attrVal.slice(dashIdx) : '';
-      const reg = new RegExp(`^(this\\.)?${outerValName}\\.`);
-      const newBase = base.replace(reg, `${absBase}.`);
+      const regWithDollar = new RegExp(`^(this\\.)?\\$\\$${outerValName}\\.`);
+      const regWithoutDollar = new RegExp(`^(this\\.)?${outerValName}\\.`);
+      if (!regWithDollar.test(base) && regWithoutDollar.test(base)) {
+        this._printWarn(`dd-each2="${attrVal}" should use $$${outerValName} instead of ${outerValName} (e.g. $$${outerValName}.${base.replace(regWithoutDollar, '')})`);
+      }
+      const newBase = base.replace(regWithDollar, `${absBase}.`);
       return `dd-each2="${newBase}${opts}"`;
     });
   }
