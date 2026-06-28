@@ -273,16 +273,30 @@ class DdListeners extends Auxiliary {
     const elems = this._listElements(attrName, '');
     this._debug('ddKeyup', `found elements:: ${elems.length}`, 'orange');
 
+    const timerMap = new Map(); // per-element debounce timers
+
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
-      const keyCode = opts[0];
+
+      const delayOpt = opts.find(o => o.startsWith('delay:'));
+      const delay = delayOpt ? parseInt(delayOpt.split(':')[1], 10) : 0;
+      const keyCode = opts.find(o => !o.startsWith('delay:')) || null;
 
       const handler = async event => {
         const eventCode = event.code ? event.code.toLowerCase() : '';
-        if (!!keyCode && keyCode !== eventCode) { return; }
-        await this._funcsExe(base, elem, event);
-        this._debug('ddKeyup', `Executed ddKeyup listener --> ${base} | eventCode: ${eventCode}`, 'orangered');
+        if (keyCode && keyCode !== eventCode) { return; }
+
+        if (delay > 0) {
+          clearTimeout(timerMap.get(elem));
+          timerMap.set(elem, setTimeout(async () => {
+            await this._funcsExe(base, elem, event);
+            this._debug('ddKeyup', `Executed ddKeyup listener (debounced ${delay}ms) --> ${base} | eventCode: ${eventCode}`, 'orangered');
+          }, delay));
+        } else {
+          await this._funcsExe(base, elem, event);
+          this._debug('ddKeyup', `Executed ddKeyup listener --> ${base} | eventCode: ${eventCode}`, 'orangered');
+        }
       };
 
       const eventName = 'keyup';
