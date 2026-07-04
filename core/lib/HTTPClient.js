@@ -39,6 +39,11 @@ class HTTPClient {
     // init the xhr
     this.xhr = new XMLHttpRequest();
 
+    // tracks whether a request is currently in flight on this instance.
+    // XMLHttpRequest is not concurrency-safe: calling .open() on an in-flight XHR
+    // silently aborts the previous request. _busy lets us detect and warn about this.
+    this._busy = false;
+
     // set interceptor
     this.interceptor;
   }
@@ -103,6 +108,13 @@ class HTTPClient {
 
 
     /*** 1) init HTTP request ***/
+    // warn if a previous request on this same instance is still in flight.
+    // two concurrent calls share one XHR — the second .open() aborts the first silently.
+    // fix: use separate HTTPClient (or ApiCall) instances for parallel requests.
+    if (this._busy) {
+      console.warn(`[HTTPClient] Concurrent request detected on the same instance! A previous request to "${this.xhr._url || 'unknown'}" is still in flight. The previous request will be aborted. Use separate HTTPClient instances for parallel calls.`);
+    }
+    this._busy = true;
     // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/open
     this.xhr.open(method, url, true, null, null);
 
