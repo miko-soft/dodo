@@ -37,13 +37,35 @@ class Model extends View {
     };
 
     const trapHandler = {
+      // Fires when you write: this.$model.users = [...] or this.$model['users'] = [...]
+      // Saves the new value, then re-renders all dd- elements that reference $model.users.
+      // Skipped during __init() so the page doesn't flash on every setup assignment.
       set: (obj, modelName, modelValue) => {
         this.$debugOpts?.model && console.log(`DEBUG: Model set triggered. this.$model.${modelName} = `, modelValue, ' | __initFinished:', this.__initFinished);
-        const tf = Reflect.set(obj, modelName, modelValue); // set obj.modelName = modelValue i.e. this.$model.modelName = modelValue
-        this.__initFinished && this.render(modelName); // prevent $model rendering in __init()
+        const tf = Reflect.set(obj, modelName, modelValue);
+        this.__initFinished && this.render(modelName);
         eventEmitter.emit('model-change', { modelName, modelValue });
         return tf;
       },
+
+      // Fires when the JS engine uses Object.defineProperty() to set a property — which
+      // happens when a bundler (Vite/esbuild) compiles bracket notation like this.$model[key] = value.
+      // Without this trap, bracket-notation assignments would silently bypass the set trap
+      // and no re-render would be triggered. Symbol keys are ignored — they are internal
+      // engine bookkeeping (Symbol.toPrimitive, Symbol.iterator, …) and must not cause renders.
+      defineProperty: (obj, modelName, descriptor) => {
+        this.$debugOpts?.model && console.log(`DEBUG: Model defineProperty triggered. this.$model.${String(modelName)} = `, descriptor.value, ' | __initFinished:', this.__initFinished);
+        const tf = Reflect.defineProperty(obj, modelName, descriptor);
+        if (typeof modelName === 'string') {
+          this.__initFinished && this.render(modelName);
+          eventEmitter.emit('model-change', { modelName, modelValue: descriptor.value });
+        }
+        return tf;
+      },
+
+      // Fires when you read: this.$model.users or this.$model['users']
+      // If the value is an object (array, plain object), it is wrapped in a nested Proxy
+      // so that deep writes like this.$model.user.name = 'Ana' also trigger a re-render.
       get: (obj, modelName) => {
         const val = Reflect.get(obj, modelName);
         if (val !== null && typeof val === 'object' && typeof modelName === 'string') {
