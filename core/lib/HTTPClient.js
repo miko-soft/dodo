@@ -157,6 +157,7 @@ class HTTPClient {
         ans.time.res = this._getTime();
         ans.time.duration = this._getTimeDiff(ans.time.req, ans.time.res);
 
+        this._busy = false; // request finished — instance is free for the next call
         resolve(ans);
       };
 
@@ -172,6 +173,7 @@ class HTTPClient {
         ans.time.res = this._getTime();
         ans.time.duration = this._getTimeDiff(ans.time.req, ans.time.res);
 
+        this._busy = false; // request finished — instance is free for the next call
         // do not resolve if it's already resolved by timeout
         resolve(ans);
       };
@@ -186,6 +188,7 @@ class HTTPClient {
         ans.statusMessage = `Request aborted due to timeout (${this.timeout} ms) ${url} `;
         ans.time.res = this._getTime();
         ans.time.duration = this._getTimeDiff(ans.time.req, ans.time.res);
+        this._busy = false; // request finished — instance is free for the next call
         resolve(ans);
       };
 
@@ -197,6 +200,7 @@ class HTTPClient {
         ans.statusMessage = `Server did not respond and timeout is forced after ${this.timeout} ms.`;
         ans.time.res = this._getTime();
         ans.time.duration = this._getTimeDiff(ans.time.req, ans.time.res);
+        this._busy = false; // request finished — instance is free for the next call
         resolve(ans);
       }, this.timeout);
 
