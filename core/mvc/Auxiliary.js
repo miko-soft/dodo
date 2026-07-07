@@ -737,12 +737,44 @@ class Auxiliary {
 
 
   /**
-   * Solve expressions. Expressions are closed in round brackets, for example (this.a !== 0).
-   * Expression types:
-   * - double negation such as !!this.isAcive
-   * - negation such as !this.y
-   * - conditions with 3 parts, for example: 'this.x >= 7' or 'x === this.y' or 'x < y'
-   * @param {string} expression - text within brackets i.e. the condition string, 'this.x < 8'
+   * Solve a boolean condition expression (the content inside round brackets).
+   * Each operand can be a controller variable, a string literal, a number, or a boolean.
+   *
+   * Single-operand forms:
+   *   $model.isActive                       --> truthy check
+   *   !$model.isActive                      --> negation
+   *   !!$model.isActive                     --> double negation (cast to boolean)
+   *
+   * Comparison operators (variable OP variable, variable OP literal, literal OP literal):
+   *   $model.age === 18                     --> strict equality
+   *   $model.age == '18'                    --> loose equality
+   *   $model.age !== 0                      --> strict inequality
+   *   $model.name != 'John'                 --> loose inequality
+   *   $model.price >= 100                   --> greater-than-or-equal
+   *   $model.price > 0                      --> greater-than
+   *   $model.count <= 10                    --> less-than-or-equal
+   *   $model.count < 5                      --> less-than
+   *
+   * Logical AND (&&) — all negation combinations:
+   *   $model.isAdmin && $model.isActive     --> X && Y
+   *   !$model.isAdmin && $model.isActive    --> !X && Y
+   *   $model.isAdmin && !$model.isActive    --> X && !Y
+   *   !$model.isAdmin && !$model.isActive   --> !X && !Y
+   *
+   * Logical OR (||) — all negation combinations:
+   *   $model.isAdmin || $model.isGuest      --> X || Y
+   *   !$model.isAdmin || $model.isGuest     --> !X || Y
+   *   $model.isAdmin || !$model.isGuest     --> X || !Y
+   *   !$model.isAdmin || !$model.isGuest    --> !X || !Y
+   *
+   * Operand types resolved by resolveValue():
+   *   $model.x, x, $model.arr[0].name      --> controller variable (via _getControllerValue)
+   *   !$model.x, !!$model.x                --> negated / double-negated controller variable
+   *   'some string', "text"                 --> string literal
+   *   true, false                           --> boolean literal
+   *   42, 3.14, -1                          --> number literal
+   *
+   * @param {string} expression - condition string without surrounding brackets, e.g. '!$model.x && !$model.y'
    * @returns {boolean}
    */
   _solveCondition(expression) {
@@ -750,7 +782,7 @@ class Auxiliary {
     // [\w\.\$\[\]_]+  ---> variables like $model.companies[0]._id
     // ['"\p{L}\p{N}\s]+  ---> any string with UTF-8 chars closed in single or double quote 'Ja sam čćžšđ' . It's also for true or false.
     // [-\.\d]+   ---> any number integer or float
-    const tripleConditionRegex = /([\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)\s*(===|==|!==|!=|>=|>|<=|<|&&|\|\|)\s*([\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)/u;
+    const tripleConditionRegex = /(!?!?[\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)\s*(===|==|!==|!=|>=|>|<=|<|&&|\|\|)\s*(!?!?[\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)/u;
     const singleConditionRegex = /(\!?(\!\!)?[\w\.\$\[\]_]+)/;
 
     // Function to resolve the value of a variable or literal
