@@ -1,3 +1,4 @@
+import ApiCall from './ApiCall.js';
 import Auth from './Auth.js';
 import BrowserStorage from './BrowserStorage.js';
 import Cookie from './Cookie.js';
@@ -11,6 +12,7 @@ import util from './util.js';
 
 
 export {
+  ApiCall,
   Auth,
   BrowserStorage,
   Cookie,
