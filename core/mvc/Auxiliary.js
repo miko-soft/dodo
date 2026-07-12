@@ -780,9 +780,9 @@ class Auxiliary {
   _solveCondition(expression) {
     // Regular expression to match different parts of the expression
     // [\w\.\$\[\]_]+  ---> variables like $model.companies[0]._id
-    // ['"\p{L}\p{N}\s]+  ---> any string with UTF-8 chars closed in single or double quote 'Ja sam čćžšđ' . It's also for true or false.
+    // '[^']*'|"[^"]*"  ---> any string literal in single or double quotes, including special chars like — @ # % etc.
     // [-\.\d]+   ---> any number integer or float
-    const tripleConditionRegex = /(!?!?[\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)\s*(===|==|!==|!=|>=|>|<=|<|&&|\|\|)\s*(!?!?[\w\.\$\[\]_]+|['"\p{L}\p{N}\s]+|[-\.\d]+)/u;
+    const tripleConditionRegex = /(!?!?[\w\.\$\[\]_]+|'[^']*'|"[^"]*"|[-\.\d]+)\s*(===|==|!==|!=|>=|>|<=|<|&&|\|\|)\s*(!?!?[\w\.\$\[\]_]+|'[^']*'|"[^"]*"|[-\.\d]+)/u;
     const singleConditionRegex = /(\!?(\!\!)?[\w\.\$\[\]_]+)/;
 
     // Function to resolve the value of a variable or literal
