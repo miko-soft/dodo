@@ -434,7 +434,7 @@ class Dd extends DdCloners {
     for (const elem of elems) {
       const attrVal = elem.getAttribute(attrName);
       const { base, opts } = this._decomposeAttribute(attrVal);
-      const val = this._solveBase(base);
+      let val = this._solveBase(base);
       const act = opts && opts[0] ? opts[0] : 'add'; // Default to 'add'
       this._debug('ddClass', `dd-class="${attrVal}" :: ${base} = ${JSON.stringify(val)} | act:: ${act}`, 'navy');
 
@@ -447,8 +447,12 @@ class Dd extends DdCloners {
       }
 
       if (act !== 'arrange' && !Array.isArray(val)) {
-        this._printWarn(`dd-class="${attrVal}" -> The value must be an array for "${act}" action. Received: ${JSON.stringify(val)}.`);
-        continue;
+        if (typeof val === 'string') {
+          val = [val]; // auto-wrap single string
+        } else {
+          this._printWarn(`dd-class="${attrVal}" -> The value must be an array for "${act}" action. Received: ${JSON.stringify(val)}.`);
+          continue;
+        }
       }
 
       if (act === 'arrange' && (typeof val !== 'object' || Array.isArray(val))) {
@@ -479,7 +483,8 @@ class Dd extends DdCloners {
         */
       function _handleArrangeOption(elem, val) {
         // Apply operations in the same order as properties are defined in `val`
-        for (const [action, classes] of Object.entries(val)) {
+        for (const [action, rawClasses] of Object.entries(val)) {
+          const classes = typeof rawClasses === 'string' ? [rawClasses] : rawClasses;
           if (!Array.isArray(classes)) continue;
 
           if (action === 'replace') {
