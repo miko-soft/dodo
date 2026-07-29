@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//web/node/miko/mikosoft_info/dodo_mikosoft_info/**)",
+      "Read(//web/node/miko/mikosoft_info/**)"
+    ]
+  }
+}

@@ -172,90 +172,591 @@ view. Translation keys in HTML: `data-i18n="SOME_KEY"`.
 
 ## dd-* Directives Reference
 
-Directives are `dd-*` HTML attributes processed during `render()`. Most take a value
-pointing into `$model` or calling a controller method.
+Directives are `dd-*` HTML attributes processed during `render()`.
 
-### Data Binding
+### Value format rules (apply to almost all directives)
 
-| Directive         | Syntax / Example                                              |
-|-------------------|---------------------------------------------------------------|
-| `dd-text`         | `<p dd-text="$model.name"></p>` — set textContent            |
-| `dd-html`         | `<div dd-html="$model.richText"></div>` — set innerHTML       |
-| `dd-model`        | `<input dd-model="$model.email">` — two-way binding (input ↔ $model), triggers render on input event |
-| `dd-value`        | `<input dd-value="$model.count">` — one-way: sets value attr  |
-| `dd-set`          | `<input dd-set="$model.search">` — one-way: input → $model on change, no re-render |
-| `dd-label`        | `<label dd-label="$model.fieldName"></label>`                 |
-| `dd-placeholder`  | `<input dd-placeholder="$model.hint">`                       |
-| `dd-title`        | `<span dd-title="$model.tooltip"></span>`                    |
-| `dd-data`         | `<div dd-data="id::$model.userId"></div>` — sets data-id attr |
+```html
+dd-text="firstName"                         <!-- controller property -->
+dd-text="this.firstName"                    <!-- explicit this -->
+dd-text="$model.product.name"               <!-- $model property path -->
+dd-text="printTxt('hello')"                 <!-- controller method call -->
+dd-text="((a + $model.b) * $fridge.x)"     <!-- expression (wrap in parentheses) -->
+dd-text="(a > $model.b ? 'YES' : 'NO')"    <!-- ternary expression -->
+```
+
+Supported operators inside expressions: `! !== != === == > >= < <= && ||`
+
+Common modifier available on most directives:
+```html
+dd-text="company.size --forceRender"   <!-- re-render on ANY $model change, not just 'size' -->
+```
+
+---
+
+### Writers
+
+**dd-text** — sets `textContent` (HTML tags are NOT interpreted)
+```html
+<p dd-text="$model.product.name"></p>
+<p dd-text="$model.product.description --pipe:slice(0, 55)"></p>
+<p dd-text="printTxt('some string')"></p>
+<p dd-text="(a > $model.b ? 'YES' : 'NO')"></p>
+```
+Modifier: `--pipe:stringMethod()` — applies any String method (slice, replace, toUpperCase…)
+
+**dd-html** — sets `innerHTML` (HTML tags ARE interpreted)
+```html
+<div dd-html="$model.richContent"></div>
+<div dd-html="printHtml('<b>bold</b>')"></div>
+```
+
+---
+
+### Form value directives
+
+**dd-value** — sets form element value (one-way: model → view)
+```html
+<input type="text"   dd-value="$model.product">
+<input type="number" dd-value="(x > a ? 3 : 5)">
+<textarea            dd-value="$model.description"></textarea>
+<select              dd-value="$model.car">...</select>
+```
+
+**dd-model** — two-way binding: model → view AND view → model (fires on `input` event, triggers `render`)
+```html
+<input dd-model="$model.product.name">
+<input dd-model="$model.product.price --convertType">
+```
+Modifier: `--convertType` — auto-converts string input to Number/Boolean/Object.
+
+**dd-set** — one-way: view → controller property on `input` event, does NOT trigger `render`
+```html
+<input   dd-set="myPet">
+<select  dd-set="$model.age --convertType">
+<select  dd-set="$model.user[{{this.id}}]">   <!-- mustache interpolation in path -->
+```
+
+---
+
+### Text attribute directives
+
+**dd-label** — sets `label` attribute
+```html
+<label dd-label="$model.fieldName"></label>
+```
+
+**dd-placeholder** — sets `placeholder` attribute
+```html
+<input dd-placeholder="$model.hint">
+```
+
+**dd-title** — sets `title` attribute
+```html
+<span dd-title="$model.tooltip"></span>
+```
+
+**dd-data** — sets `data-*` attributes
+```html
+<div dd-data="$model.userId --data-id"></div>
+```
+
+---
 
 ### Conditionals
 
-| Directive    | Example                                          |
-|--------------|--------------------------------------------------|
-| `dd-if`      | `<div dd-if="$model.isAdmin">...</div>` — removes element from DOM if falsy |
-| `dd-elseif`  | `<div dd-elseif="$model.isMod">...</div>`        |
-| `dd-else`    | `<div dd-else>...</div>`                         |
-| `dd-visible` | `<div dd-visible="$model.show">...</div>` — toggles CSS display (element stays in DOM) |
+**dd-if / dd-elseif / dd-else** — removes/inserts element from DOM
+```html
+<b dd-if="condition('if')">2</b>
+<b dd-elseif="condition('elseif')">5</b>
+<b dd-else>not 2, not 5</b>
+
+<div dd-if="($model.a !== 'something')">...</div>
+<div dd-if="(!!$model.companies[0].opened)">...</div>
+```
+`dd-else` takes no value. Siblings must be adjacent elements.
+
+**dd-visible** — toggles `visibility: visible|hidden` (element stays in DOM)
+```html
+<div dd-visible="$model.isActive">...</div>
+<div dd-visible="($model.a !== 'something')">...</div>
+```
+
+---
 
 ### Loops (Cloner Directives)
 
-| Directive     | Example / Notes                                                    |
-|---------------|--------------------------------------------------------------------|
-| `dd-each`     | `<li dd-each="users" dd-text="$model.name"></li>` — clones element for each array item |
-| `dd-each2`    | Nested loop inside `dd-each` — iterates a sub-array of the parent row |
-| `dd-entries`  | `<li dd-entries="settings"></li>` — iterates object key/value pairs; use `$model.key` / `$model.value` inside |
-| `dd-repeat`   | `<div dd-repeat="5">★</div>` — clones element N times             |
+`dd-each` goes on **the element being repeated**, not on a parent container.
+Declare template variables with `--alias,key`. Inside the loop:
+- `{{alias}}` / `{{key}}` — mustache syntax for text content and HTML
+- `$$alias` — double-dollar prefix to reference the current item inside other `dd-*` attribute values
+- `$model` inside the loop still refers to the **controller's reactive model**, NOT the loop item
 
-Inside `dd-each`: `$model` refers to the current array item. `$model.$i` is the 0-based index.
+**dd-each** — iterate array
+```html
+dd-each="myArr --val,key"
+dd-each="$model.myArr --val,key"
+dd-each="this.$model.myArr --val,key"
+dd-each="getItems() --val,key"
+```
+
+**dd-each2** — nested loop inside `dd-each` (MUST use `$$` prefix for sub-array)
+```html
+<div dd-each="$model.users --user,i">
+  <b>{{user.name}}</b>
+  <span dd-each2="$$user.addresses --addr,j">{{addr.city}}</span>
+</div>
+```
+
+**dd-entries** — iterate object key-value pairs
+```html
+<tr dd-entries="$model.config --key,val">
+  <td>{{key}}</td>
+  <td>{{val}}</td>
+</tr>
+```
+
+**dd-repeat** — clone element N times
+```html
+dd-repeat="$model.myNumber"
+dd-repeat="multiply(5)"
+dd-repeat="(this.myNumber + 1)"
+```
+
+**dd-each full example:**
+
+Controller — `src/controllers/UsersCtrl.js`:
+```javascript
+import { Controller } from '@mikosoft/dodo';
+
+class UsersCtrl extends Controller {
+  async __loader(trx) {
+    await this.loadView('#main', '/src/views/pages/users.html');
+  }
+  async __init(trx) {
+    this.$model.users = [];
+  }
+  async __rend(trx) {
+    await this.render();
+  }
+  async __postrend(trx) {
+    const resp = await this.$httpClient.get('/api/users');
+    this.$model.users = resp.data; // triggers render('users') automatically
+  }
+  deleteUser(key) {
+    this.$model.users = this.$model.users.filter((u, i) => i !== key);
+  }
+}
+export default UsersCtrl;
+```
+
+View — `src/views/pages/users.html`:
+```html
+<ul>
+  <li dd-each="$model.users --user,key" dd-class="$$user.cssClass --add">
+    <span>{{key}}.</span>
+    <strong>{{user.name}}</strong>
+    <em>{{user.email}}</em>
+    <button dd-click="deleteUser({{key}})">Delete</button>
+  </li>
+</ul>
+```
+
+**dd-each with `<option>` pre-selection:**
+```html
+<select dd-set="$model.selected_country">
+  <option dd-each="countries --country,key --selected:0" value="{{country}}">{{country}}</option>
+</select>
+```
+`--selected:N` pre-selects the Nth option (0-based index).
+
+---
 
 ### HTML Attribute Managers
 
-| Directive      | Effect                                           |
-|----------------|--------------------------------------------------|
-| `dd-class`     | `<div dd-class="active::$model.isActive">` — add/remove CSS class conditionally |
-| `dd-style`     | `<div dd-style="color::$model.color">` — set inline style property |
-| `dd-disabled`  | `<button dd-disabled="$model.loading">` — set/remove disabled attr |
-| `dd-readonly`  | `<input dd-readonly="$model.locked">`            |
-| `dd-required`  | `<input dd-required="$model.mandatory">`         |
-| `dd-checked`   | `<input type="checkbox" dd-checked="$model.agreed">` |
-| `dd-selected`  | `<option dd-selected="$model.chosen">` — set selected attr |
-| `dd-src`       | `<img dd-src="$model.avatarUrl">` — set src attr |
-| `dd-attr`      | `<div dd-attr="data-id::$model.id">` — set any attribute |
-| `dd-min`       | `<input dd-min="$model.minVal">`                 |
-| `dd-max`       | `<input dd-max="$model.maxVal">`                 |
+**dd-class** — add/remove/toggle CSS classes
+```html
+<div dd-class="myKlass --add">...</div>       <!-- add classes (default) -->
+<div dd-class="myKlass --remove">...</div>    <!-- remove classes -->
+<div dd-class="myKlass --toggle">...</div>    <!-- toggle classes -->
+<div dd-class="myKlass --replace">...</div>   <!-- clear all, then add -->
+<div dd-class="myArrange --arrange">...</div> <!-- object: {add:[...], remove:[...], toggle:[...]} -->
+<div dd-class="(isActive ? ['text-red','fw-bold'] : 'text-green')">...</div>
+```
+Value is a property holding a string or array of class names, a method call, or an expression.
+
+**dd-style** — set inline styles
+```html
+<div dd-style="myStyle">...</div>           <!-- property: {'font-size':'25px','color':'red'} -->
+<div dd-style="myStyle --replace">...</div> <!-- clear style first, then apply -->
+<div dd-style="($model.x > b ? {color:'green'} : {color:'red'})">...</div>
+```
+
+**dd-disabled** — set/remove `disabled` attribute
+```html
+<button dd-disabled="isActive">...</button>
+<button dd-disabled="(!$model.x)">...</button>
+<button dd-disabled="($fridge.a > $model.b)">...</button>
+```
+
+**dd-readonly** — set/remove `readonly` attribute
+```html
+<input dd-readonly="$model.locked">
+```
+
+**dd-required** — set/remove `required` attribute
+```html
+<input dd-required="$model.mandatory">
+```
+
+**dd-checked** — set checkbox/radio checked state
+```html
+<input type="checkbox" dd-checked="selectedCheckboxes">  <!-- array of values -->
+<input type="radio"    dd-checked="selectedRadio">        <!-- single string value -->
+```
+
+**dd-selected** — set select option selected state
+```html
+<select dd-selected="selectedProduct">...</select>
+<select dd-selected="selectedProducts --multiple">...</select>  <!-- multi-select: array -->
+```
+
+**dd-src** — set `src` attribute
+```html
+<img dd-src="$model.imageURL">
+<img dd-src="$model.imageURL --https://via.placeholder.com/130">  <!-- fallback src -->
+```
+
+**dd-attr** — set any HTML attribute
+```html
+<a dd-attr="$model.myURL --href">Link</a>
+<a dd-attr="setUrl() --href">Link</a>
+```
+Modifier `--attributeName` specifies which attribute to set.
+
+**dd-min / dd-max** — set `min` / `max` attributes
+```html
+<input dd-min="$model.minVal">
+<input dd-max="$model.maxVal">
+```
+
+---
 
 ### Event Listeners
 
-| Directive      | Example / Notes                                                         |
-|----------------|-------------------------------------------------------------------------|
-| `dd-href`      | `<a dd-href="/about">About</a>` — SPA navigation, no page reload        |
-| `dd-click`     | `<button dd-click="save()">Save</button>` — calls controller method     |
-| `dd-change`    | `<select dd-change="onSelect($event)">` — change event                  |
-| `dd-keyup`     | `<input dd-keyup="search()">` or `dd-keyup--13="submit()"` — keyCode filter |
-| `dd-enter`     | `<input dd-enter="submit()">` — Enter key shortcut                      |
-| `dd-evt`       | `<div dd-evt--mouseover="onHover($event)">` — any DOM event via `--<eventName>` |
-| `dd-model`     | See Data Binding — fires on input event                                 |
-| `dd-set`       | See Data Binding — fires on change event                                |
-| `dd-outclick`  | `<div dd-outclick="close()">` — fires when clicking outside element (dropdowns, modals) |
-| `dd-intersect` | `<img dd-intersect="lazyLoad()">` — fires when element enters viewport (IntersectionObserver) |
-| `dd-swipe`     | `<div dd-swipe="onSwipe($event)">` or `dd-swipe--left="prev()"` — touch swipe |
+Special parameters available inside event directive values:
+- `$element` — the DOM element the directive is on
+- `$event` — the native DOM event object
+
+**dd-click**
+```html
+<button dd-click="myFunc()">Click me</button>
+<button dd-click="(alert('hello'))">Alert</button>
+<button dd-click="myFunc() --preventDefault">No default</button>
+```
+
+**dd-enter** — fires on Enter key
+```html
+<input dd-enter="myFunc()">
+<input dd-enter="(alert('txt')) --preventDefault">
+```
+
+**dd-keyup** — fires on keyup with optional key and debounce modifiers
+```html
+<input dd-keyup="myFunc()">
+<input dd-keyup="myFunc() --enter">              <!-- only on Enter key -->
+<input dd-keyup="myFunc() --delay:500">          <!-- debounced 500ms -->
+<input dd-keyup="myFunc() --enter --delay:1000"> <!-- both modifiers -->
+```
+
+**dd-change** — fires on form element change
+```html
+<select dd-change="myFunc()"></select>
+```
+
+**dd-evt** — any DOM event(s), chainable with `&&`
+```html
+<span dd-evt="runFn($element, $event, 'red') --mouseenter && runFn($element, $event, 'green') --mouseleave">
+  Hover me
+</span>
+```
+
+**dd-outclick** — fires when clicking outside the element
+```html
+<div dd-outclick="closeDropdown()">...</div>
+```
+
+**dd-intersect** — fires when element enters viewport (IntersectionObserver)
+```html
+<img dd-intersect="lazyLoad()" data-src="/img/photo.jpg" src="/img/placeholder.jpg">
+```
+
+**dd-swipe** — fires on touch swipe with optional direction filter
+```html
+<div dd-swipe="onSwipe($event)">...</div>            <!-- any direction -->
+<div dd-swipe="prev() --left">...</div>              <!-- left swipe only -->
+<div dd-swipe="next() --right">...</div>             <!-- right swipe only -->
+```
+Direction modifiers: `--left`, `--right`, `--up`, `--down`
+
+**dd-href** — client-side navigation, no page reload
+```html
+<a href="/about"  dd-href>About</a>          <!-- uses href attribute value -->
+<a href="" dd-href="/about">About</a>        <!-- value overrides href -->
+```
+
+---
 
 ### DOM Utilities
 
-| Directive       | Example / Notes                                                    |
-|-----------------|--------------------------------------------------------------------|
-| `dd-elem`       | `<canvas dd-elem="chart"></canvas>` — exposes element as `this.$elem.chart` in controller |
-| `dd-setinitial` | `<input dd-setinitial="$model.lang">` — reads element value into $model on route load |
+**dd-elem** — exposes DOM element as `this.$elem.<name>` in the controller
+```html
+<canvas dd-elem="chart"></canvas>
+<!-- controller: this.$elem.chart → the <canvas> DOM element -->
+```
+
+**dd-setinitial** — reads element's current value into a controller property on route load (prerender, before `__init`)
+```html
+<input value="bread"  dd-setinitial="product">
+<input value="1971"   dd-setinitial="year --convertType">
+<select               dd-setinitial="$model.lang">
+```
+Modifier: `--convertType` — auto-converts string to Number/Boolean/Object.
+
+---
 
 ### Visibility Helpers (`-hide` suffix)
 
-Any directive can use a `-hide` suffix on the **attribute name** to hide the element until
-rendering is complete (prevents FOUC):
+Any directive attribute can have `-hide` appended to hide the element until rendering
+is complete (prevents flash of unrendered content):
 ```html
 <ul dd-each-hide="users">...</ul>
+<p  dd-text-hide="$model.title"></p>
 ```
 DoDo injects `[dd-*-hide] { display: none !important; }` via a `<style>` tag at startup.
+
+
+## Real-World Patterns & Examples
+
+### View loading — import HTML as raw string (Vite/bundler)
+```javascript
+import navbar from '/views/inc/navbar.html?raw';
+import home   from '/views/pages/home/home.html?raw';
+
+async __loader(trx) {
+  this.loadView('#navbar', navbar);   // raw HTML string
+  this.loadView('#main',   home);
+}
+```
+`loadView` accepts either a raw HTML string (bundler import) or a URL string (fetch).
+
+### Page meta helpers (available in __loader)
+```javascript
+this.setTitle('Page Title');
+this.setDescription('Meta description');
+this.setKeywords('dodo, spa, js');
+this.setLang('en');
+```
+
+### Controller with full lifecycle
+```javascript
+import { Controller, corelib } from '@mikosoft/dodo';
+import navbar from '/views/inc/navbar.html?raw';
+import page   from '/views/pages/users.html?raw';
+
+export default class UsersCtrl extends Controller {
+  constructor(app) {
+    super();
+  }
+  async __loader(trx) {
+    this.setTitle('Users');
+    this.loadView('#navbar', navbar);
+    this.loadView('#main', page);
+  }
+  async __init(trx) {
+    this.$model.users = [];
+    this.selectedId = null;
+  }
+  async __rend(trx) {
+    await this.render();
+  }
+  async __postrend(trx) {
+    const resp = await this.$httpClient.askJSON('/api/users', 'GET');
+    this.$model.users = resp.data;
+  }
+  async __destroy() {
+    this.unloadCSS(['/css/users.css']);
+  }
+  selectUser(id) {
+    this.selectedId = id;
+    this.$model.users = this.$model.users; // force re-render
+  }
+}
+```
+
+### $modeler API (correct method names)
+```javascript
+this.$modeler.use('pets').setValue('cat');        // set scalar value
+this.$modeler.use('pets').getValue();             // get current value
+this.$modeler.use('pets').getValue('x.y.z');      // get at nested path
+this.$modeler.use('pets').setValue(2015, 'x.y.z'); // set at nested path
+this.$modeler.use('pets').delValue('x.y.z');      // delete nested key
+this.$modeler.use('pets').mpush('rabbit');         // array push + render
+this.$modeler.use('pets').mpop();                  // array pop + render
+this.$modeler.use('pets').munshift('fish');        // array unshift + render
+this.$modeler.use('pets').mshift();                // array shift + render
+```
+
+### dd-click — multiple methods, special args, nested property call
+```html
+<!-- run two methods with one click (semicolon separated) -->
+<button dd-click="save(); notify()">Save</button>
+
+<!-- $element = the DOM element itself -->
+<button dd-click="makeRed($element)">Color</button>
+
+<!-- $value = current input value -->
+<input dd-click="search($value)">
+
+<!-- call a nested method defined as a controller property -->
+<button dd-click="print.inConsole.makeRed($element)">Log</button>
+
+<!-- pass controller property as argument -->
+<button dd-click="processAll(this.products)">Process</button>
+
+<!-- regex literal as argument -->
+<button dd-click="validate(/^[a-z]+$/)">Validate</button>
+```
+
+### dd-each with dd-if inside
+```html
+<table>
+  <tr dd-each="$model.companies --val,key">
+    <td>{{val.name}}</td>
+    <td dd-if="compareSize({{val.size}})">{{val.size}}</td>
+    <td dd-else>Less than 50</td>
+  </tr>
+</table>
+```
+
+### dd-each with dd-html (generate cell HTML from method)
+```html
+<table>
+  <tr dd-each="cars --car,key" dd-html="tableCells({{key}})"></tr>
+</table>
+```
+```javascript
+tableCells(key) {
+  const car = this.cars[key];
+  return `<td>${car.name}</td><td>${car.year}</td>`;
+}
+```
+
+### dd-each generating <option> elements
+```html
+<select name="myAuto">
+  <option value=""></option>
+  <option dd-each="$model.autos --val,key" value="{{val.id}}">{{val.name}}</option>
+</select>
+```
+
+### dd-view — sub-view placeholder
+```html
+<!-- in main view -->
+<div dd-view="#main-part">PLACEHOLDER</div>
+```
+```javascript
+// in __loader
+this.loadView('#main-part', part, 'inner');  // 3rd arg: load mode
+```
+
+### dd-form — Form library integration
+```html
+<form dd-form="testForm">
+  <input type="text"     name="fullName">
+  <input type="number"   name="age">
+  <select name="country">...</select>
+  <select name="family" multiple>...</select>
+  <input type="checkbox" name="jobs" value="IT">
+  <input type="radio"    name="pet"  value="cat">
+  <textarea name="desc"></textarea>
+</form>
+```
+```javascript
+this.testForm = new corelib.Form('testForm');
+
+this.testForm.setControl('fullName', 'John Doe');
+this.testForm.getControl('fullName');             // → 'John Doe'
+this.testForm.delControl('fullName');
+
+this.testForm.setControls({ fullName: 'Ana', age: 25 });
+this.testForm.getAllControls();                   // → { fullName, age, ... }
+this.testForm.delAllControls();
+
+// dot notation for nested field names
+this.testForm.setControl('fruit.seller.name', 'Joe Ltd');
+```
+
+### HTTPClient — askJSON shorthand
+```javascript
+const resp = await this.$httpClient.askJSON('/api/users', 'GET');
+const resp = await this.$httpClient.askJSON('/api/users', 'POST', { name: 'Ana' });
+```
+
+### Auth configuration
+```javascript
+import { corelib } from '@mikosoft/dodo';
+
+const $auth = new corelib.Auth({
+  apiLogin:        'http://localhost:8001/api/users/login',
+  afterGoodLogin:  '/dashboard/{loggedUserRole}',  // {loggedUserRole} is substituted
+  afterBadLogin:   '/login',
+  afterLogout:     '/login'
+});
+
+// bind guards before passing to route options
+const autoLogin = $auth.autoLogin.bind($auth);
+const isLogged  = $auth.isLogged.bind($auth);
+const hasRole   = $auth.hasRole.bind($auth);
+
+// in routes:
+['when', '/dashboard', DashCtrl, { authGuards: [isLogged, hasRole] }]
+['when', '/login',     LoginCtrl, { authGuards: [autoLogin] }]
+```
+
+### HTTPClient configuration
+```javascript
+import { corelib } from '@mikosoft/dodo';
+
+const $httpClient = new corelib.HTTPClient({
+  encodeURI:    true,
+  timeout:      21000,
+  responseType: '',
+  retry:        0,
+  retryDelay:   1300,
+  maxRedirects: 0,
+  headers: {
+    'authorization': '',
+    'accept':        '*/*',
+    'content-type':  'text/html; charset=UTF-8'
+  }
+});
+```
+
+### dd-set with dd-evt (when dd-click fires before dd-set)
+```html
+<!-- dd-click fires BEFORE dd-set, so use dd-evt --input to read the updated value -->
+<input dd-set="myProp" dd-evt="printInConsole() --input">
+```
+
+### dd-setinitial with dd-model (capture initial HTML value into $model)
+```html
+<input type="text" value="Saša" dd-model="$model.name" dd-setinitial="$model.name">
+<select dd-model="$model.country" dd-setinitial="$model.country">
+  <option value="HR" selected>Croatia</option>
+  <option value="US">USA</option>
+</select>
+```
 
 
 ## Built-in Libraries
