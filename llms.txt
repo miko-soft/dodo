@@ -1,0 +1,435 @@
+# @mikosoft/dodo — AI Reference (v1.3.0)
+
+Concise reference for AI assistants. Read this file to understand the Dodo framework
+without analysing source code. Full docs: http://dodo.mikosoft.info
+
+
+## What is Dodo
+
+@mikosoft/dodo is a lightweight MVC JavaScript framework for building reactive single-page
+applications (SPAs). It has zero external dependencies, requires no build tools or TypeScript,
+and uses plain ES6 modules. Supported environments: browsers, browser extensions, Electron,
+Cordova/PhoneGap, PWAs.
+
+Key differences from React/Vue/Angular:
+- No components — one Controller manages the whole page
+- No virtual DOM — updates real DOM via dd-* directive processing
+- No JSX/templates — plain HTML files with dd-* attributes
+- Reactive model via JavaScript Proxy (not observables or signals)
+
+
+## Architecture
+
+```
+URL change → Router → Controller runs lifecycle hooks → dd-* directives update DOM
+```
+
+Two app entry-point classes:
+
+| Class    | File                  | Use case                                  |
+|----------|-----------------------|-------------------------------------------|
+| App      | core/App.js           | Multi-page SPA with client-side routing   |
+| AppOne   | core/AppOne.js        | Single-page, no routing (extensions etc.) |
+
+Supporting classes (inheritance chain, bottom → top):
+  Controller → Model → Dd → DdCloners → DdListeners → Auxiliary
+
+
+## Entry Point Setup
+
+### Multi-page app (App)
+
+```javascript
+import { App } from '@mikosoft/dodo';
+
+const app = new App('myApp');
+app
+  .auth($auth)             // Auth instance → this.$auth in controllers
+  .httpClient($httpClient) // HTTP client → this.$httpClient in controllers
+  .debug($debugOpts)       // console debug flags
+  .fridge($fridge)         // shared object persisting across routes → this.$fridge
+  .i18n($i18n)             // translations → used by View.loadI18n(langCode)
+  .preflight([fn1, fn2])   // run before every controller __loader()
+  .postflight([fn1, fn2])  // run after every controller __postrend()
+  .destroyflight(fn)       // run when any controller is destroyed (route change)
+  .ssr();                  // dispatches 'ssr-ready' window event after first render
+
+const $routes = [
+  ['when',     '/',          HomeCtrl],
+  ['when',     '/users/:id', UserCtrl,     { authGuards: ['isLogged'] }],
+  ['when',     '/login',     LoginCtrl],
+  ['redirect', '/home',      '/'],          // redirect /home → /
+  ['do',       [logFn]],                   // run on every route change
+  ['notfound', NotfoundCtrl]
+];
+
+app.routes($routes).listen();
+```
+
+### Single-page app (AppOne)
+
+```javascript
+import { AppOne } from '@mikosoft/dodo';
+const app = new AppOne('myApp');
+app.controller(MyCtrl);
+```
+
+
+## Controller Lifecycle
+
+Every Controller runs hooks in this strict order:
+
+```
+__loader(trx) → __init(trx) → __rend(trx) → __postrend(trx)
+__destroy() fires when navigating away from the route
+```
+
+| Hook           | Purpose                                                       |
+|----------------|---------------------------------------------------------------|
+| `__loader(trx)` | Load HTML views/partials into the DOM                        |
+| `__init(trx)`  | Set initial values on `$model` and controller properties      |
+| `__rend(trx)`  | Call `render()` — processes all dd-* directives               |
+| `__postrend(trx)` | Run code after render (fetch data, init 3rd-party plugins) |
+| `__destroy()`  | Cleanup (remove event listeners, cancel timers)               |
+
+The `trx` (transitional) object:
+```javascript
+trx.uri     // '/users/42'
+trx.params  // { id: '42' }        — route params from '/users/:id'
+trx.query   // { sort: 'asc' }     — query string params
+trx.pevent  // popstate/pushstate browser event
+```
+
+Minimal controller:
+```javascript
+import { Controller } from '@mikosoft/dodo';
+
+class HomeCtrl extends Controller {
+  async __loader(trx) {
+    await this.loadView('#main', '/views/home.html');
+  }
+  async __init(trx) {
+    this.$model.title = 'Hello';
+    this.$model.users = [];
+  }
+  async __rend(trx) {
+    await this.render();
+  }
+  async __postrend(trx) {
+    const resp = await this.$httpClient.get('/api/users');
+    this.$model.users = resp.data; // triggers reactive render('users') automatically
+  }
+}
+export default HomeCtrl;
+```
+
+
+## Reactive Model ($model)
+
+`this.$model` is a JavaScript Proxy defined on the Controller. Assigning any property
+automatically triggers a debounced, serialised `render(modelName)`.
+
+```javascript
+this.$model.items = [];        // next tick: render('items') fires
+this.$model.count = 42;        // next tick: render('count') fires
+
+// Manual full render (called in __rend):
+await this.render();
+
+// Manual targeted render (called anywhere after __init):
+await this.render('items');    // only re-renders dd-* elements bound to 'items'
+```
+
+Render is debounced per property name (rapid successive assignments = one render) and
+serialised globally (renders never run in parallel — prevents listener corruption).
+
+`$modeler` — helper methods auto-defined for each $model property:
+```javascript
+this.$modeler.items.push(newItem);  // push to array, then render('items')
+this.$modeler.items.unshift(item);
+this.$modeler.items.set(idx, val);
+this.$modeler.items.del(idx);
+```
+
+
+## View System
+
+`this.loadView(cssSelector, htmlFilePath)` — fetches an HTML file and injects it into the
+element matching the CSS selector. Called in `__loader()`.
+
+```javascript
+async __loader(trx) {
+  await this.loadView('#main',     '/views/home.html');
+  await this.loadView('#sidebar',  '/views/sidebar.html');
+}
+```
+
+HTML files are plain HTML fragments (no `<html>/<body>` wrapper needed).
+
+`this.loadI18n(langCode)` — injects translation strings from the `$i18n` object into the
+view. Translation keys in HTML: `data-i18n="SOME_KEY"`.
+
+
+## dd-* Directives Reference
+
+Directives are `dd-*` HTML attributes processed during `render()`. Most take a value
+pointing into `$model` or calling a controller method.
+
+### Data Binding
+
+| Directive         | Syntax / Example                                              |
+|-------------------|---------------------------------------------------------------|
+| `dd-text`         | `<p dd-text="$model.name"></p>` — set textContent            |
+| `dd-html`         | `<div dd-html="$model.richText"></div>` — set innerHTML       |
+| `dd-model`        | `<input dd-model="$model.email">` — two-way binding (input ↔ $model), triggers render on input event |
+| `dd-value`        | `<input dd-value="$model.count">` — one-way: sets value attr  |
+| `dd-set`          | `<input dd-set="$model.search">` — one-way: input → $model on change, no re-render |
+| `dd-label`        | `<label dd-label="$model.fieldName"></label>`                 |
+| `dd-placeholder`  | `<input dd-placeholder="$model.hint">`                       |
+| `dd-title`        | `<span dd-title="$model.tooltip"></span>`                    |
+| `dd-data`         | `<div dd-data="id::$model.userId"></div>` — sets data-id attr |
+
+### Conditionals
+
+| Directive    | Example                                          |
+|--------------|--------------------------------------------------|
+| `dd-if`      | `<div dd-if="$model.isAdmin">...</div>` — removes element from DOM if falsy |
+| `dd-elseif`  | `<div dd-elseif="$model.isMod">...</div>`        |
+| `dd-else`    | `<div dd-else>...</div>`                         |
+| `dd-visible` | `<div dd-visible="$model.show">...</div>` — toggles CSS display (element stays in DOM) |
+
+### Loops (Cloner Directives)
+
+| Directive     | Example / Notes                                                    |
+|---------------|--------------------------------------------------------------------|
+| `dd-each`     | `<li dd-each="users" dd-text="$model.name"></li>` — clones element for each array item |
+| `dd-each2`    | Nested loop inside `dd-each` — iterates a sub-array of the parent row |
+| `dd-entries`  | `<li dd-entries="settings"></li>` — iterates object key/value pairs; use `$model.key` / `$model.value` inside |
+| `dd-repeat`   | `<div dd-repeat="5">★</div>` — clones element N times             |
+
+Inside `dd-each`: `$model` refers to the current array item. `$model.$i` is the 0-based index.
+
+### HTML Attribute Managers
+
+| Directive      | Effect                                           |
+|----------------|--------------------------------------------------|
+| `dd-class`     | `<div dd-class="active::$model.isActive">` — add/remove CSS class conditionally |
+| `dd-style`     | `<div dd-style="color::$model.color">` — set inline style property |
+| `dd-disabled`  | `<button dd-disabled="$model.loading">` — set/remove disabled attr |
+| `dd-readonly`  | `<input dd-readonly="$model.locked">`            |
+| `dd-required`  | `<input dd-required="$model.mandatory">`         |
+| `dd-checked`   | `<input type="checkbox" dd-checked="$model.agreed">` |
+| `dd-selected`  | `<option dd-selected="$model.chosen">` — set selected attr |
+| `dd-src`       | `<img dd-src="$model.avatarUrl">` — set src attr |
+| `dd-attr`      | `<div dd-attr="data-id::$model.id">` — set any attribute |
+| `dd-min`       | `<input dd-min="$model.minVal">`                 |
+| `dd-max`       | `<input dd-max="$model.maxVal">`                 |
+
+### Event Listeners
+
+| Directive      | Example / Notes                                                         |
+|----------------|-------------------------------------------------------------------------|
+| `dd-href`      | `<a dd-href="/about">About</a>` — SPA navigation, no page reload        |
+| `dd-click`     | `<button dd-click="save()">Save</button>` — calls controller method     |
+| `dd-change`    | `<select dd-change="onSelect($event)">` — change event                  |
+| `dd-keyup`     | `<input dd-keyup="search()">` or `dd-keyup--13="submit()"` — keyCode filter |
+| `dd-enter`     | `<input dd-enter="submit()">` — Enter key shortcut                      |
+| `dd-evt`       | `<div dd-evt--mouseover="onHover($event)">` — any DOM event via `--<eventName>` |
+| `dd-model`     | See Data Binding — fires on input event                                 |
+| `dd-set`       | See Data Binding — fires on change event                                |
+| `dd-outclick`  | `<div dd-outclick="close()">` — fires when clicking outside element (dropdowns, modals) |
+| `dd-intersect` | `<img dd-intersect="lazyLoad()">` — fires when element enters viewport (IntersectionObserver) |
+| `dd-swipe`     | `<div dd-swipe="onSwipe($event)">` or `dd-swipe--left="prev()"` — touch swipe |
+
+### DOM Utilities
+
+| Directive       | Example / Notes                                                    |
+|-----------------|--------------------------------------------------------------------|
+| `dd-elem`       | `<canvas dd-elem="chart"></canvas>` — exposes element as `this.$elem.chart` in controller |
+| `dd-setinitial` | `<input dd-setinitial="$model.lang">` — reads element value into $model on route load |
+
+### Visibility Helpers (`-hide` suffix)
+
+Any directive can use a `-hide` suffix on the **attribute name** to hide the element until
+rendering is complete (prevents FOUC):
+```html
+<ul dd-each-hide="users">...</ul>
+```
+DoDo injects `[dd-*-hide] { display: none !important; }` via a `<style>` tag at startup.
+
+
+## Built-in Libraries
+
+Import from corelib:
+```javascript
+import { corelib } from '@mikosoft/dodo';
+const { Auth, HTTPClient, HTTPClientFetch, Form, Cookie,
+        BrowserStorage, Paginator, eventEmitter, navig, util, ApiCall } = corelib;
+```
+
+### Auth (`core/lib/Auth.js`)
+JWT authentication with cookie storage, auto-login on page refresh, and role-based route
+guards. Inject into the app with `app.auth($auth)` → available as `this.$auth` in all controllers.
+
+```javascript
+await this.$auth.login(credentials);
+await this.$auth.logout();
+this.$auth.getLoggedUserInfo();       // decoded JWT payload
+this.$auth.getJWTtoken();             // raw JWT string
+```
+
+Route guard options (passed in route definition):
+```javascript
+['when', '/dashboard', DashCtrl, { authGuards: ['autoLogin', 'isLogged', 'hasRole'] }]
+```
+
+### HTTPClient / HTTPClientFetch (`core/lib/HTTPClient.js`, `HTTPClientFetch.js`)
+Two HTTP clients — XMLHttpRequest-based and Fetch API-based. Inject via `app.httpClient($httpClient)`.
+
+```javascript
+const resp = await this.$httpClient.get('/api/users', { headers: {...} });
+const resp = await this.$httpClient.post('/api/users', body, { headers: {...} });
+await this.$httpClient.put('/api/users/1', body);
+await this.$httpClient.delete('/api/users/1');
+await this.$httpClient.patch('/api/users/1', patch);
+```
+Features: retry logic, timeouts, request/response interceptors, custom headers.
+
+### ApiCall (`core/lib/ApiCall.js`)
+Higher-level abstraction over HTTPClient for structured API calls.
+
+### Form (`core/lib/Form.js`)
+Read/write all HTML form control types (text, checkbox, radio, select, file) to/from `$model`.
+Handles type conversion and optional validation.
+
+### Cookie (`core/lib/Cookie.js`)
+```javascript
+Cookie.set('name', value, { expires: 7, secure: true, domain: '.example.com', sameSite: 'Strict' });
+Cookie.get('name');
+Cookie.delete('name');
+```
+
+### BrowserStorage (`core/lib/BrowserStorage.js`)
+Simple wrappers around `localStorage` and `sessionStorage`.
+
+### EventEmitter (`core/lib/EventEmitter.js`)
+Pub/sub bus for decoupled communication between controllers:
+```javascript
+eventEmitter.emit('user:loggedIn', userData);
+eventEmitter.on('user:loggedIn', handler);
+eventEmitter.off('user:loggedIn', handler);
+```
+
+### Paginator (`core/lib/Paginator.js`)
+Calculates page ranges, total pages, and navigation state for paginated data.
+
+### navig (`core/lib/navig.js`)
+```javascript
+navig.goto('/dashboard');
+navig.goto('/search', { q: 'hello' });   // appends query string
+navig.getCurrentURI();                   // '/dashboard?tab=stats'
+```
+
+### util (`core/lib/util.js`)
+General-purpose helpers: type checking (`util.isObj`, `util.isArr`, ...), deep object clone,
+string manipulation, `util.sleep(ms)`.
+
+
+## Debug Options
+
+`core/conf/$debugOpts.js` defines boolean flags that enable console output per subsystem:
+
+```javascript
+const $debugOpts = {
+  exeRoute: false,      // router matching
+  render: false,        // render() calls
+  ddEach: false,        // dd-each processing
+  ddClick: false,       // dd-click listener attachment
+  // ... one flag per directive and subsystem
+};
+app.debug($debugOpts);
+```
+
+Set any flag to `true` to see detailed console logs for that subsystem.
+
+
+## Controller Constants (available as `this.*` in every controller)
+
+| Property        | Source             | Description                                   |
+|-----------------|--------------------|-----------------------------------------------|
+| `this.$model`   | Model.js           | Reactive data proxy                           |
+| `this.$modeler` | Model.js           | Array/object mutation helpers                 |
+| `this.$dd`      | Dd.js              | Internal directive registry & listener list   |
+| `this.$elem`    | Dd.js              | DOM elements captured by `dd-elem`            |
+| `this.$fridge`  | App.fridge()       | Shared data across all controllers            |
+| `this.$httpClient` | App.httpClient() | HTTP client instance                         |
+| `this.$auth`    | App.auth()         | Auth instance                                 |
+| `this.$debugOpts` | App.debug()      | Debug flags                                   |
+| `this.$appName` | App constructor    | App name string                               |
+
+
+## Known Issues
+
+### Promise.all() inside `__init()` causes broken rendering
+
+**Status:** Unresolved
+
+Using `Promise.all()`, `Promise.race()`, `Promise.allSettled()`, or `Promise.any()` in
+`__init()` can leave orphaned promises. If one branch rejects, `Promise.all` rejects early,
+`__init()` returns, `__initFinished = true` is set — but surviving in-flight promises
+continue running. When they later resolve and set `$model.x`, they trigger `render('x')`
+out of sequence, corrupting the DOM/listener state. No error is thrown.
+
+**Workaround — always use sequential awaits in `__init()`:**
+```javascript
+// BAD — do not do this:
+async __init(trx) {
+  await Promise.all([this.loadNetworks(), this.loadUsers()]);
+}
+
+// GOOD:
+async __init(trx) {
+  await this.loadNetworks();
+  await this.loadUsers();
+}
+```
+
+If parallel fetching is needed for performance, move it to `__postrend()` where
+`__initFinished` is already `true` and the render queue handles sequencing correctly.
+
+
+## File Map
+
+```
+core/
+  index.js              — main export: { App, AppOne, Controller, Model, View, corelib }
+  App.js                — multi-page SPA class
+  AppOne.js             — single-page app class
+  mvc/
+    Controller.js       — lifecycle hooks, render(), _doRender()
+    Model.js            — $model Proxy, $modeler helpers
+    View.js             — loadView(), loadI18n()
+    Dd.js               — non-cloner directive processors, $dd/$elem init
+    DdCloners.js        — dd-each, dd-each2, dd-entries, dd-repeat
+    DdListeners.js      — dd-click, dd-href, dd-model, dd-set, dd-change, dd-keyup,
+                          dd-enter, dd-evt, dd-outclick, dd-intersect, dd-swipe
+    Auxiliary.js        — _debug(), utility helpers
+  misc/
+    Router.js           — route matching, trx building, middleware chain
+  lib/
+    Auth.js
+    HTTPClient.js
+    HTTPClientFetch.js
+    ApiCall.js
+    Form.js
+    Cookie.js
+    BrowserStorage.js
+    EventEmitter.js
+    Paginator.js
+    navig.js
+    stringTypeConvert.js
+    util.js
+    index.js            — exports all lib as `corelib`
+  conf/
+    $debugOpts.js       — debug flag defaults
+```
