@@ -239,7 +239,7 @@ class Controller extends Model {
    */
   prerender() {
     this.ddSetinitial();
-    this.ddHref();
+    this.ddHref(); // prerender href links because we do not want to wait for API route to end and __rend() to render them
   }
 
 

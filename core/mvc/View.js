@@ -22,9 +22,10 @@ class View extends Dd {
    * @param {string} viewContent - HTML content
    * @param {string} dest - destination where to place the view: inner, sibling, prepend, append
    * @param {string} cssSel - CSS selector to load part of the view file: 'div > p.bolded:nth-child(2)'
+   * @param {string[]} skipHideDirectives - directives to skip hiding, for example: ['dd-class', 'dd-href']. Sometimes we don't want to long wait for API route to end and then __rend() to render them. For example sidebar.html .
    * @returns {void}
    */
-  loadView(viewName, viewContent = '', dest = 'inner', cssSel = '') {
+  loadView(viewName, viewContent = '', dest = 'inner', cssSel = '', skipHideDirectives = []) {
     const attrName = 'dd-view';
 
     // empty content from the document by removing the dd-view-clone="" elements
@@ -49,7 +50,7 @@ class View extends Dd {
     }
 
     // make dd elements invisible by setting dd-...-hide attribute i.e. display:none !important
-    htmlstr = this._hide_ddElements(htmlstr);
+    htmlstr = this._hide_ddElements(htmlstr, skipHideDirectives);
 
     // load content in the element
     if (dest === 'inner') {
@@ -74,9 +75,10 @@ class View extends Dd {
    * Initially this directive hides all elements with dd-... attributes within the dd-selfview element.
    * Mostly used in AppOne applications.
    * This method should be used in the controller's __loader() hook.
+   * @param {string[]} skipHideDirectives - directives to skip hiding, for example: ['dd-class', 'dd-href']
    * @returns {void}
    */
-  loadSelfview() {
+  loadSelfview(skipHideDirectives = []) {
     const attrName = 'dd-selfview';
 
     // get a HTML element with dd-view attribute
@@ -89,7 +91,7 @@ class View extends Dd {
     this._debug('loadSelfview', `--htmlstr: ${htmlstr.length}`, '#8B0892');
 
     // make dd elements invisible by setting dd-...-hide attribute i.e. display:none !important
-    htmlstr = this._hide_ddElements(htmlstr);
+    htmlstr = this._hide_ddElements(htmlstr, skipHideDirectives);
 
     elem.innerHTML = htmlstr;
   }
@@ -517,12 +519,13 @@ class View extends Dd {
    * @param {string} htmlString - string with html tags
    * @returns {string} - modified HTML string
    */
-  _hide_ddElements(htmlString) {
+  _hide_ddElements(htmlString, skipHideDirectives = []) {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = htmlString;
 
     const directives = [...this.$dd.noncloner_directives, ...this.$dd.cloner_directives];
     for (const directive of directives) {
+      if (skipHideDirectives.includes(directive)) { continue; }
       const dd_elems = wrapper.querySelectorAll(`[${directive}]`);
       for (const dd_elem of dd_elems) {
         this._elemHide(dd_elem, directive);

@@ -154,17 +154,30 @@ this.$modeler.items.del(idx);
 
 ## View System
 
-`this.loadView(cssSelector, htmlFilePath)` — fetches an HTML file and injects it into the
-element matching the CSS selector. Called in `__loader()`.
+`this.loadView(viewName, viewContent, dest, cssSel, skipHideDirectives)` — injects HTML content
+into the element with `dd-view="viewName"`. Called in `__loader()`.
 
 ```javascript
 async __loader(trx) {
-  await this.loadView('#main',     '/views/home.html');
-  await this.loadView('#sidebar',  '/views/sidebar.html');
+  this.loadView('#main',    mainHtml);
+  this.loadView('#sidebar', sidebarHtml);
+
+  // skipHideDirectives: skip hiding + immediately process listed directives.
+  // Use for static views whose dd-* expressions don't depend on $model data
+  // (e.g. $fridge-based dd-class for active-link highlighting, dd-href navigation links).
+  // This prevents the flash where links are hidden until __rend() completes after API calls.
+  this.loadView('#sidebar', sidebarHtml, 'inner', '', ['dd-class', 'dd-href']);
 }
 ```
 
 HTML files are plain HTML fragments (no `<html>/<body>` wrapper needed).
+
+`skipHideDirectives` parameter (5th arg, default `[]`): array of directive names to opt out of
+the hide-until-render mechanism. Elements matching those directives are inserted visible and the
+corresponding processors (`ddClass()`, `ddHref()`, …) are called immediately after inject, before
+`__init()` runs. Only safe for expressions that do not depend on `$model` data (e.g. `$fridge`,
+static values). `$model`-dependent `dd-class` / `dd-text` etc. on other views are unaffected and
+still hide+render on the normal `__rend()` cycle.
 
 `this.loadI18n(langCode)` — injects translation strings from the `$i18n` object into the
 view. Translation keys in HTML: `data-i18n="SOME_KEY"`.
