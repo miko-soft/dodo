@@ -200,6 +200,25 @@ dd-text="(a > $model.b ? 'YES' : 'NO')"    <!-- ternary expression -->
 
 Supported operators inside expressions: `! !== != === == > >= < <= && ||`
 
+**⚠️ IMPORTANT — No method chaining in dd-* expressions:**
+JavaScript method calls chained after an expression (e.g. `.toFixed()`, `.toUpperCase()`,
+`.slice()`) are NOT supported in `dd-*` attribute values. The expression parser's `^\(.+\)$`
+regex matches to the LAST `)` in the string, not the closing paren of the inner expression,
+causing the method name to be treated as an undefined variable and throwing a runtime error.
+
+```html
+<!-- ❌ WRONG — causes _solveMath errors -->
+<span dd-text="($$plan.price_monthly / 100).toFixed(2)"></span>
+
+<!-- ✅ CORRECT — precompute in the controller, expose as a $model property -->
+<!-- In controller: plan.priceDisplay = (plan.price_monthly / 100).toFixed(2) -->
+<span dd-text="$$plan.priceDisplay"></span>
+```
+
+**Rule: always precompute formatted/transformed values in the controller and bind the
+result to a `$model` property (or a computed property on each item). Use dd-* directives
+only to READ those properties or to evaluate simple arithmetic / boolean expressions.**
+
 Common modifier available on most directives:
 ```html
 dd-text="company.size --forceRender"   <!-- re-render on ANY $model change, not just 'size' -->
@@ -883,6 +902,40 @@ Set any flag to `true` to see detailed console logs for that subsystem.
 
 
 ## Known Issues
+
+### Method chaining after expressions causes _solveMath errors
+
+**Status:** By design (parser limitation)
+
+Using JavaScript method calls (`.toFixed()`, `.toUpperCase()`, `.slice()`, etc.) chained
+onto the end of a `(expression)` in any `dd-*` directive causes three console errors:
+
+```
+_solveMath Error:: The <fieldName> has undefined value.
+_solveMath Error:: The toFixed has undefined value.
+Error: Invalid character in expression
+```
+
+**Why:** `_solveBase` detects `^\(.+\)$` (starts with `(`, ends with `)`) and strips the
+outer parens. When the attribute is `($$plan.price_monthly / 100).toFixed(2)`, the LAST `)` is
+the one in `toFixed(2)`, so stripping gives `plans[0].price_monthly / 100).toFixed(2`.
+`_solveMath` then tokenises this with the regex `/[a-zA-Z_$][a-zA-Z0-9_$\.]*/g`, which stops
+at `[` brackets, leaving `price_monthly` and `toFixed` as bare undefined identifiers.
+
+**Fix — always precompute in the controller:**
+```javascript
+// controller
+this.$model.plans = plans.map(p => ({
+  ...p,
+  priceDisplay: (p.price_monthly / 100).toFixed(2),
+}));
+```
+```html
+<!-- view -->
+<span dd-text="$$plan.priceDisplay"></span>
+```
+
+---
 
 ### Promise.all() inside `__init()` causes broken rendering
 
