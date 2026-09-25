@@ -307,8 +307,16 @@ Modifier: `--convertType` — auto-converts string input to Number/Boolean/Objec
 
 <div dd-if="($model.a !== 'something')">...</div>
 <div dd-if="(!!$model.companies[0].opened)">...</div>
+
+<!-- compound && / || expressions (operators must be space-separated) -->
+<span dd-if="($$item.val !== null && $$item.val >= 0)" class="text-green">...</span>
+<span dd-elseif="($$item.val !== null && $$item.val < 0)" class="text-red">...</span>
+<span dd-else>...</span>
+
+<div dd-if="($$u.role === 'admin' || $$u.role === 'mod')">...</div>
 ```
 `dd-else` takes no value. Siblings must be adjacent elements.
+`null` and `undefined` are supported as literal values in conditions.
 
 **dd-visible** — toggles `visibility: visible|hidden` (element stays in DOM)
 ```html
