@@ -778,11 +778,10 @@ class Auxiliary {
    * @returns {boolean}
    */
   _solveCondition(expression) {
-    // Regular expression to match different parts of the expression
     // [\w\.\$\[\]_]+  ---> variables like $model.companies[0]._id
     // '[^']*'|"[^"]*"  ---> any string literal in single or double quotes, including special chars like — @ # % etc.
     // [-\.\d]+   ---> any number integer or float
-    const tripleConditionRegex = /(!?!?[\w\.\$\[\]_]+|'[^']*'|"[^"]*"|[-\.\d]+)\s*(===|==|!==|!=|>=|>|<=|<|&&|\|\|)\s*(!?!?[\w\.\$\[\]_]+|'[^']*'|"[^"]*"|[-\.\d]+)/u;
+    const tripleConditionRegex = /(!?!?[\w\.\$\[\]_]+|'[^']*'|"[^"]*"|[-\.\d]+)\s*(===|==|!==|!=|>=|>|<=|<)\s*(!?!?[\w\.\$\[\]_]+|'[^']*'|"[^"]*"|[-\.\d]+)/u;
     const singleConditionRegex = /(\!?(\!\!)?[\w\.\$\[\]_]+)/;
 
     // Function to resolve the value of a variable or literal
@@ -795,64 +794,47 @@ class Auxiliary {
       else { valueStr = str.trim(); }
 
       let value;
-      if (valueStr === 'true' || valueStr === 'false') {
-        value = valueStr === 'true';
-      } else if (/^\d+/.test(valueStr)) {
-        value = Number(valueStr);
-      } else if (/^['"].*['"]$/.test(valueStr)) {
-        value = valueStr.slice(1, -1);
-      } else {
-        value = this._getControllerValue(valueStr);
-      }
+      if (valueStr === 'null') { value = null; }
+      else if (valueStr === 'undefined') { value = undefined; }
+      else if (valueStr === 'true' || valueStr === 'false') { value = valueStr === 'true'; }
+      else if (/^\d+/.test(valueStr)) { value = Number(valueStr); }
+      else if (/^['"].*['"]$/.test(valueStr)) { value = valueStr.slice(1, -1); }
+      else { value = this._getControllerValue(valueStr); }
 
       if (isDoubleNegation) { return value; }
       else if (isNegation) { return !value; }
       else { return value; }
     };
 
-    // Try to match a complex condition with an operator
-    let cond_parts = expression.match(tripleConditionRegex);
-    if (cond_parts) {
-      const a_str = cond_parts[1].trim();
-      const operator = cond_parts[2];
-      const b_str = cond_parts[3].trim();
-
-      // Resolve the values of a and b
-      const a = resolveValue(a_str);
-      const b = resolveValue(b_str);
-
-      // Evaluate the condition based on the operator
-      const evaluateCondition = (a, operator, b) => {
+    // Evaluate a single atomic clause: a comparison (a op b) or a single variable
+    const evaluateClause = (clause) => {
+      clause = clause.trim();
+      const parts = clause.match(tripleConditionRegex);
+      if (parts) {
+        const a = resolveValue(parts[1].trim());
+        const operator = parts[2];
+        const b = resolveValue(parts[3].trim());
         switch (operator) {
           case '===': return a === b;
-          case '==': return a == b;
+          case '==':  return a == b;
           case '!==': return a !== b;
-          case '!=': return a != b;
-          case '>=': return a >= b;
-          case '>': return a > b;
-          case '<=': return a <= b;
-          case '<': return a < b;
-          case '&&': return a && b;
-          case '||': return a || b;
-          default: return false;
+          case '!=':  return a != b;
+          case '>=':  return a >= b;
+          case '>':   return a > b;
+          case '<=':  return a <= b;
+          case '<':   return a < b;
+          default:    return false;
         }
-      };
-
-      // Solve and return the condition
-      const tf = evaluateCondition(a, operator, b);
-      // console.log('_solveCondition::', `${a_str}:${a} ${operator} ${b_str}:${b} => ${tf}`);
-      return tf;
-    } else {
-      // Try to match a simple single negated condition
-      cond_parts = expression.match(singleConditionRegex);
-      if (cond_parts) {
-        const single_str = cond_parts[1].trim();
-        const tf = resolveValue(single_str);
-        return tf;
-      } else {
-        this._printError(`_solveCondition Error: Invalid expression format "${expression}"`);
       }
-    }
+      const single = clause.match(singleConditionRegex);
+      if (single) { return resolveValue(single[1].trim()); }
+      this._printError(`_solveCondition Error: Invalid clause "${clause}"`);
+      return false;
+    };
+
+    // Split by ' || ' (lower precedence) then ' && ' (higher precedence) to support compound expressions
+    const orGroups = expression.split(' || ');
+    return orGroups.some(group => group.split(' && ').every(clause => !!evaluateClause(clause)));
   }
 
 

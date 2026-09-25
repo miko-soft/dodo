@@ -200,6 +200,8 @@ dd-text="(a > $model.b ? 'YES' : 'NO')"    <!-- ternary expression -->
 
 Supported operators inside expressions: `! !== != === == > >= < <= && ||`
 
+**Rule:** Wrap in `()` only when the value contains operators i.e. when it's expression. Plain properties and method calls need no brackets.
+
 **⚠️ IMPORTANT — No method chaining in dd-* expressions:**
 JavaScript method calls chained after an expression (e.g. `.toFixed()`, `.toUpperCase()`,
 `.slice()`) are NOT supported in `dd-*` attribute values. The expression parser's `^\(.+\)$`
@@ -937,32 +939,6 @@ this.$model.plans = plans.map(p => ({
 
 ---
 
-### Promise.all() inside `__init()` causes broken rendering
-
-**Status:** Unresolved
-
-Using `Promise.all()`, `Promise.race()`, `Promise.allSettled()`, or `Promise.any()` in
-`__init()` can leave orphaned promises. If one branch rejects, `Promise.all` rejects early,
-`__init()` returns, `__initFinished = true` is set — but surviving in-flight promises
-continue running. When they later resolve and set `$model.x`, they trigger `render('x')`
-out of sequence, corrupting the DOM/listener state. No error is thrown.
-
-**Workaround — always use sequential awaits in `__init()`:**
-```javascript
-// BAD — do not do this:
-async __init(trx) {
-  await Promise.all([this.loadNetworks(), this.loadUsers()]);
-}
-
-// GOOD:
-async __init(trx) {
-  await this.loadNetworks();
-  await this.loadUsers();
-}
-```
-
-If parallel fetching is needed for performance, move it to `__postrend()` where
-`__initFinished` is already `true` and the render queue handles sequencing correctly.
 
 
 ## File Map
